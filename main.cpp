@@ -3,6 +3,7 @@
 #include "kmeans.h"
 #include "svm.h"
 #include "gmm.h"
+#include "mat.h"
 
 class Student
 {
@@ -58,11 +59,43 @@ void test_csv()
     return;
 }
 
+void test_lu()
+{
+    Mat x(3, 3, { 1, 1, 1,
+                  0, 0.5, -2,
+                  0, 1, 1});
+    Mat xi;
+    Mat::LU::inv(x, xi);
+    xi.show();
+    std::cout<<"test inverse:"<<std::endl;
+    Mat I(x.rows, x.cols);
+    Mat::mul(I, x, xi);
+    I.show();
+    return;
+}
+
+void test_det()
+{
+    float value;
+    Mat x1(3, 3, {1, 1, 1,
+                  1, 2, 3,
+                  1, 5, 1});
+    Mat::det(x1, value);
+    std::cout<<"det:"<<value<<std::endl;
+
+
+
+    Mat x2(4, 4, {1, 1, 1, 2,
+                  1, 2, 3, 0,
+                  0, 5, 1, -1,
+                  1, 0, -3, 1});
+    Mat::det(x2, value);
+    std::cout<<"det:"<<value<<std::endl;
+    return;
+}
+
 int main()
 {
-    KMeans model;
-    SVM<Kernel::RBF> svm;
-    GMM gmm;
-    Vec x({1, 2, 3, 4, 5});
+    test_det();
     return 0;
 }

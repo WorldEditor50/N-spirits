@@ -1,11 +1,11 @@
 #ifndef LINEARREGRESSION_H
 #define LINEARREGRESSION_H
-#include "vec.h"
+#include "mat.h"
 
 class LinearModel
 {
 public:
-    Vec w;
+    Mat w;
     float b;
 public:
     LinearModel(){}
@@ -17,25 +17,25 @@ public:
     {
         return y*(1 - y);
     }
-    float operator()(const Vec &x)
+    float operator()(const Mat &x)
     {
-        return sigmoid(Vec::dot(w, x) + b);
+        return sigmoid(Mat::dot(w, x) + b);
     }
-    void update(const Vec &x, float y, float yt, float learningRate)
+    void update(const Mat &x, float y, float yt, float learningRate)
     {
         /* sgd */
-        for (std::size_t i = 0; i < w.size(); i++) {
+        for (std::size_t i = 0; i < w.totalSize; i++) {
             w[i] -= learningRate*(y - yt)*dSigmoid(y)*x[i];
         }
         b -= learningRate*(y - yt)*dSigmoid(y);
         return;
     }
-    void train(const std::vector<Vec> &x, const Vec &yt, std::size_t maxEpoch, std::size_t batchSize=30, float learningRate=1e-3)
+    void train(const std::vector<Mat> &x, const Mat &yt, std::size_t maxEpoch, std::size_t batchSize=30, float learningRate=1e-3)
     {
         for (std::size_t i = 0; i < maxEpoch; i++) {
             for (std::size_t j = 0; j < batchSize; j++) {
                 int k = rand() % x.size();
-                float y = sigmoid(Vec::dot(w, x[k]) + b);
+                float y = sigmoid(Mat::dot(w, x[k]) + b);
                 update(x[k], y, yt[k], learningRate);
             }
         }

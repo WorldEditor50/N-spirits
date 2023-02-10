@@ -1,61 +1,63 @@
 #ifndef GMM_H
 #define GMM_H
 #include "kmeans.h"
-
 class GMM
 {
 public:
     class Gaussian
     {
     public:
-        float prior;
-        float minSigma;
-        Vec u;
-        Vec sigma;
+        Mat u;
+        Mat sigma;
+        Mat cov;
     public:
-        Gaussian():prior(0){}
+        Gaussian(){}
         Gaussian(std::size_t featureDim)
         {
-            u = Vec(featureDim, 0);
-            sigma = Vec(featureDim, 0);
+            u = Mat(featureDim, 1);
+            sigma = Mat(featureDim, 1);
+            cov = Mat(featureDim, featureDim);
         }
-        float operator()(const Vec &x)
+        float operator()(const Mat &x)
         {
             /* N(x;u,sigma) = exp((x-u)^2/sigma)/sqrt(2*pi*sigma) */
-            float p = prior;
-            for (std::size_t i = 0; i < u.size(); i++) {
-                p *= std::exp(-0.5*(x[i] - u[i])*(x[i] - u[i])/sigma[i])/std::sqrt(2*pi*sigma[i]);
+            float p = 1;
+            for (std::size_t i = 0; i < u.totalSize; i++) {
+                p *= std::exp(-0.5*(x[i] - u[i])*(x[i] - u[i])/sigma[i])/std::sqrt(2*3.14159*sigma[i]);
             }
             return p;
         }
         void zero()
         {
-            prior = 0;
             u.zero();
             sigma.zero();
             return;
         }
     };
 public:
-    std::size_t topicDim;
+    std::size_t componentDim;
     std::size_t featureDim;
+    Mat priors;
+    Mat minSigma;
     std::vector<Gaussian> gaussians;
 public:
-    GMM():topicDim(0), featureDim(0){}
+    GMM():componentDim(0), featureDim(0){}
     explicit GMM(std::size_t k, std::size_t featureDim_)
-        :topicDim(k), featureDim(featureDim_)
+        :componentDim(k), featureDim(featureDim_)
     {
-        gaussians = std::vector<Gaussian>(topicDim, Gaussian(featureDim));
+        priors = Mat(componentDim, 1);
+        minSigma = Mat(componentDim, 1);
+        gaussians = std::vector<Gaussian>(componentDim, Gaussian(featureDim));
     }
-    void init(const std::vector<Vec> &x, std::size_t maxEpoch)
+    void init(const std::vector<Mat> &x, std::size_t maxEpoch)
     {
         /* run kmeans to select centers */
-        KMeans kmeans(topicDim);
+        KMeans kmeans(componentDim);
         kmeans.cluster(x, maxEpoch);
         std::vector<std::size_t> y;
         kmeans.predict(x, y);
         /* mean of all data */
-        Vec u(topicDim, 0);
+        Mat u(componentDim, 1);
         for (std::size_t i = 0; i < x.size(); i++) {
             u += x[i];
         }
@@ -63,19 +65,19 @@ public:
         /* variance of all data */
         for (std::size_t i = 0; i < x.size(); i++) {
             std::size_t topic = y[i];
-            gaussians[topic].minSigma += Vec::dot(x[i], x[i]);
+            minSigma[topic] += Mat::dot(x[i], x[i]);
         }
-        for (std::size_t i = 0; i < u.size(); i++) {
-            gaussians[i].minSigma = std::max(1e-10, 0.01*(gaussians[i].minSigma/float(x.size()) - u[i]*u[i]));
+        for (std::size_t i = 0; i < u.totalSize; i++) {
+            minSigma[i] = std::max(1e-10, 0.01*(minSigma[i]/float(x.size()) - u[i]*u[i]));
         }
         /* prior of each topic */
-        Vec N(topicDim, 0);
+        Mat N(componentDim, 1);
         for (std::size_t i = 0; i < x.size(); i++) {
             std::size_t topic = y[i];
             N[topic]++;
         }
-        for (std::size_t i = 0; i < gaussians.size(); i++) {
-            gaussians[i].prior = float(N[i])/float(x.size());
+        for (std::size_t i = 0; i < priors.totalSize; i++) {
+            priors[i] = float(N[i])/float(x.size());
         }
         /* mean of each topic */
         for (std::size_t i = 0; i < kmeans.centers.size(); i++) {
@@ -84,38 +86,38 @@ public:
         /* variance of each topic */
         for (std::size_t i = 0; i < x.size(); i++) {
             std::size_t topic = y[i];
-            Vec& uc = kmeans.centers[topic];
-            for (std::size_t j = 0; j < gaussians[topic].sigma.size(); j++) {
+            Mat& uc = kmeans.centers[topic];
+            for (std::size_t j = 0; j < gaussians[topic].sigma.totalSize; j++) {
                 gaussians[topic].sigma[j] += (x[i][j] - uc[j])*(x[i][j] - uc[j]);
             }
         }
         /* constraint */
         for (std::size_t i = 0; i < gaussians.size(); i++) {
-            if (gaussians[i].prior > 0) {
-                for (std::size_t j = 0; j < gaussians[i].sigma.size(); j++) {
+            if (priors[i] > 0) {
+                for (std::size_t j = 0; j < gaussians[i].sigma.totalSize; j++) {
                     gaussians[i].sigma[j] /= N[i];
-                    if (gaussians[i].sigma[j] < gaussians[i].minSigma) {
-                        gaussians[i].sigma[j] = gaussians[i].minSigma;
+                    if (gaussians[i].sigma[j] < minSigma[i]) {
+                        gaussians[i].sigma[j] = minSigma[i];
                     }
                 }
             } else {
-                for (std::size_t j = 0; j < gaussians[i].sigma.size(); j++) {
-                    gaussians[i].sigma[j] = gaussians[i].minSigma;
-                }
+                gaussians[i].sigma = minSigma;
             }
         }
         return;
     }
 
-    void cluster(const std::vector<Vec> &x, std::size_t maxEpoch)
+    void cluster(const std::vector<Mat> &x, std::size_t maxEpoch, float eps)
     {
         /* init */
         init(x, maxEpoch);
         /* estimate */
-        std::vector<Gaussian> s(x.size(), Gaussian(x[0].size()));
+        Mat priors_(componentDim, 1);
+        std::vector<Gaussian> s(x.size(), Gaussian(featureDim));
         for (std::size_t epoch = 0; epoch < maxEpoch; epoch++) {
             for (std::size_t i = 0; i < s.size(); i++) {
                 s[i].zero();
+                priors_.zero();
             }
             for (std::size_t i = 0; i < x.size(); i++) {
                 /*
@@ -134,31 +136,29 @@ public:
                 }
                 for (std::size_t j = 0; j < s.size(); j++) {
                     /* E-Step */
-                    float p = gaussians[j].prior*gaussians[j](x[i])/sp;
-                    s[j].prior += p;
+                    float gamma = priors[i]*gaussians[j](x[i])/sp;
+                    priors_[j] += gamma;
                     /* M-Step */
-                    for (std::size_t k = 0; k < gaussians[j].u.size(); k++) {
-                        s[j].u[k] += p*x[i][k];
-                        s[j].sigma[k] += p*x[i][k]*x[i][k];
+                    for (std::size_t k = 0; k < gaussians[j].u.totalSize; k++) {
+                        s[j].u[k] += gamma*x[i][k];
+                        s[j].sigma[k] += gamma*x[i][k]*x[i][k];
                     }
                 }
             }
             /* update */
             for (std::size_t i = 0; i < gaussians.size(); i++) {
-                float& prior = gaussians[i].prior;
-                float& minSigma = gaussians[i].minSigma;
-                Vec& u = gaussians[i].u;
-                Vec& sigma = gaussians[i].sigma;
                 /* M-Step */
-                prior = s[i].prior/float(x.size());
-                if (prior <= 0) {
-                    return;
+                priors[i] = priors_[i]/float(x.size());
+                if (priors[i] <= 0) {
+                    continue;
                 }
-                for (std::size_t j = 0; j < u.size(); j++) {
-                    u[j] = s[i].u[j]/s[i].prior;
-                    sigma[j] = s[i].sigma[j]/s[i].prior - u[j]*u[j];
-                    if (sigma[j] < minSigma) {
-                        sigma[j] = minSigma;
+                Mat& u = gaussians[i].u;
+                for (std::size_t j = 0; j < u.totalSize; j++) {
+                    u[j] = s[i].u[j]/priors_[i];
+                    /* Cov(X，Y)=E(XY)-E(X)E(Y) */
+                    gaussians[i].sigma[j] = s[i].sigma[j]/priors_[i] - u[j]*u[j];
+                    if (gaussians[i].sigma[j] < minSigma[i]) {
+                        gaussians[i].sigma[j] = minSigma[i];
                     }
                 }
             }
@@ -166,7 +166,7 @@ public:
         return;
     }
 
-    std::size_t operator()(const Vec &x)
+    std::size_t operator()(const Mat &x)
     {
         float maxP = -1;
         std::size_t topic = 0;

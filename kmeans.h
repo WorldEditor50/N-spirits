@@ -5,24 +5,24 @@
 #include <cmath>
 #include <string>
 #include <random>
-#include "vec.h"
+#include "mat.h"
 
 class KMeans
 {
 public:
     std::size_t topicDim;
     std::size_t featureDim;
-    std::vector<Vec> centers;
+    std::vector<Mat> centers;
 public:
     KMeans(){}
     explicit KMeans(std::size_t k):topicDim(k),featureDim(0){}
 
-    void cluster(const std::vector<Vec> &x, std::size_t maxEpoch)
+    void cluster(const std::vector<Mat> &x, std::size_t maxEpoch)
     {
         /* init center */
         std::uniform_int_distribution<int> distribution(0, x.size() - 1);
         std::default_random_engine engine;
-        centers = std::vector<Vec>(topicDim);
+        centers = std::vector<Mat>(topicDim);
         for (std::size_t i = 0; i < centers.size(); i++) {
             int j = distribution(engine);
             centers[i] = x[j];
@@ -60,7 +60,7 @@ public:
         return;
     }
 
-    void predict(const std::vector<Vec> &x, std::vector<std::size_t> &y)
+    void predict(const std::vector<Mat> &x, std::vector<std::size_t> &y)
     {
         y = std::vector<std::size_t>(topicDim);
         for (std::size_t i = 0; i < x.size(); i++) {
@@ -78,7 +78,7 @@ public:
         return;
     }
 
-    std::size_t operator()(const Vec &x)
+    std::size_t operator()(const Mat &x)
     {
         float maxD = -1;
         std::size_t topic = 0;
@@ -92,10 +92,10 @@ public:
         return topic;
     }
 
-    static float distance(const Vec &p1, const Vec &p2)
+    static float distance(const Mat &p1, const Mat &p2)
     {
         float d = 0;
-        for (std::size_t i = 0; i < p1.size(); i++) {
+        for (std::size_t i = 0; i < p1.totalSize; i++) {
             d += (p1[i] - p2[i])*(p1[i] - p2[i]);
         }
         return std::sqrt(d);

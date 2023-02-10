@@ -4,7 +4,8 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += \
-        main.cpp
+        main.cpp \
+        mat.cpp
 
 HEADERS += \
     bayes.h \
@@ -15,5 +16,6 @@ HEADERS += \
     kernel.h \
     kmeans.h \
     linearregression.h \
+    mat.h \
     svm.h \
     vec.h
