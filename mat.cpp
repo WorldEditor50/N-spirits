@@ -13,7 +13,7 @@ Mat Mat::identity(std::size_t rows, std::size_t cols)
     for (std::size_t i = 0; i < y.rows; i++) {
         for (std::size_t j = 0; j < y.cols; j++) {
             if (i == j) {
-                y.data[i*rows + j] = 1;
+                y.data[i*cols + j] = 1;
             }
         }
     }
@@ -27,7 +27,12 @@ Mat &Mat::operator=(const Mat &r)
     }
     rows = r.rows;
     cols = r.cols;
-    data = std::vector<float>(r.data);
+    totalSize = r.totalSize;
+    if (data.empty()) {
+        data = std::vector<float>(r.data);
+    } else {
+        data.assign(r.data.begin(), r.data.end());
+    }
     return *this;
 }
 
@@ -38,9 +43,11 @@ Mat &Mat::operator=(Mat &&r)
     }
     rows = r.rows;
     cols = r.cols;
+    totalSize = r.totalSize;
     data.swap(r.data);
     r.rows = 0;
     r.cols = 0;
+    r.totalSize = 0;
     return *this;
 }
 
@@ -53,7 +60,7 @@ Mat Mat::operator *(const Mat &x) const
     for (std::size_t i = 0; i < y.rows; i++) {
         for (std::size_t j = 0; j < y.cols; j++) {
             for (std::size_t k = 0; k < cols; k++) {
-                y.data[i*y.rows + j] += data[i*rows + k] * x.data[k*x.rows + j];
+                y.data[i*y.cols + j] += data[i*cols + k] * x.data[k*x.cols + j];
             }
         }
     }
@@ -201,10 +208,20 @@ Mat Mat::tr() const
     Mat y(cols, rows);
     for (std::size_t i = 0; i < y.rows; i++) {
         for (std::size_t j = 0; j < y.cols; j++) {
-            y.data[i*y.rows + j] = data[j*rows + i];
+            y.data[i*y.cols + j] = data[j*cols + i];
         }
     }
     return y;
+}
+
+int Mat::reshape(size_t rows_, size_t cols_)
+{
+    if (rows_*cols_ != totalSize) {
+        return -1;
+    }
+    rows = rows_;
+    cols = cols_;
+    return 0;
 }
 
 Mat Mat::sub(std::size_t pr, std::size_t pc, std::size_t sr, std::size_t sc) const
@@ -212,7 +229,7 @@ Mat Mat::sub(std::size_t pr, std::size_t pc, std::size_t sr, std::size_t sc) con
     Mat y(sr, sc);
     for (std::size_t i = 0; i < y.rows; i++) {
         for (std::size_t j = 0; j < y.cols; j++) {
-            y.data[i*y.rows + j] = data[(i + pr)*rows + j + pc];
+            y.data[i*y.cols + j] = data[(i + pr)*cols + j + pc];
         }
     }
     return y;
@@ -237,7 +254,7 @@ void Mat::set(std::size_t pr, std::size_t pc, const Mat &x)
 {
     for (std::size_t i = pr; i < pr + x.rows; i++) {
         for (std::size_t j = pc; j < pc + x.cols; j++) {
-            data[i*rows + j] = x.data[(i - pr)*rows + j - pc];
+            data[i*cols + j] = x.data[(i - pr)*cols + j - pc];
         }
     }
     return;
@@ -265,32 +282,15 @@ void Mat::EMA(const Mat &r, float rho)
 
 void Mat::show() const
 {
-    std::cout<<"row:"<<rows<<", cols"<<cols<<std::endl;
+    std::cout<<"row:"<<rows<<", cols:"<<cols<<std::endl;
     for (std::size_t i = 0; i < rows; i++) {
         for (std::size_t j = 0; j < cols; j++) {
-            std::cout<<data[i*rows + j]<<" ";
+            std::size_t index = i*cols + j;
+            std::cout<<data[index]<<" ";
         }
         std::cout<<std::endl;
     }
     return;
-}
-
-int Mat::mul(Mat &y, const Mat &x1, const Mat &x2)
-{
-    if (x1.cols != x2.rows) {
-        return -1;
-    }
-    if ((y.rows != x1.rows) && (y.cols != x2.cols)) {
-        return -2;
-    }
-    for (std::size_t i = 0; i < y.rows; i++) {
-        for (std::size_t j = 0; j < y.cols; j++) {
-            for (std::size_t k = 0; k < x1.cols; k++) {
-                y.data[i*y.rows + j] += x1.data[i*x1.rows + k]*x2.data[k*x2.rows + j];
-            }
-        }
-    }
-    return 0;
 }
 
 float Mat::dot(const Mat &x1, const Mat &x2)
@@ -333,7 +333,7 @@ Mat Mat::kronecker(const Mat &x1, const Mat &x2)
         for (std::size_t j = 0; j < x1.cols; j++) {
             for (std::size_t k = 0; k < x2.rows; k++) {
                 for (std::size_t l = 0; l < x2.cols; l++) {
-                    y(i*x2.rows + k, j*x2.cols + l) = x1.data[i*x1.rows + j] * x2.data[k*x2.rows + l];
+                    y(i*x2.cols + k, j*x2.cols + l) = x1.data[i*x1.cols + j] * x2.data[k*x2.cols + l];
                 }
             }
         }
@@ -341,218 +341,80 @@ Mat Mat::kronecker(const Mat &x1, const Mat &x2)
     return y;
 }
 
-Mat Mat::sqrt(const Mat &x)
+void Mat::Swap::row(Mat &x, size_t ri, size_t rj)
 {
-    Mat y(x.rows, x.cols);
-    for (std::size_t i = 0; i < x.totalSize; i++) {
-        y.data[i] = std::sqrt(x.data[i]);
-    }
-    return y;
-}
-
-Mat Mat::exp(const Mat &x)
-{
-    Mat y(x.rows, x.cols);
-    for (std::size_t i = 0; i < x.totalSize; i++) {
-        y.data[i] = std::exp(x.data[i]);
-    }
-    return y;
-}
-
-Mat Mat::sin(const Mat &x)
-{
-    Mat y(x.rows, x.cols);
-    for (std::size_t i = 0; i < x.totalSize; i++) {
-        y.data[i] = std::sin(x.data[i]);
-    }
-    return y;
-}
-
-Mat Mat::cos(const Mat &x)
-{
-    Mat y(x.rows, x.cols);
-    for (std::size_t i = 0; i < x.totalSize; i++) {
-        y.data[i] = std::cos(x.data[i]);
-    }
-    return y;
-}
-
-void Mat::uniform(Mat &x)
-{
-    std::uniform_real_distribution<float> distibution(-1, 1);
-    for (std::size_t i = 0; i < x.totalSize; i++) {
-        x.data[i] = distibution(engine);
+    for (std::size_t h = 0; h < x.cols; h++) {
+        float tmp = x(ri, h);
+        x(ri, h) = x(rj, h);
+        x(rj, h) = tmp;
     }
     return;
 }
 
-void Mat::diag(const Mat &x, Mat &elements, int k)
+void Mat::Swap::col(Mat &x, size_t ci, size_t cj)
 {
-
+    for (std::size_t h = 0; h < x.rows; h++) {
+        float tmp = x(h, ci);
+        x(h, ci) = x(h, cj);
+        x(h, cj) = tmp;
+    }
     return;
 }
 
-int Mat::det(const Mat &x, float &value)
+void Mat::Multiply::ikkj(Mat &y, const Mat &x1, const Mat &x2)
 {
-    if (x.rows != x.cols) {
-        return -1;
-    }
-    /* 1-order */
-    if (x.rows == 1) {
-        return x(0, 0);
-    }
-    /* 2-order */
-    if (x.rows == 2) {
-        return x(0, 0)*x(1, 1) - x(0, 1)*x(1, 0);
-    }
-
-    /*
-       n-order:
-        Gaussian Elimination -> up triangle matrix -> det(x) = ∏ Diag(U)
-    */
-
-    Mat d(x);
-    std::size_t N = x.cols;
-    value = 1;
-    for (std::size_t i = 0; i < N; i++) {
-        /* find 0 in column */
-        std::size_t t = i;
-        while (d(t, i) == 0 && t < N) {
-            t++;
-        }
-        if (t == N) {
-            continue;
-        }
-        for (std::size_t j = 0; j < N; j++) {
-            float tmp = d(i, j);
-            d(i, j) = d(t, j);
-            d(t, j) = tmp;
-        }
-
-        if (t != i) {
-            value *= -1;
-        }
-        /* ∏ Diag(U)  */
-        float diagonal = d(i, i);
-        value *= diagonal;
-        for (std::size_t j = 0; j < N; j++) {
-            d(i, j) /= diagonal;
-        }
-
-        for (std::size_t j = 0; j < N; j++) {
-            if (i == j) {
-                continue;
-            }
-            float dji = d(j, i);
-            for (std::size_t k = 0; k < N; k++) {
-                d(j, k) -= dji*d(i, k);
+    /* no transpose */
+    for (std::size_t i = 0; i < y.rows; i++) {
+        for (std::size_t j = 0; j < y.cols; j++) {
+            for (std::size_t k = 0; k < x1.cols; k++) {
+                /* (i, j) = (i, k) * (k, j) */
+                y.data[i*y.cols + j] += x1.data[i*x1.cols + k]*x2.data[k*x2.cols + j];
             }
         }
     }
-    return 0;
+    return;
 }
 
-Mat Mat::tanh(const Mat &x)
+void Mat::Multiply::ikjk(Mat &y, const Mat &x1, const Mat &x2)
 {
-    Mat y(x.rows, x.cols);
-    for (std::size_t i = 0; i < x.totalSize; i++) {
-        y.data[i] = std::tanh(x.data[i]);
-    }
-    return y;
-}
-
-float Mat::LU::sumLrkUki(Mat &l, std::size_t r, Mat &u, std::size_t i)
-{
-    float re = 0.0;
-    for (std::size_t k = 0; k < r; k++) {
-        re += l(r, k) * u(k, i);
-    }
-    return re;
-}
-float Mat::LU::sumLikUkr(Mat &u, std::size_t r, Mat &l, std::size_t i)
-{
-    float re = 0.0;
-    for (std::size_t k = 0; k < r; k++) {
-        re += l(i, k) * u(k, r);
-    }
-    return re;
-}
-
-int Mat::LU::solve(const Mat &x, Mat &l, Mat &u)
-{
-    /* square matrix */
-    if (x.rows != x.cols) {
-        return -1;
-    }
-    /* U1i=X1i,Li1=Xi1/U11 */
-    for (std::size_t i = 0; i < x.rows; i++) {
-         u(0, i) = x(0, i);
-         l(i, 0) = x(i, 0)/u(0, 0);
-     }
-     /*
-        Uri= Xri- Σ(k=1->r-1)Lrk*Uki (i=r,r+1,...,n)
-        Lir= Xir - Σ(k=1->r-1)Lik*Ukr (i=r+1,r+2,...,n and r≠n)
-    */
-     std::size_t N = x.rows - 1;
-     for (std::size_t r = 1; r < x.rows; r++) {
-         for (std::size_t i = r; i < x.cols; i++) {
-             u(r, i) = x(r, i) - sumLrkUki(l, r, u, i);
-             if (i == r) {
-                 l(r, r) = 1;
-             } else if (r == N) {
-                 l(N, N) = 1;
-             } else {
-                 l(i, r) = (x(i, r) - sumLikUkr(l, i, u, r))/u(r, r);
-             }
-         }
-    }
-    return 0;
-}
-
-int Mat::LU::inv(const Mat &x, Mat &xi)
-{
-    Mat l(x.rows, x.cols);
-    Mat u(x.rows, x.cols);
-    /* LU decomposition */
-    int ret = LU::solve(x, l, u);
-    if (ret < 0) {
-        return -1;
-    }
-    /* check invertable */
-    float prod = 1;
-    for (std::size_t i = 1; i < x.rows; i++) {
-        prod *= u(i, i);
-    }
-    if (prod == 0) {
-        return -2;
-    }
-
-    /* inverse matrix of u */
-    Mat ui(x.rows, x.cols);
-    for (std::size_t i = 0; i < ui.rows; i++) {
-        ui(i, i) = 1/u(i, i);
-        for (int k = i - 1; k >= 0; k--) {
-            float s = 0;
-            for (std::size_t j = k + 1; j <= i; j++) {
-                s += u(k, j)*ui(j, i);
-            }
-            ui(k, i) = -s/u(k, k);
-        }
-    }
-    /* inverse matrix of l */
-    Mat li(x.rows, x.cols);
-    for (std::size_t i = 0; i < li.cols; i++) {
-        li(i, i) = 1;
-        for (std::size_t k = i + 1; k < x.rows; k++) {
-            for (std::size_t j = i; j <= k - 1; j++) {
-                li(k, i) -= l(k, j)*li(j, i);
+    /* transpose x2 */
+    for (std::size_t i = 0; i < y.rows; i++) {
+        for (std::size_t j = 0; j < y.cols; j++) {
+            for (std::size_t k = 0; k < x1.cols; k++) {
+                /* (i, j) = (i, k) * (j, k)^T */
+                y.data[i*y.cols + j] += x1.data[i*x1.cols + k]*x2.data[j*x2.cols + k];
             }
         }
     }
-    /* inverse matrix of x, x = l*u , xi = ui*li */
-    xi = Mat(x.rows, x.cols);
-    Mat::mul(xi, ui, li);
-    return 0;
+    return;
+}
+
+void Mat::Multiply::kikj(Mat &y, const Mat &x1, const Mat &x2)
+{
+    /* transpose x1 */
+    for (std::size_t i = 0; i < y.rows; i++) {
+        for (std::size_t j = 0; j < y.cols; j++) {
+            for (std::size_t k = 0; k < x1.rows; k++) {
+                /* (i, j) = (k, i)^T * (k, j)^T */
+                y.data[i*y.cols + j] += x1.data[k*x1.cols + i]*x2.data[k*x2.cols + j];
+            }
+        }
+    }
+    return;
+}
+
+void Mat::Multiply::kijk(Mat &y, const Mat &x1, const Mat &x2)
+{
+    /* transpose x1, x2 */
+    for (std::size_t i = 0; i < y.rows; i++) {
+        for (std::size_t j = 0; j < y.cols; j++) {
+            for (std::size_t k = 0; k < x1.rows; k++) {
+                /* (i, j) = (k, i)^T * (j, k)^T */
+                y.data[i*y.cols + j] += x1.data[k*x1.cols + i] * x2.data[j*x2.cols + k];
+            }
+        }
+    }
+    return;
 }
 
 void Mat::parse(std::istringstream &stream, std::size_t cols, Mat &x)
@@ -581,7 +443,7 @@ void Mat::parse(std::istringstream &stream, std::size_t cols, Mat &x)
 void Mat::toString(const Mat &x, std::string &line)
 {
     /* csv:<rows><cols><data> */
-    line += std::to_string(x.rows) + "," + std::to_string(x.cols);
+    line += std::to_string(x.rows) + "," + std::to_string(x.cols) + ",";
     for (std::size_t i = 0; i < x.rows; i++) {
         for (std::size_t j = 0; j < x.cols; j++) {
             line += std::to_string(x(i, j));
@@ -592,3 +454,5 @@ void Mat::toString(const Mat &x, std::string &line)
     }
     return;
 }
+
+

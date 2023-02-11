@@ -1,0 +1,358 @@
+#include "linearalgebra.h"
+
+void LinearAlgebra::transpose(Mat &x)
+{
+    for (std::size_t i = 0; i < x.rows; i++) {
+        for (std::size_t j = 0; j < x.cols; j++) {
+            float tmp = x.data[i*x.cols + j];
+            x.data[i*x.cols + j] = x[j*x.cols + i];
+            x.data[j*x.cols + i] = tmp;
+        }
+    }
+    std::size_t r = x.rows;
+    x.rows = x.cols;
+    x.cols = r;
+    return;
+}
+
+int LinearAlgebra::trace(const Mat &x, float &value)
+{
+    if (x.rows != x.cols) {
+        return -1;
+    }
+    std::size_t N = x.cols;
+    value = 0;
+    for (std::size_t i = 0; i < N; i++) {
+        value += x(i, i);
+    }
+    return 0;
+}
+
+void LinearAlgebra::diag(const Mat &x, Mat &elements, int k)
+{
+
+}
+
+void LinearAlgebra::gaussianElimination(const Mat &x, Mat &y)
+{
+    y = Mat(x);
+    std::size_t pivot = 0;
+    for (std::size_t i = 0; i < y.rows && pivot < y.cols; i++, pivot++) {
+        if (i >= y.cols) {
+            /* found the pivot */
+            break;
+        }
+        /* swap the row with pivot */
+        for (std::size_t k = i + 1; k < y.rows; k++) {
+            if (y(i, pivot) != 0) {
+                break;
+            } else if (k < y.rows) {
+                Mat::Swap::row(y, i, k);
+            }
+            if (k == y.rows - 1 && pivot < y.cols - 1 && y(i, pivot) == 0) {
+                pivot++;
+                k = i;
+                continue;
+            }
+        }
+        for (std::size_t k = i + 1; k < y.rows; k++) {
+            double scalingFactor = y(k, pivot) / y(i, pivot);
+            if (scalingFactor != 0) {
+                y(k, pivot) = 0;
+                for (std::size_t j = pivot + 1; j < y.cols; j++) {
+                    y(k, j) -= scalingFactor * y(i, j);
+                }
+            }
+        }
+    }
+    return;
+}
+
+int LinearAlgebra::det(const Mat &x, float &value)
+{
+    if (x.rows != x.cols) {
+        return -1;
+    }
+    /* 1-order */
+    if (x.rows == 1) {
+        value = x(0, 0);
+    }
+    /* 2-order */
+    if (x.rows == 2) {
+        value = x(0, 0)*x(1, 1) - x(0, 1)*x(1, 0);
+    }
+    /*
+       n-order:
+        Gaussian Elimination -> up triangle matrix -> det(x) = ∏ Diag(U)
+    */
+    Mat d(x);
+    std::size_t N = x.cols;
+    value = 1;
+    for (std::size_t i = 0; i < N; i++) {
+        /* find 0 in column */
+        std::size_t t = i;
+        while (d(t, i) == 0 && t < N) {
+            t++;
+        }
+        if (t == N) {
+            continue;
+        }
+        /* swap row */
+        Mat::Swap::row(d, i, t);
+        if (t != i) {
+            value *= -1;
+        }
+        /* ∏ Diag(U)  */
+        float pivot = d(i, i);
+        value *= pivot;
+        for (std::size_t j = 0; j < N; j++) {
+            d(i, j) /= pivot;
+        }
+
+        for (std::size_t j = 0; j < N; j++) {
+            if (i == j) {
+                continue;
+            }
+            float dji = d(j, i);
+            for (std::size_t k = 0; k < N; k++) {
+                d(j, k) -= dji*d(i, k);
+            }
+        }
+    }
+    return 0;
+}
+
+size_t LinearAlgebra::rank(const Mat &x)
+{
+    return 0;
+}
+
+int LinearAlgebra::QR::solve(const Mat &x, Mat &q, Mat &r)
+{
+    if (x.rows != x.cols) {
+        return -1;
+    }
+    q = Mat(x.rows, x.cols);
+    r = Mat(x.rows, x.cols);
+    Mat a(x);
+    std::size_t N = x.rows;
+    for (std::size_t k = 0; k < N; k++) {
+        /* normalize: Rkk = ||Aik|| */
+        float s = 0;
+        for (std::size_t i = 0; i < N; i++) {
+            s += a(i, k) * a(i, k);
+        }
+        r(k, k) = std::sqrt(s);
+        /* Qik = Aik / Rkk */
+        for (std::size_t i = 0; i < N; i++) {
+            q(i, k) = a(i, k) / r(k, k);
+        }
+
+        for (std::size_t i = k + 1; i < N; i++) {
+            /* Rki = Aji * Qjk */
+            for (std::size_t j = 0; j < N; j++) {
+                r(k, i) += a(j, i) * q(j, k);
+            }
+            /* Aji = Rki * Qjk */
+            for (std::size_t j = 0; j < N; j++) {
+                a(j, i) -= r(k, i) * q(j, k);
+            }
+        }
+    }
+    return 0;
+}
+
+int LinearAlgebra::QR::eigen(const Mat &x, Mat &e)
+{
+    return 0;
+}
+
+int LinearAlgebra::LU::solve(const Mat &x, Mat &l, Mat &u)
+{
+    /* square matrix */
+    if (x.rows != x.cols) {
+        return -1;
+    }
+    /* U1i=X1i,Li1=Xi1/U11 */
+    for (std::size_t i = 0; i < x.rows; i++) {
+         u(0, i) = x(0, i);
+         l(i, 0) = x(i, 0)/u(0, 0);
+    }
+
+    std::size_t N = x.rows - 1;
+    for (std::size_t r = 1; r < x.rows; r++) {
+        for (std::size_t i = r; i < x.cols; i++) {
+            /* Σ(k=1->r-1)Lrk*Uki */
+            float s = 0.0;
+            for (std::size_t k = 0; k < r; k++) {
+                s += l(r, k) * u(k, i);
+            }
+            /* Uri= Xri- Σ(k=1->r-1)Lrk*Uki (i=r,r+1,...,n) */
+            u(r, i) = x(r, i) - s;
+            if (i == r) {
+                l(r, r) = 1;
+            } else if (r == N) {
+                l(N, N) = 1;
+            } else {
+                /* Σ(k=1->r-1)Lik*Ukr */
+                float s = 0.0;
+                for (std::size_t k = 0; k < r; k++) {
+                    s += l(i, k) * u(k, r);
+                }
+                /* Lir = Xir - Σ(k=1->r-1)Lik*Ukr (i=r+1,r+2,...,n and r≠n) */
+                l(i, r) = (x(i, r) - s)/u(r, r);
+            }
+        }
+    }
+    return 0;
+}
+
+int LinearAlgebra::LU::inv(const Mat &x, Mat &xi)
+{
+    Mat l(x.rows, x.cols);
+    Mat u(x.rows, x.cols);
+    /* LU decomposition */
+    int ret = LU::solve(x, l, u);
+    if (ret < 0) {
+        return -1;
+    }
+    /* check invertable */
+    float prod = 1;
+    for (std::size_t i = 1; i < x.rows; i++) {
+        prod *= u(i, i);
+    }
+    if (prod == 0) {
+        return -2;
+    }
+    /* inverse matrix of u */
+    Mat ui(x.rows, x.cols);
+    for (std::size_t i = 0; i < ui.rows; i++) {
+        ui(i, i) = 1/u(i, i);
+        for (int k = i - 1; k >= 0; k--) {
+            float s = 0;
+            for (std::size_t j = k + 1; j <= i; j++) {
+                s += u(k, j)*ui(j, i);
+            }
+            ui(k, i) = -s/u(k, k);
+        }
+    }
+    /* inverse matrix of l */
+    Mat li(x.rows, x.cols);
+    for (std::size_t i = 0; i < li.cols; i++) {
+        li(i, i) = 1;
+        for (std::size_t k = i + 1; k < x.rows; k++) {
+            for (std::size_t j = i; j <= k - 1; j++) {
+                li(k, i) -= l(k, j)*li(j, i);
+            }
+        }
+    }
+    /* inverse matrix of x, x = l*u , xi = ui*li */
+    xi = Mat(x.rows, x.cols);
+    Mat::Multiply::ikkj(xi, ui, li);
+    return 0;
+}
+
+float LinearAlgebra::SVD::eps = 1e-7;
+std::size_t LinearAlgebra::SVD::maxEpoch = 1e5;
+float LinearAlgebra::SVD::normalize(Mat &x)
+{
+    float s = 0;
+    for (std::size_t i = 0; i < x.totalSize; i++) {
+        s += x.data[i]*x.data[i];
+    }
+    s = std::sqrt(s);
+    if (s < eps) {
+        return 0;
+    }
+    x /= s;
+    return s;
+}
+
+int LinearAlgebra::SVD::solve(const Mat &x, Mat &u, Mat &s, Mat &v)
+{
+    Mat a(x);
+    u = Mat(x.rows, x.rows);
+    v = Mat(x.cols, x.cols);
+    s = Mat(x.size());
+    /* row vectors */
+    Mat ur(x.rows, 1);
+    Mat nextUr(x.rows, 1);
+    Mat vr(x.cols, 1);
+    Mat nextVr(x.cols, 1);
+    while (1) {
+        uniform(ur);
+        float s = normalize(ur);
+        if (s > eps) {
+            break;
+        }
+    }
+    //std::size_t N = std::max(x.rows, x.cols);
+    for (std::size_t col = 0; col < s.cols; col++){
+        float diff = 1;
+        float r = -1;
+        for (std::size_t epoch = 0; diff >= eps && epoch < SVD::maxEpoch; epoch++) {
+            nextUr.zero();
+            nextVr.zero();
+
+            /* nextVr = a^T * ur */
+            Mat::Multiply::kikj(nextVr, a, ur);
+
+            /* QR: v */
+            r = normalize(nextVr);
+            if (r < eps) {
+                break;
+            }
+            for (std::size_t i = 0; i < col; i++) {
+                float sj = 0;
+                for (std::size_t j = 0; j < nextVr.totalSize; j++) {
+                    sj += v(i, j)*nextVr[j];
+                }
+                for (std::size_t j = 0; j < nextVr.totalSize; j++) {
+                    nextVr[j] -= sj*v(i, j);
+                }
+            }
+            normalize(nextVr);
+
+            /* nextUr = a * nextVr */
+            Mat::Multiply::ikkj(nextUr, a, nextVr);
+
+            /* QR: u */
+            r = normalize(nextUr);
+            if (r < eps) {
+                break;
+            }
+            for (std::size_t i = 0; i < col; i++) {
+                float sj = 0;
+                for (std::size_t j = 0; j < nextUr.totalSize; j++) {
+                    sj += u(i, j) * nextUr[j];
+                }
+                for (std::size_t j = 0; j < nextUr.totalSize; j++) {
+                    nextUr[j] -= sj * u(i, j);
+                }
+            }
+            normalize(nextUr);
+            /* error */
+            diff = 0;
+            for (std::size_t i = 0; i < nextUr.totalSize; i++) {
+                float d = nextUr[i] - ur[i];
+                diff += d*d;
+            }
+            ur = nextUr;
+            vr = nextVr;
+        }
+        if (r >= eps) {
+            s(col, col) = r;
+            for (std::size_t i = 0; i < ur.totalSize; i++) {
+                u(col, i) = ur[i];
+            }
+            for (std::size_t i = 0; i < vr.totalSize; i++) {
+                v(col, i) = vr[i];
+            }
+        } else {
+            break;
+        }
+    }
+    u = u.tr();
+    v = v.tr();
+    return 0;
+}
