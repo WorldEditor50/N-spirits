@@ -5,7 +5,7 @@
 #include "gmm.h"
 #include "mat.h"
 #include "linearalgebra.h"
-#include "func.h"
+#include "utils.h"
 
 class Student
 {
@@ -126,7 +126,8 @@ void test_svd()
                   0.495, 0.463, 0.962, 0.758, 0.558,
                   0.321, 0.0872, 0.884, 0.0788, 0.252,
                   0.612, 0.688, 0.767, 0.997, 0.597,
-                  0.657, 0.907, 0.657, 0.0873, 0.598});
+                  0.657, 0.907, 0.657, 0.0873, 0.598
+          });
     Mat u;
     Mat v;
     Mat s;
@@ -139,10 +140,10 @@ void test_svd()
     v.show();
     /* x = U*S*V^T */
     Mat y = u*s*v.tr();
-    std::cout<<"y:"<<std::endl;
-    y.show();
     std::cout<<"x:"<<std::endl;
     x.show();
+    std::cout<<"y:"<<std::endl;
+    y.show();
     return;
 }
 
@@ -207,8 +208,8 @@ void test_transpose_multiply()
     Mat x9(3, 4);
     Mat x10(3, 5);
     Mat x11(4, 5);
-    uniform(x9, 0, 9);
-    uniform(x10, 0, 9);
+    Utils::uniform(x9, 0, 9);
+    Utils::uniform(x10, 0, 9);
     Mat::Multiply::kikj(x11, x9, x10);
     std::cout<<"x9:"<<std::endl;
     x9.show();

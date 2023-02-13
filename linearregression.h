@@ -1,6 +1,7 @@
 #ifndef LINEARREGRESSION_H
 #define LINEARREGRESSION_H
 #include "mat.h"
+#include "utils.h"
 
 class LinearModel
 {
@@ -19,7 +20,7 @@ public:
     }
     float operator()(const Mat &x)
     {
-        return sigmoid(Mat::dot(w, x) + b);
+        return sigmoid(Utils::dot(w, x) + b);
     }
     void update(const Mat &x, float y, float yt, float learningRate)
     {
@@ -35,7 +36,7 @@ public:
         for (std::size_t i = 0; i < maxEpoch; i++) {
             for (std::size_t j = 0; j < batchSize; j++) {
                 int k = rand() % x.size();
-                float y = sigmoid(Mat::dot(w, x[k]) + b);
+                float y = sigmoid(Utils::dot(w, x[k]) + b);
                 update(x[k], y, yt[k], learningRate);
             }
         }

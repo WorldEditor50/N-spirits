@@ -4,9 +4,9 @@ void LinearAlgebra::transpose(Mat &x)
 {
     for (std::size_t i = 0; i < x.rows; i++) {
         for (std::size_t j = 0; j < x.cols; j++) {
-            float tmp = x.data[i*x.cols + j];
-            x.data[i*x.cols + j] = x[j*x.cols + i];
-            x.data[j*x.cols + i] = tmp;
+            float tmp = x.val[i*x.cols + j];
+            x.val[i*x.cols + j] = x[j*x.cols + i];
+            x.val[j*x.cols + i] = tmp;
         }
     }
     std::size_t r = x.rows;
@@ -28,7 +28,7 @@ int LinearAlgebra::trace(const Mat &x, float &value)
     return 0;
 }
 
-void LinearAlgebra::diag(const Mat &x, Mat &elements, int k)
+void LinearAlgebra::diag(const Mat &x, std::vector<float> &elements, int k)
 {
 
 }
@@ -252,15 +252,9 @@ int LinearAlgebra::LU::inv(const Mat &x, Mat &xi)
     return 0;
 }
 
-float LinearAlgebra::SVD::eps = 1e-7;
-std::size_t LinearAlgebra::SVD::maxEpoch = 1e5;
-float LinearAlgebra::SVD::normalize(Mat &x)
+float LinearAlgebra::SVD::normalize(Mat &x, float eps)
 {
-    float s = 0;
-    for (std::size_t i = 0; i < x.totalSize; i++) {
-        s += x.data[i]*x.data[i];
-    }
-    s = std::sqrt(s);
+    float s = std::sqrt(Utils::dot(x, x));
     if (s < eps) {
         return 0;
     }
@@ -268,91 +262,108 @@ float LinearAlgebra::SVD::normalize(Mat &x)
     return s;
 }
 
-int LinearAlgebra::SVD::solve(const Mat &x, Mat &u, Mat &s, Mat &v)
+float LinearAlgebra::SVD::qrIteration(Mat &a, const Mat &q, float eps)
 {
-    Mat a(x);
+    float r = normalize(a, eps);
+    if (r < eps) {
+        return r;
+    }
+    for (std::size_t i = 0; i < q.rows; i++) {
+        float s = 0;
+        for (std::size_t j = 0; j < a.totalSize; j++) {
+            s += q(i, j)*a[j];
+        }
+        for (std::size_t j = 0; j < a.totalSize; j++) {
+            a[j] -= s*q(i, j);
+        }
+    }
+    normalize(a, eps);
+    return r;
+}
+
+int LinearAlgebra::SVD::solve(const Mat &x, Mat &u, Mat &s, Mat &v, float eps, std::size_t maxEpoch)
+{
     u = Mat(x.rows, x.rows);
     v = Mat(x.cols, x.cols);
     s = Mat(x.size());
-    /* row vectors */
+    /* column vectors */
     Mat ur(x.rows, 1);
     Mat nextUr(x.rows, 1);
     Mat vr(x.cols, 1);
     Mat nextVr(x.cols, 1);
     while (1) {
-        uniform(ur);
-        float s = normalize(ur);
+        Utils::uniform(ur);
+        float s = normalize(ur,eps);
         if (s > eps) {
             break;
         }
     }
-    //std::size_t N = std::max(x.rows, x.cols);
-    for (std::size_t col = 0; col < s.cols; col++){
-        float diff = 1;
+    std::size_t N = std::min(x.rows, x.cols);
+    for (std::size_t n = 0; n < N; n++){
         float r = -1;
-        for (std::size_t epoch = 0; diff >= eps && epoch < SVD::maxEpoch; epoch++) {
+        for (std::size_t epoch = 0; epoch < maxEpoch; epoch++) {
             nextUr.zero();
             nextVr.zero();
-
             /* nextVr = a^T * ur */
-            Mat::Multiply::kikj(nextVr, a, ur);
-
+            Mat::Multiply::kikj(nextVr, x, ur);
             /* QR: v */
-            r = normalize(nextVr);
+            r = qrIteration(nextVr, v, eps);
             if (r < eps) {
                 break;
             }
-            for (std::size_t i = 0; i < col; i++) {
-                float sj = 0;
-                for (std::size_t j = 0; j < nextVr.totalSize; j++) {
-                    sj += v(i, j)*nextVr[j];
-                }
-                for (std::size_t j = 0; j < nextVr.totalSize; j++) {
-                    nextVr[j] -= sj*v(i, j);
-                }
-            }
-            normalize(nextVr);
-
             /* nextUr = a * nextVr */
-            Mat::Multiply::ikkj(nextUr, a, nextVr);
-
+            Mat::Multiply::ikkj(nextUr, x, nextVr);
             /* QR: u */
-            r = normalize(nextUr);
+            r = qrIteration(nextUr, u, eps);
             if (r < eps) {
                 break;
             }
-            for (std::size_t i = 0; i < col; i++) {
-                float sj = 0;
-                for (std::size_t j = 0; j < nextUr.totalSize; j++) {
-                    sj += u(i, j) * nextUr[j];
-                }
-                for (std::size_t j = 0; j < nextUr.totalSize; j++) {
-                    nextUr[j] -= sj * u(i, j);
-                }
-            }
-            normalize(nextUr);
             /* error */
-            diff = 0;
-            for (std::size_t i = 0; i < nextUr.totalSize; i++) {
-                float d = nextUr[i] - ur[i];
-                diff += d*d;
+            float delta = Utils::Norm::l2(nextUr, ur);
+            if (delta < eps) {
+                break;
             }
             ur = nextUr;
             vr = nextVr;
         }
-        if (r >= eps) {
-            s(col, col) = r;
-            for (std::size_t i = 0; i < ur.totalSize; i++) {
-                u(col, i) = ur[i];
-            }
-            for (std::size_t i = 0; i < vr.totalSize; i++) {
-                v(col, i) = vr[i];
-            }
-        } else {
+        if (r < eps) {
             break;
         }
+        /* update */
+        s(n, n) = r;
+        u.setRow(n, ur.val);
+        v.setRow(n, vr.val);
     }
     u = u.tr();
     v = v.tr();
     return 0;
+}
+
+void LinearAlgebra::PCA::solve(const Mat &datas)
+{
+    /* covariance matrix */
+    Mat y(datas.cols, datas.cols);
+    Utils::cov(y, datas);
+    /* svd */
+    Mat s;
+    Mat v;
+    SVD::solve(y, u, s, v);
+    return;
+}
+
+void LinearAlgebra::PCA::project(const Mat &x, std::size_t k, Mat &y)
+{
+    if (k >= u.cols) {
+        return;
+    }
+    /* reduce dim */
+    Mat uh(u.rows, k);
+    for (std::size_t i = 0; i < u.rows; i++) {
+        for (std::size_t j = 0; j < k; j++) {
+            uh(i, j) = u(i, j);
+        }
+    }
+    /* y = u^T * x */
+    Mat::Multiply::kikj(y, uh, x);
+    return;
 }

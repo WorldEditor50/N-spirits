@@ -12,7 +12,6 @@ HEADERS += \
     bayes.h \
     csv.h \
     dataset.h \
-    func.h \
     gmm.h \
     hmm.h \
     kernel.h \
@@ -21,4 +20,5 @@ HEADERS += \
     linearregression.h \
     mat.h \
     svm.h \
+    utils.h \
     vec.h

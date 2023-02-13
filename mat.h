@@ -30,24 +30,24 @@ public:
     std::size_t rows;
     std::size_t cols;
     std::size_t totalSize;
-    std::vector<float> data;
+    std::vector<float> val;
     static std::default_random_engine engine;
 public:
     Mat(){}
     explicit Mat(std::size_t rows_, std::size_t cols_)
-        :rows(rows_),cols(cols_),totalSize(rows_*cols_),data(rows_*cols_, 0){}
+        :rows(rows_),cols(cols_),totalSize(rows_*cols_),val(rows_*cols_, 0){}
     explicit Mat(std::size_t rows_, std::size_t cols_, float value)
-        :rows(rows_),cols(cols_),totalSize(rows_*cols_),data(rows_*cols_, value){}
+        :rows(rows_),cols(cols_),totalSize(rows_*cols_),val(rows_*cols_, value){}
     explicit Mat(const Size &s)
-        :rows(s.rows),cols(s.cols),totalSize(s.rows*s.cols),data(s.rows*s.cols, 0){}
+        :rows(s.rows),cols(s.cols),totalSize(s.rows*s.cols),val(s.rows*s.cols, 0){}
     explicit Mat(std::size_t rows_, std::size_t cols_, const std::vector<float> &data_)
-        :rows(rows_),cols(cols_),totalSize(rows_*cols_),data(data_){}
+        :rows(rows_),cols(cols_),totalSize(rows_*cols_),val(data_){}
     Mat(const Mat &r)
-        :rows(r.rows),cols(r.cols),totalSize(r.totalSize),data(r.data){}
+        :rows(r.rows),cols(r.cols),totalSize(r.totalSize),val(r.val){}
     Mat(Mat &&r)
         :rows(r.rows),cols(r.cols),totalSize(r.totalSize)
     {
-        data.swap(r.data);
+        val.swap(r.val);
         r.rows = 0;
         r.cols = 0;
         r.totalSize = 0;
@@ -55,10 +55,10 @@ public:
     static Mat zeros(std::size_t rows, std::size_t cols);
     static Mat identity(std::size_t rows, std::size_t cols);
     inline Size size() const {return Size(rows, cols);}
-    inline float &operator[](std::size_t i){return data[i];}
-    inline float operator[](std::size_t i) const {return data[i];}
-    inline float operator()(std::size_t i, std::size_t j) const {return data[i*cols + j];}
-    inline float &operator()(std::size_t i, std::size_t j) {return data[i*cols + j];}
+    inline float &operator[](std::size_t i){return val[i];}
+    inline float operator[](std::size_t i) const {return val[i];}
+    inline float operator()(std::size_t i, std::size_t j) const {return val[i*cols + j];}
+    inline float &operator()(std::size_t i, std::size_t j) {return val[i*cols + j];}
     Mat &operator=(const Mat &r);
     Mat &operator=(Mat &&r);
     /* object operation */
@@ -85,28 +85,23 @@ public:
     Mat flatten() const;
     Mat f(std::function<float(float)> func) const;
     void set(std::size_t sr, std::size_t sc, const Mat &x);
+    void setRow(std::size_t i, const std::vector<float> &row);
+    void setColumn(std::size_t j, const std::vector<float> &col);
     void zero();
-    void full(float x);
-    void EMA(const Mat &r, float rho);
-
+    void fill(float x);
     void show() const;
     std::size_t argmax() const;
     std::size_t argmin() const;
-    float max();
-    float min();
-    float sum();
-    float mean();
-
+    float max() const;
+    float min() const;
+    float sum() const;
+    float mean() const;
+    float variance() const;
     /* static operation */
-    static float dot(const Mat &x1, const Mat &x2);
     static void div(Mat &y, const Mat &x1, const Mat &x2);
     static void add(Mat &y, const Mat &x1, const Mat &x2);
     static void minus(Mat &y, const Mat &x1, const Mat &x2);
 
-    static float var(const Mat &x);
-    static float var(const Mat &x, float u);
-    static float cov(const Mat &x, const Mat &y);
-    static float cov(const Mat &x, float ux, const Mat &y, float uy);
     static Mat kronecker(const Mat &x1, const Mat &x2);
     /* swap */
     struct Swap {
