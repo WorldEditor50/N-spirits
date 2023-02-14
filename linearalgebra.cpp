@@ -2,16 +2,15 @@
 
 void LinearAlgebra::transpose(Mat &x)
 {
+    Mat y(x.cols, x.rows);
     for (std::size_t i = 0; i < x.rows; i++) {
         for (std::size_t j = 0; j < x.cols; j++) {
-            float tmp = x.val[i*x.cols + j];
-            x.val[i*x.cols + j] = x[j*x.cols + i];
-            x.val[j*x.cols + i] = tmp;
+            y(j, i) = x(i, j);
         }
     }
-    std::size_t r = x.rows;
-    x.rows = x.cols;
-    x.cols = r;
+    x.rows = y.rows;
+    x.cols = y.cols;
+    x.val.swap(y.val);
     return;
 }
 
@@ -30,7 +29,11 @@ int LinearAlgebra::trace(const Mat &x, float &value)
 
 void LinearAlgebra::diag(const Mat &x, std::vector<float> &elements, int k)
 {
-
+    std::size_t N = std::min(x.rows, x.cols);
+    for (std::size_t i = 0; i < N; i++) {
+         elements.push_back(x(i, i));
+    }
+    return;
 }
 
 void LinearAlgebra::gaussianElimination(const Mat &x, Mat &y)
@@ -339,7 +342,7 @@ int LinearAlgebra::SVD::solve(const Mat &x, Mat &u, Mat &s, Mat &v, float eps, s
     return 0;
 }
 
-void LinearAlgebra::PCA::solve(const Mat &datas)
+void LinearAlgebra::PCA::fit(const Mat &datas)
 {
     /* covariance matrix */
     Mat y(datas.cols, datas.cols);
@@ -356,7 +359,7 @@ void LinearAlgebra::PCA::project(const Mat &x, std::size_t k, Mat &y)
     if (k >= u.cols) {
         return;
     }
-    /* reduce dim */
+    /* reduce dimention */
     Mat uh(u.rows, k);
     for (std::size_t i = 0; i < u.rows; i++) {
         for (std::size_t j = 0; j < k; j++) {

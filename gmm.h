@@ -2,6 +2,7 @@
 #define GMM_H
 #include "kmeans.h"
 #include "utils.h"
+#include "linearalgebra.h"
 
 class GMM
 {
@@ -28,6 +29,15 @@ public:
                 p *= std::exp(-0.5*(x[i] - u[i])*(x[i] - u[i])/sigma[i])/std::sqrt(2*3.14159*sigma[i]);
             }
             return p;
+        }
+        float pdf(const Mat &x)
+        {
+            float covDet = 0;
+            LinearAlgebra::det(cov, covDet);
+            Mat covInv;
+            LinearAlgebra::LU::inv(cov, covInv);
+            Mat delta = x - u;
+
         }
         void zero()
         {

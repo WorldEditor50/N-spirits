@@ -38,7 +38,7 @@ public:
     Mat u;
 public:
     PCA(){}
-    void solve(const Mat &datas);
+    void fit(const Mat &datas);
     void project(const Mat &x, size_t, Mat &y);
 };
 }

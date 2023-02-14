@@ -4,4 +4,6 @@ practices of ML algorithm
 - gmm
 - svm
 - lr
+## dataset
+- https://www.kaggle.com/datasets/harrywang/wine-dataset-for-clustering
 

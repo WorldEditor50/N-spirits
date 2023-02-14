@@ -4,30 +4,32 @@
 #include <set>
 #include "csv.h"
 #include "vec.h"
+#include "mat.h"
 
-class Numeric : public CSV<Vec>
+class NumericDB : public CSV<Vec>
 {
 public:
-    Numeric(const std::string &fileName)
+    NumericDB(const std::string &fileName)
         :CSV<Vec>(fileName){}
     int load(std::vector<Vec> &data)
     {
         std::string title;
         return CSV<Vec>::load(title, data);
     }
-
-    int load(std::vector<Vec> &x, Vec &y)
+    int load(std::vector<Mat> &x)
     {
         std::string title;
         std::vector<Vec> data;
-        CSV<Vec>::load(title, data);
+        int ret = CSV<Vec>::load(title, data);
+        if (ret < 0) {
+            return -1;
+        }
         for (std::size_t i = 0; i < data.size(); i++) {
-            x.push_back(Vec(std::vector<float>(data.begin(), data.end() - 1)));
-            std::size_t j = data[i].size() - 1;
-            y.push_back(data[i][j]);
+            x.push_back(Mat(1, cols, data[i]));
         }
         return 0;
     }
+
 };
 
 

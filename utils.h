@@ -131,6 +131,7 @@ inline void cov(Mat &y, const Mat &x)
             a(j, i) -= u;
         }
     }
+    /* y = A^T*A */
     Mat::Multiply::kikj(y, a, a);
     y /= float(a.rows);
     return;

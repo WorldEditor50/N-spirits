@@ -9,9 +9,12 @@ SOURCES += \
         mat.cpp
 
 HEADERS += \
+    basic_def.h \
     bayes.h \
+    complexnumber.h \
     csv.h \
     dataset.h \
+    fft.h \
     gmm.h \
     hmm.h \
     kernel.h \

@@ -1,13 +1,10 @@
 #ifndef VEC_H
 #define VEC_H
-
 #include <vector>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <iostream>
-
-constexpr static float pi = 3.14159;
 
 class Vec : public std::vector<float>
 {

@@ -12,6 +12,7 @@
 class Mat
 {
 public:
+    using ValueType = float;
     enum Code {
         MAT_OK = 0
     };
@@ -52,6 +53,7 @@ public:
         r.cols = 0;
         r.totalSize = 0;
     }
+    static void fromArray(const std::vector<Mat> &x, Mat &y);
     static Mat zeros(std::size_t rows, std::size_t cols);
     static Mat identity(std::size_t rows, std::size_t cols);
     inline Size size() const {return Size(rows, cols);}
@@ -109,9 +111,13 @@ public:
         static void col(Mat &x, std::size_t ci, std::size_t cj);
     };
     struct Multiply {
+        /* A*B */
         static void ikkj(Mat &y, const Mat &x1, const Mat &x2);
+        /* A*B^T */
         static void ikjk(Mat &y, const Mat &x1, const Mat &x2);
+        /* A^T*B */
         static void kikj(Mat &y, const Mat &x1, const Mat &x2);
+        /* A^T*B^T */
         static void kijk(Mat &y, const Mat &x1, const Mat &x2);
     };
 

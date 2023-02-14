@@ -2,6 +2,18 @@
 
 std::default_random_engine Mat::engine;
 
+void Mat::fromArray(const std::vector<Mat> &x, Mat &y)
+{
+    /* x: (N, 1, featureDim) */
+    y = Mat(x.size(), x[0].cols);
+    for (std::size_t i = 0; i < y.rows; i++) {
+        for (std::size_t j = 0; j < y.cols; j++) {
+            y(i, j) = x[i](1, j);
+        }
+    }
+    return;
+}
+
 Mat Mat::zeros(std::size_t rows, std::size_t cols)
 {
     return Mat(rows, cols);

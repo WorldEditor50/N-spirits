@@ -1,11 +1,13 @@
 #include <iostream>
 #include "csv.h"
+#include "dataset.h"
 #include "kmeans.h"
 #include "svm.h"
 #include "gmm.h"
 #include "mat.h"
 #include "linearalgebra.h"
 #include "utils.h"
+
 
 class Student
 {
@@ -219,13 +221,37 @@ void test_transpose_multiply()
     x11.show();
     return;
 }
+
+void test_kmeans()
+{
+    /* load data */
+    NumericDB db("D:/home/dataset/wine-clustering.csv");
+    std::vector<Mat> x;
+    db.load(x);
+    /* clustering */
+    KMeans model(3);
+    model.cluster(x, 1000);
+    /* predict */
+    std::size_t label = model(x[0]);
+    std::cout<<"label:"<<label<<std::endl;
+    /* project to 2d-plane */
+    LinearAlgebra::PCA pca;
+    Mat x1;
+    Mat::fromArray(x, x1);
+    pca.fit(x1);
+    Mat y;
+    pca.project(x[0], 2, y);
+    return;
+}
+
 int main()
 {
 #if 0
     test_lu();
     test_qr();
     test_det();
-#endif
     test_svd();
+#endif
+    test_kmeans();
     return 0;
 }
