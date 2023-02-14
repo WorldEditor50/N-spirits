@@ -1,4 +1,4 @@
-# MLib
+# SimpleML
 practices of ML algorithm
 - kmeans
 - gmm
