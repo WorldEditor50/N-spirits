@@ -12,14 +12,12 @@ public:
     public:
         Mat u;
         Mat sigma;
-        Mat cov;
     public:
         Gaussian(){}
         Gaussian(std::size_t featureDim)
         {
             u = Mat(featureDim, 1);
             sigma = Mat(featureDim, 1);
-            cov = Mat(featureDim, featureDim);
         }
         float operator()(const Mat &x)
         {
@@ -30,15 +28,7 @@ public:
             }
             return p;
         }
-        float pdf(const Mat &x)
-        {
-            float covDet = 0;
-            LinearAlgebra::det(cov, covDet);
-            Mat covInv;
-            LinearAlgebra::LU::inv(cov, covInv);
-            Mat delta = x - u;
 
-        }
         void zero()
         {
             u.zero();
@@ -64,10 +54,10 @@ public:
     void init(const std::vector<Mat> &x, std::size_t maxEpoch)
     {
         /* run kmeans to select centers */
-        KMeans kmeans(componentDim);
-        kmeans.cluster(x, maxEpoch);
+        KMeans model(componentDim);
+        model.cluster(x, maxEpoch);
         std::vector<std::size_t> y;
-        kmeans.predict(x, y);
+        model(x, y);
         /* mean of all data */
         Mat u(componentDim, 1);
         for (std::size_t i = 0; i < x.size(); i++) {
@@ -92,13 +82,13 @@ public:
             priors[i] = float(N[i])/float(x.size());
         }
         /* mean of each topic */
-        for (std::size_t i = 0; i < kmeans.centers.size(); i++) {
-            gaussians[i].u = kmeans.centers[i];
+        for (std::size_t i = 0; i < model.centers.size(); i++) {
+            gaussians[i].u = model.centers[i];
         }
         /* variance of each topic */
         for (std::size_t i = 0; i < x.size(); i++) {
             std::size_t topic = y[i];
-            Mat& uc = kmeans.centers[topic];
+            Mat& uc = model.centers[topic];
             for (std::size_t j = 0; j < gaussians[topic].sigma.totalSize; j++) {
                 gaussians[topic].sigma[j] += (x[i][j] - uc[j])*(x[i][j] - uc[j]);
             }

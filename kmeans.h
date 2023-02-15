@@ -62,6 +62,7 @@ public:
             }
             delta /= float(topicDim);
             if (delta < eps && epoch > maxEpoch/4) {
+                /* finished */
                 break;
             }
             if (epoch % (maxEpoch/10) == 0) {
@@ -78,7 +79,7 @@ public:
         return;
     }
 
-    void predict(const std::vector<Mat> &x, std::vector<std::size_t> &y)
+    void operator()(const std::vector<Mat> &x, std::vector<std::size_t> &y)
     {
         y = std::vector<std::size_t>(topicDim);
         for (std::size_t i = 0; i < x.size(); i++) {

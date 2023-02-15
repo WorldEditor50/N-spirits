@@ -110,7 +110,7 @@ public:
                 Vector v;
                 v.alpha = alpha[i];
                 v.y = y[i];
-                v.x.assign(x[i].begin(), x[i].end());
+                v.x = x[i];
                 vectors.push_back(v);
             }
         }

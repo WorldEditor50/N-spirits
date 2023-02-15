@@ -359,6 +359,7 @@ void LinearAlgebra::PCA::project(const Mat &x, std::size_t k, Mat &y)
     if (k >= u.cols) {
         return;
     }
+
     /* reduce dimention */
     Mat uh(u.rows, k);
     for (std::size_t i = 0; i < u.rows; i++) {
@@ -367,6 +368,8 @@ void LinearAlgebra::PCA::project(const Mat &x, std::size_t k, Mat &y)
         }
     }
     /* y = u^T * x */
-    Mat::Multiply::kikj(y, uh, x);
+    y = Mat(x.rows, k);
+    /* (1, 2) = (1, 13)*(13, 2)^T */
+    Mat::Multiply::ikkj(y, x, uh);
     return;
 }

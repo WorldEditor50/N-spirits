@@ -1,4 +1,5 @@
 #include <iostream>
+#include <tuple>
 #include "csv.h"
 #include "dataset.h"
 #include "kmeans.h"
@@ -7,7 +8,7 @@
 #include "mat.h"
 #include "linearalgebra.h"
 #include "utils.h"
-
+#include "tensor.h"
 
 class Student
 {
@@ -241,8 +242,336 @@ void test_kmeans()
     pca.fit(x1);
     Mat y;
     pca.project(x[0], 2, y);
+    y.show();
     return;
 }
+
+
+void test_tensor()
+{
+    Tensori x(2, 3, 3);
+    for (std::size_t i = 0; i < x.sizes.size(); i++) {
+        std::cout<<x.sizes[i]<<",";
+    }
+    std::cout<<std::endl;
+    for (std::size_t i = 0; i < x.shape.size(); i++) {
+        std::cout<<x.shape[i]<<",";
+    }
+    std::cout<<std::endl;
+
+    x.val = std::vector<int>{
+                                1, 2, 3,
+                                4, 5, 6,
+                                7, 8, 9,
+
+                                11, 12, 13,
+                                14, 15, 16,
+                                17, 18, 19
+                             };
+
+    std::cout<<x(1, 1, 2)<<std::endl;
+    x.printShape();
+
+    Tensori x1 = x.sub(0);
+    x1.printValue();
+
+    x.reshape(3, 3, 2);
+    Tensori x2 = x.sub(0, 1);
+    x2.printValue();
+    return;
+}
+
+
+void conv(Tensori &o, const Tensori &kernels, const Tensori &x, int stride=1, int padding=1)
+{
+    for (int n = 0; n < o.shape[0]; n++) {
+        for (int i = 0; i < o.shape[1]; i++) {
+            for (int j = 0; j < o.shape[2]; j++) {
+                /* kernels */
+                for (int h = 0; h < kernels.shape[2]; h++) {
+                    for (int k = 0; k < kernels.shape[3]; k++) {
+                        for (int c = 0; c < kernels.shape[1]; c++) {
+                            /* map to input  */
+                            int row = h + i*stride - padding;
+                            int col = k + j*stride - padding;
+                            if (row < 0 || row >= x.shape[1] ||
+                                    col < 0 || col >= x.shape[2]) {
+                                continue;
+                            }
+                            //std::cout<<"(h, k)=("<<h<<","<<k<<"), "<<"(row, col)=("<<row<<","<<col<<")"<<std::endl;
+                            /* sum up all input channel's convolution result */
+                            o(n, i, j) += kernels(n, c, h, k)*x(c, row, col);
+                        }
+                    }
+                }
+                //std::cout<<"-----------------------------------"<<std::endl;
+            }
+        }
+    }
+    return;
+}
+
+void test_conv()
+{
+
+    /*
+            0   0   0   0   0
+
+            0   1   2   3   0        1     0     1           4     8     2
+
+            0   4   5   6   0   *    0    -1     0      =    6     15    4
+
+            0   7   8   9   0        1     0     1          -2     2    -4
+
+            0   0   0   0   0
+
+
+
+            0   0   0   0   0
+
+            0   1   1   1   0        1     1     1           4     6     4
+
+            0   1   1   1   0   *    1     1     1      =    6     9     6
+
+            0   1   1   1   0        1     1     1           4     6     4
+
+            0   0   0   0   0
+
+
+
+            1   1   1        1     1           4     4
+
+            1   1   1   *    1     1      =    4     4
+
+            1   1   1
+
+
+            0   0   0   0   0   0   0
+
+            0   0   0   0   0   0   0                                 1    2     3     2    1
+
+            0   0   1   1   1   0   0           1     1     1         2    4     6     4    2
+
+            0   0   1   1   1   0   0      *    1     1     1      =  3    6     9     6    3
+
+            0   0   1   1   1   0   0           1     1     1         2    4     6     4    2
+
+            0   0   0   0   0   0   0                                 1    2     3     2    1
+
+            0   0   0   0   0   0   0
+
+
+    */
+
+    Tensori o(1, 3, 3);
+    Tensori kernels({1, 1, 3, 3}, {1, 0, 1, 0, -1, 0, 1, 0, 1});
+    Tensori x({1, 3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    /* case 1: */
+    conv(o, kernels, x);
+    o.printValue();
+    /* case 2: */
+    o.zero();
+    kernels.zero();
+    x.zero();
+
+    kernels.assign(1, 1, 1, 1, 1, 1, 1, 1, 1);
+    x.assign(1, 1, 1, 1, 1, 1, 1, 1, 1);
+
+    conv(o, kernels, x);
+    o.printValue();
+    /* case 3: */
+    Tensori y1(1, 2, 2);
+    Tensori x1({1, 3, 3}, {1, 1, 1, 1, 1, 1, 1, 1, 1});
+    Tensori k1({1, 1, 2, 2}, {1, 1, 1, 1});
+    conv(y1, k1, x1, 1, 0);
+    y1.printValue();
+    /* case 4: */
+    Tensori y2(1, 5, 5);
+    Tensori x2({1, 3, 3}, {1, 1, 1, 1, 1, 1, 1, 1, 1});
+    Tensori k2({1, 1, 3, 3}, {1, 1, 1, 1, 1, 1, 1, 1, 1});
+    conv(y2, k2, x2, 1, 2);
+    y2.printValue();
+    /* case 5: */
+    Tensori y3(1, 3, 3);
+    conv(y3, k2, x2, 2, 2);
+    y3.printValue();
+    return;
+}
+
+void test_tensor_func()
+{
+    Tensor x({3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    Tensor y = Tensor::func(x, [&](float xi)->float{ return xi*xi;});
+    y.printValue();
+    y = Tensor::func(x, exp);
+    y.printValue();
+    return;
+}
+
+void test_product()
+{
+    Tensor x1({2, 2}, {1, 2, 3, 4});
+    Tensor x2({2, 2}, {9, 9, 9, 9});
+    Tensor y = Tensor::product2D(x1, x2);
+    y.printValue();
+    return;
+}
+
+struct Person {
+    int age;
+    std::string name;
+    Person():age(0),name("fool"){}
+    Person(int age_, const std::string &name_)
+        :age(age_),name(name_){}
+    void print()
+    {
+        std::cout<<"person:"<<"name:"<<name<<",age:"<<age<<std::endl;
+        return;
+    }
+};
+struct Stu {
+    std::string name;
+    int rank;
+    int score;
+    Stu():name("fool"),rank(0),score(0){}
+    Stu(const std::string &name_, int rank_, int score_):
+        name(name_),rank(rank_),score(score_){}
+    void print()
+    {
+        std::cout<<"Student:"<<"name:"<<name<<",rank:"<<rank<<",score:"<<score<<std::endl;
+        return;
+    }
+};
+
+struct Employee {
+    std::string name;
+    int salary;
+    Employee():name("fool"),salary(0){}
+    Employee(const std::string &name_, int salary_)
+        :name(name_),salary(salary_){}
+    void print()
+    {
+        std::cout<<"Employee:"<<"name:"<<name<<",salary:"<<salary<<std::endl;
+        return;
+    }
+};
+
+template<typename ...T>
+class NameList
+{
+public:
+    using Expand = int[];
+    using List = std::tuple<T...>;
+    constexpr static int Ni = sizeof... (T);
+    List list;
+public:
+    template<typename Tuple, int N>
+    struct Print {
+        static void impl(Tuple& value)
+        {
+            Print<Tuple, N - 1>::impl(value);
+            std::get<N - 1>(value).print();
+            return;
+        }
+    };
+    template<typename Tuple>
+    struct Print<Tuple, 1> {
+        static void impl(Tuple& value)
+        {
+            std::get<0>(value).print();
+            return;
+        }
+    };
+
+    template<typename Tuple, int N>
+    struct InversePrint {
+        static void impl(Tuple& value)
+        {
+            std::get<N - 1>(value).print();
+            InversePrint<Tuple, N - 1>::impl(value);
+            return;
+        }
+    };
+    template<typename Tuple>
+    struct InversePrint<Tuple, 1> {
+        static void impl(Tuple& value)
+        {
+            std::get<0>(value).print();
+            return;
+        }
+    };
+
+    template<typename Tuple, int N>
+    struct Foreach {
+        static void impl(Tuple& value)
+        {
+            Foreach<Tuple, N - 1>::impl(value);
+            std::cout<<N - 1<<","<<N - 2<<std::endl;
+            std::cout<<"--------"<<std::endl;
+            return;
+        }
+    };
+    template<typename Tuple>
+    struct Foreach<Tuple, 1> {
+        static void impl(Tuple& value)
+        {
+            std::cout<<"0"<<std::endl;
+            return;
+        }
+    };
+public:
+    NameList(){}
+    NameList(T&& ...type)
+        :list(std::make_tuple<T...>(std::forward<T>(type)...)){}
+
+    void print()
+    {
+        Print<List, Ni>::impl(list);
+        return;
+    }
+    void testIndex()
+    {
+        Foreach<List, Ni>::impl(list);
+        return;
+    }
+    void inversePrint()
+    {
+        InversePrint<List, Ni>::impl(list);
+        return;
+    }
+    template<std::size_t ...i>
+    void display_(std::index_sequence<i...>)
+    {
+        Expand{(std::get<i>(list).print(),0)...};
+        return;
+    }
+    void display()
+    {
+        display_(std::make_index_sequence<Ni>());
+        return;
+    }
+};
+
+void test_tuple()
+{
+    NameList<Person, Stu, Employee, Person, Stu, Employee>
+            list(Person(12, "person"),
+                 Stu("jim", 5, 90),
+                 Employee("tom", 1000),
+                 Person(120, "fool"),
+                 Stu("jimmy", 50, 0),
+                 Employee("tommy", 10000));
+    //list.print();
+    //list.inversePrint();
+    list.display();
+    NameList<Person, Stu, Employee> men;
+    auto& p = std::get<0>(men.list);
+    p.age = 1000;
+    p.name = "richard123";
+    //men.print();
+    return;
+}
+
 
 int main()
 {
@@ -251,7 +580,8 @@ int main()
     test_qr();
     test_det();
     test_svd();
-#endif
     test_kmeans();
+#endif
+    test_conv();
     return 0;
 }
