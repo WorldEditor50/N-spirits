@@ -1,9 +1,13 @@
 #ifndef FFT_H
 #define FFT_H
 #include <vector>
+#include "tensor.h"
 #include "complexnumber.h"
 
+using Tensorc = Tensor_<Complex>;
+
 namespace FFT {
+
     inline int reverse(int index, int n)
     {
         int r = 0;
@@ -14,12 +18,13 @@ namespace FFT {
         }
         return index;
     }
-    inline int fft1d(std::vector<Complex> &x, int N, int opt)
+    inline void transform1D(Tensorc &c, int opt)
     {
-        std::vector<Complex> xa(N);
+        int N = c.totalsize;
+        Tensorc cr(N);
         for (int i = 0; i < N; i++) {
             int index = reverse(i, std::log2(N));
-            xa[i] = x[index];
+            cr[i] = c[index];
         }
         std::vector<Complex> w(N/2);
         for (int i = 0; i < N/2; i++) {
@@ -32,25 +37,40 @@ namespace FFT {
                 for (int i = 0; i < h/2; i++) {
                     int n1 = i * s * h;
                     int n2 = n1 + h/2;
-                    Complex c = xa[n1]*w[N/h*i];
-                    xa[n2] = xa[n1] - c;
-                    xa[n1] = xa[n1] + c;
+                    Complex c0 = cr[n1]*w[N/h*i];
+                    cr[n2] = cr[n1] - c0;
+                    cr[n1] = cr[n1] + c0;
                 }
             }
         }
-        x = xa;
+        c = cr;
         if (opt == -1) {
-            for (std::size_t i = 0; i < x.size(); i++) {
-                x[i] = xa[i]/N;
+            for (std::size_t i = 0; i < c.totalsize; i++) {
+                c[i] = cr[i]/N;
             }
         } else {
-            for (std::size_t i = 0; i < x.size(); i++) {
-                x[i] = xa[i];
-            }
+            c = cr;
         }
-        return 0;
+        return;
     }
 
+    inline void transform2D(Tensorc &src, Tensorc &dst, int opt)
+    {
+        for (int i = 0; i < src.shape[0]; i++) {
+            Tensorc row(1, src.shape[1]);
+            Tensorc::MatOp::row(src, i, row);
+            transform1D(row, opt);
+            Tensorc::MatOp::setRow(dst, i, row);
+        }
+
+        for (int i = 0; i < src.shape[1]; i++) {
+            Tensorc column(src.shape[0], 1);
+            Tensorc::MatOp::row(src, i, column);
+            transform1D(column, opt);
+            Tensorc::MatOp::setColumn(dst, i, column);
+        }
+        return;
+    }
 }
 
 

@@ -17,7 +17,7 @@ public:
     Tensor o;
 public:
     FcLayer(){}
-    FcLayer(int inDim_, int outDim_, bool bias_, int activeType_)
+    explicit FcLayer(int inDim_, int outDim_, bool bias_, int activeType_)
         : FcParam(inDim_, outDim_, bias_, activeType_)
     {
         w = Tensor(outputDim, inputDim);
@@ -32,7 +32,7 @@ public:
 
     virtual void forward(const Tensor &x)
     {
-        Tensor::MM::kikj(o, w, x);
+        Tensor::MatOp::kikj(o, w, x);
         if (bias == true) {
             o += b;
         }
@@ -156,7 +156,7 @@ public:
     {
         FcLayer::forward(x);
         if (withGrad == true) {
-            Tensor::bernoulli(mask, p);
+            mask.bernoulli(p);
             mask /= (1 - p);
             FcLayer::o *= mask;
         }
@@ -177,7 +177,7 @@ public:
 
     void forward(const Tensor &x) override
     {
-        Tensor::MM::kikj(o, w, x);
+        Tensor::MatOp::kikj(o, w, x);
 
         float u = o.mean();
         float sigma = o.variance(u);
@@ -235,6 +235,66 @@ public:
         }
 
         return;
+    }
+};
+
+class RBM
+{
+public:
+    Tensor w;
+    Tensor b;
+    Tensor a;
+public:
+    explicit RBM(int visibleDim, int hiddenDim)
+    {
+        w = Tensor(visibleDim, hiddenDim);
+        a = Tensor(visibleDim, 1);
+        b = Tensor(hiddenDim, 1);
+    }
+
+    Tensor sample(const Tensor &p)
+    {
+        Tensor values(p.shape);
+        std::bernoulli_distribution distribution;
+        for (std::size_t i = 0; i < p.totalsize; i++) {
+            values.val[i] = distribution(p.val[i]);
+        }
+        return values;
+    }
+
+    Tensor sampleHidden(const Tensor &v)
+    {
+        /* p = sigmoid(w^T*v + b) */
+        Tensor p = Sigmoid::f(w.tr()*v + b);
+        return sample(p);
+    }
+
+    Tensor sampleVisible(const Tensor &h)
+    {
+        Tensor p = Sigmoid::f(w*h + a);
+        return sample(p);
+    }
+
+    void train(const std::vector<Tensor> &x, std::size_t maxEpoch, float learningRate=1e-3)
+    {
+        for (std::size_t i = 0; i < maxEpoch; i++) {
+            for (std::size_t j = 0; j < x.size(); j++) {
+                Tensor h = sampleHidden(x[j]);
+                Tensor v1 = sampleVisible(h);
+                Tensor h1 = sampleHidden(v1);
+                w += (x[j]*h - v1*h1)*learningRate;
+                a += (x[j] - v1)*learningRate;
+                b += (h - h1)*learningRate;
+            }
+        }
+        return;
+    }
+
+    Tensor generate()
+    {
+        Tensor h(b.shape);
+        h.bernoulli(0.5);
+        return sampleVisible(h);
     }
 };
 

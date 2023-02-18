@@ -27,7 +27,7 @@ public:
         Tensor dy(outputDim, 1);
         Active::func[activeType].df(dy, o);
         dy *= delta;
-        Tensor::MM::kikj(dw, dy, x);
+        Tensor::MatOp::kikj(dw, dy, x);
         db += dy;
         delta.zero();
         return;
@@ -35,7 +35,7 @@ public:
 
     void backward(const Tensor &w, Tensor &delta_)
     {
-        Tensor::MM::kikj(delta_, w, delta);
+        Tensor::MatOp::kikj(delta_, w, delta);
         return;
     }
 
@@ -50,7 +50,7 @@ public:
         for (std::size_t i = 0; i < dy.totalsize; i++) {
             dy.val[i] = o.val[i] - yt.val[i];
         }
-        Tensor::MM::kikj(dw, dy, x);
+        Tensor::MatOp::kikj(dw, dy, x);
         db += dy;
         delta.zero();
         return;
@@ -63,7 +63,7 @@ public:
     void backward(const Tensor &w, const Tensor &mask, Tensor &delta_)
     {
         delta_ *= mask;
-        Tensor::MM::kikj(delta_, w, delta);
+        Tensor::MatOp::kikj(delta_, w, delta);
         return;
     }
 };
@@ -74,7 +74,7 @@ public:
     void backward(const Tensor &w, float gamma, Tensor &delta_)
     {
         delta_ *= gamma;
-        Tensor::MM::kikj(delta_, w, delta);
+        Tensor::MatOp::kikj(delta_, w, delta);
         return;
     }
 };

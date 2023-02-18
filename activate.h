@@ -23,6 +23,23 @@ struct Sigmoid {
         }
         return;
     }
+    inline static Tensor f(const Tensor &x)
+    {
+        Tensor y(x.shape);
+        for (std::size_t i = 0; i < x.totalsize; i++) {
+            y.val[i] = 1/(1 + exp(-x.val[i]));
+        }
+        return y;
+    }
+
+    inline static Tensor df(const Tensor &y)
+    {
+        Tensor dy(y.shape);
+        for (std::size_t i = 0; i < dy.totalsize; i++) {
+            dy.val[i] = y.val[i]*(1 + y.val[i]);
+        }
+        return dy;
+    }
 };
 
 struct Tanh {
@@ -31,7 +48,7 @@ struct Tanh {
     inline static void f(Tensor& y, const Tensor &x)
     {
         for (std::size_t i = 0; i < x.totalsize; i++) {
-            y.val[i] = tanh(-x.val[i]);
+            y.val[i] = tanh(x.val[i]);
         }
         return;
     }
@@ -42,6 +59,24 @@ struct Tanh {
             dy.val[i] = 1 - y.val[i]*y.val[i];
         }
         return;
+    }
+
+    inline static Tensor f(const Tensor &x)
+    {
+        Tensor y(x.shape);
+        for (std::size_t i = 0; i < x.totalsize; i++) {
+            y.val[i] = std::tanh(x.val[i]);
+        }
+        return y;
+    }
+
+    inline static Tensor df(const Tensor &y)
+    {
+        Tensor dy(y.shape);
+        for (std::size_t i = 0; i < dy.totalsize; i++) {
+            dy.val[i] = 1 - y.val[i]*y.val[i];
+        }
+        return dy;
     }
 };
 
@@ -63,6 +98,24 @@ struct Relu {
         }
         return;
     }
+
+    inline static Tensor f(const Tensor &x)
+    {
+        Tensor y(x.shape);
+        for (std::size_t i = 0; i < x.totalsize; i++) {
+            y.val[i] = x.val[i] > 0 ? x.val[i] : 0;
+        }
+        return y;
+    }
+
+    inline static Tensor df(const Tensor &y)
+    {
+        Tensor dy(y.shape);
+        for (std::size_t i = 0; i < dy.totalsize; i++) {
+            dy.val[i] = y.val[i] > 0 ? 1 : 0;
+        }
+        return dy;
+    }
 };
 
 struct LeakyRelu {
@@ -83,6 +136,23 @@ struct LeakyRelu {
         }
         return;
     }
+    inline static Tensor f(const Tensor &x)
+    {
+        Tensor y(x.shape);
+        for (std::size_t i = 0; i < x.totalsize; i++) {
+            y.val[i] = x.val[i] > 0 ? x.val[i] : 0.01*x.val[i];
+        }
+        return y;
+    }
+
+    inline static Tensor df(const Tensor &y)
+    {
+        Tensor dy(y.shape);
+        for (std::size_t i = 0; i < dy.totalsize; i++) {
+            dy.val[i] = y.val[i] > 0 ? 1 : 0.01;
+        }
+        return dy;
+    }
 };
 
 struct Linear {
@@ -98,6 +168,16 @@ struct Linear {
     {
         dy.fill(1);
         return;
+    }
+    inline static Tensor f(const Tensor &x)
+    {
+        return x;
+    }
+
+    inline static Tensor df(const Tensor &y)
+    {
+        Tensor dy = Tensor::ones();
+        return dy;
     }
 };
 
@@ -130,14 +210,13 @@ struct Softmax_ {
     inline static void f(Tensor& y, const Tensor &x)
     {
         Utils::exp(x, y);
-        float s = Tensor::sum(y);
+        float s = y.sum();
         y /= s;
         return;
     }
     inline static void df(Tensor &dy, const Tensor &y, const Tensor &yt)
     {
-        Tensor::minus(dy, y, yt);
-
+        Utils::minus(dy, y, yt);
         return;
     }
 };

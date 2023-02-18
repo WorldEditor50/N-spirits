@@ -9,6 +9,7 @@
 #include "linearalgebra.h"
 #include "utils.h"
 #include "tensor.h"
+#include "complexnumber.h"
 
 class Student
 {
@@ -417,6 +418,61 @@ void test_product()
     return;
 }
 
+void test_permute()
+{
+    Tensor x({2, 4, 3}, {
+                 1, 2, 3,
+                 1, 4, 5,
+                 6, 0, 7,
+                 8, 9, 2,
+
+                 10, 11, 12,
+                 13, 14, 15,
+                 16, 17, 18,
+                 19, 20, 21
+             });
+    /*
+       permute:(0, 1, 2) -> (2, 0, 1)
+       shape:  (2, 4, 3) -> (3, 2, 4)
+       sizes:  (12, 3, 1) -> (8, 4, 1)
+
+       value:
+                 1, 1, 6, 8,
+                 10, 13, 16, 19,
+
+                 2, 4, 0, 9,
+                 11, 14, 17, 20,
+
+                 3, 5, 7, 2,
+                 12, 15, 18, 21
+
+    */
+
+    Tensor y = x.permute(2, 0, 1);
+    y.printShape();
+    y.printValue();
+
+    /* validate */
+    Tensor y_(3, 2, 4);
+    for (int i = 0; i < x.shape[0]; i++) {
+        for (int j = 0; j < x.shape[1]; j++) {
+            for (int k = 0; k < x.shape[2]; k++) {
+                y_(k, i, j) = x(i, j, k);
+            }
+        }
+    }
+    y_.printShape();
+    y_.printValue();
+
+    /* matrix transpose */
+    Tensor x1({2, 3}, {1, 2, 3,
+                       4, 5, 6});
+    Tensor y1 = x1.permute(1, 0);
+    y1.printShape();
+    y1.printValue();
+    return;
+}
+
 struct Person {
     int age;
     std::string name;
@@ -581,7 +637,8 @@ int main()
     test_det();
     test_svd();
     test_kmeans();
-#endif
     test_conv();
+#endif
+    test_permute();
     return 0;
 }
