@@ -2,7 +2,7 @@
 #define LAYER_H
 #include <iostream>
 #include <fstream>
-#include "tensor.h"
+#include "../basic/tensor.h"
 #include "activate.h"
 #include "grad.h"
 

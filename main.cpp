@@ -1,15 +1,16 @@
 #include <iostream>
 #include <tuple>
-#include "csv.h"
-#include "dataset.h"
+#include "basic/mat.h"
+#include "basic/linearalgebra.h"
+#include "basic/tensor.h"
+#include "basic/complexnumber.h"
+#include "basic/utils.h"
+#include "utils/csv.h"
+#include "utils/dataset.h"
 #include "kmeans.h"
 #include "svm.h"
 #include "gmm.h"
-#include "mat.h"
-#include "linearalgebra.h"
-#include "utils.h"
-#include "tensor.h"
-#include "complexnumber.h"
+
 
 class Student
 {

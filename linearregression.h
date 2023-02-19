@@ -1,7 +1,7 @@
 #ifndef LINEARREGRESSION_H
 #define LINEARREGRESSION_H
-#include "mat.h"
-#include "utils.h"
+#include "../basic/mat.h"
+#include "../basic/utils.h"
 
 class LinearModel
 {

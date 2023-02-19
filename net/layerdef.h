@@ -1,6 +1,5 @@
 #ifndef LAYERDEF_H
 #define LAYERDEF_H
-#include "tensor.h"
 #include "activate.h"
 
 enum OperateType {

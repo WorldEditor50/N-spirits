@@ -4,38 +4,16 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 
+include($$PWD/basic/basic.pri)
+include($$PWD/utils/utils.pri)
+include($$PWD/net/net.pri)
 
 SOURCES += \
-        linearalgebra.cpp \
         main.cpp
 
 HEADERS += \
-    activate.h \
-    autograd.h \
-    basic_def.h \
     bayes.h \
-    complexnumber.h \
-    conv.h \
-    csv.h \
-    dataset.h \
-    fft.h \
-    gmm.h \
-    grad.h \
     hmm.h \
-    kernel.h \
     kmeans.h \
-    layer.h \
-    layerdef.h \
-    layerparam.h \
-    linearalgebra.h \
     linearregression.h \
-    loss.h \
-    mat.h \
-    net.h \
-    optimize.h \
-    optimizer.h \
-    svm.h \
-    tensor.h \
-    utils.h
-
-
+    svm.h

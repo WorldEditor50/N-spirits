@@ -2,9 +2,9 @@
 #define BAYES_H
 #include <map>
 #include <vector>
-#include "vec.h"
-#include "dataset.h"
-
+#include <string>
+#include "basic/vec.h"
+#include "utils/dataset.h"
 
 /*
     1. NaiveBayes
@@ -37,6 +37,7 @@
         P(x=[1, 0, 0, 1, 1]|y=1) = 1/4
 
 */
+
 class NaiveBayes
 {
 public:

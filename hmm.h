@@ -1,6 +1,7 @@
 #ifndef HMM_H
 #define HMM_H
-#include "vec.h"
+#include <vector>
+#include "basic/vec.h"
 
 class HMM
 {

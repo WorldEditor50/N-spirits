@@ -5,8 +5,8 @@
 #include <cmath>
 #include <string>
 #include <random>
-#include "mat.h"
-#include "utils.h"
+#include "basic/mat.h"
+#include "basic/utils.h"
 
 class KMeans
 {

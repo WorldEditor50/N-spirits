@@ -1,8 +1,8 @@
 #ifndef GMM_H
 #define GMM_H
 #include "kmeans.h"
-#include "utils.h"
-#include "linearalgebra.h"
+#include "basic/utils.h"
+#include "basic/linearalgebra.h"
 
 class GMM
 {

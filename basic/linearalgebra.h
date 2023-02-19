@@ -1,9 +1,11 @@
 #ifndef LINEARALGEBRA_H
 #define LINEARALGEBRA_H
+#include <vector>
 #include "mat.h"
 #include "utils.h"
 
 namespace LinearAlgebra {
+
 void transpose(Mat &x);
 /* trace */
 int trace(const Mat& x, float &value);

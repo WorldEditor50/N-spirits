@@ -3,8 +3,8 @@
 #include <vector>
 #include <set>
 #include "csv.h"
-#include "vec.h"
-#include "mat.h"
+#include "../basic/vec.h"
+#include "../basic/mat.h"
 
 class NumericDB : public CSV<Vec>
 {
