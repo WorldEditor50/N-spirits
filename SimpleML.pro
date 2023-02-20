@@ -9,7 +9,7 @@ include($$PWD/utils/utils.pri)
 include($$PWD/net/net.pri)
 
 SOURCES += \
-        main.cpp
+        test.cpp
 
 HEADERS += \
     bayes.h \

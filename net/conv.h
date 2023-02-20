@@ -1,6 +1,6 @@
 #ifndef CONV_H
 #define CONV_H
-#include "../basic/tensor.h"
+#include "../basic/tensor.hpp"
 #include "activate.h"
 #include "layerdef.h"
 
@@ -55,6 +55,26 @@ class Conv2d : public Conv2dParam
 public:
     using ParamType = Conv2dParam;
     using GradType = Conv2dGrad;
+    template<typename Optimizer>
+    class OptimizeBlock
+    {
+    public:
+        Optimizer optKernels;
+        Optimizer optB;
+    public:
+        OptimizeBlock(){}
+        OptimizeBlock(const Conv2d &layer)
+        {
+            optKernels = Optimizer(layer.kernels.shape);
+            optB = Optimizer(layer.b.shape);
+        }
+        void operator()(Conv2d& layer, GradType& grad, float learningRate)
+        {
+            optW(layer.kernels, grad.dkernels, learningRate);
+            optB(layer.b, grad.db, learningRate);
+            return;
+        }
+    };
 public:
     /* (N, c, kernelSize, kernelSize) */
     Tensor kernels;
@@ -97,7 +117,8 @@ public:
             delta = Tensor(outChannels, ho, wo);
         }
     }
-    void forward(const Tensor &x)
+
+    Tensor& forward(const Tensor &x)
     {
         /* conv */
         conv(o, kernels, x, stride, padding);
@@ -107,7 +128,7 @@ public:
         }
         /* activate */
         Sigmoid::f(o, o);
-        return;
+        return o;
     }
 
     static void conv(Tensor &y, const Tensor &kernels, const Tensor &x, int stride=1, int padding=0)

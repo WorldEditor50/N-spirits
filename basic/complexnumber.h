@@ -1,7 +1,7 @@
 #ifndef COMPLEXNUMBER_H
 #define COMPLEXNUMBER_H
-#include <cmath>
 #include "basic_def.h"
+#include <cmath>
 
 class Complex
 {

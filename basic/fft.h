@@ -1,8 +1,7 @@
 #ifndef FFT_H
 #define FFT_H
-#include <vector>
+#include "tensor.hpp"
 #include "complexnumber.h"
-#include "tensor.h"
 
 using CTensor = Tensor_<Complex>;
 
@@ -20,7 +19,7 @@ namespace FFT {
     }
     inline void transform1D(CTensor &c, int opt)
     {
-        int N = c.totalsize;
+        int N = c.totalSize;
         CTensor cr(N);
         for (int i = 0; i < N; i++) {
             int index = reverse(i, std::log2(N));
@@ -45,7 +44,7 @@ namespace FFT {
         }
         c = cr;
         if (opt == -1) {
-            for (std::size_t i = 0; i < c.totalsize; i++) {
+            for (std::size_t i = 0; i < c.totalSize; i++) {
                 c[i] = cr[i]/N;
             }
         } else {

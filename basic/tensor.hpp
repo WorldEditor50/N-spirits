@@ -1,7 +1,6 @@
 #ifndef TENSOR_H
 #define TENSOR_H
 #include <vector>
-#include <random>
 #include <functional>
 #include <iostream>
 #include <assert.h>
@@ -16,11 +15,10 @@ public:
     std::vector<T> val;
     std::vector<int> sizes;
     std::vector<int> shape;
-    std::size_t totalsize;
-    static std::default_random_engine engine;
+    std::size_t totalSize;
  public:
     /* default construct */
-    Tensor_():totalsize(0){}
+    Tensor_():totalSize(0){}
     static void initParams(const std::vector<int> &shape, std::vector<int> &sizes, std::size_t &totalsize)
     {
         totalsize = 1;
@@ -36,29 +34,29 @@ public:
         return;
     }
     /* contruct with shape */
-    explicit Tensor_(const std::vector<int> &shape_):totalsize(1),shape(shape_)
+    explicit Tensor_(const std::vector<int> &shape_):totalSize(1),shape(shape_)
     {
-        initParams(shape, sizes, totalsize);
-        val = std::vector<T>(totalsize, 0);
+        initParams(shape, sizes, totalSize);
+        val = std::vector<T>(totalSize, 0);
     }
 
     explicit Tensor_(const std::vector<int> &shape_, const std::vector<T> &val_):
-        totalsize(1),shape(shape_),val(val_)
+        totalSize(1),shape(shape_),val(val_)
     {
-        initParams(shape, sizes, totalsize);
+        initParams(shape, sizes, totalSize);
     }
 
     /* construct with shape */
     template<typename ...Dim>
-    explicit Tensor_(Dim ...dim):totalsize(1),shape({dim...})
+    explicit Tensor_(Dim ...dim):totalSize(1),shape({dim...})
     {
-        initParams(shape, sizes, totalsize);
-        val = std::vector<T>(totalsize, 0);
+        initParams(shape, sizes, totalSize);
+        val = std::vector<T>(totalSize, 0);
     }
 
     /* copy construct */
     Tensor_(const Tensor_ &r)
-        :totalsize(r.totalsize),shape(r.shape),sizes(r.sizes),val(r.val){}
+        :totalSize(r.totalSize),shape(r.shape),sizes(r.sizes),val(r.val){}
 
     /* assign operator */
     Tensor_ &operator=(const Tensor_ &r)
@@ -66,7 +64,7 @@ public:
         if (this == &r) {
             return *this;
         }
-        totalsize = r.totalsize;
+        totalSize = r.totalSize;
         shape = r.shape;
         sizes = r.sizes;
         val = r.val;
@@ -112,14 +110,14 @@ public:
         for (std::size_t i = 0; i < dims.size(); i++) {
             pos += sizes[i]*dims[i];
         }
-        for (std::size_t i = 0; i < y.totalsize; i++) {
+        for (std::size_t i = 0; i < y.totalSize; i++) {
             y.val[i] = val[i + pos];
         }
         return y;
     }
-    inline bool empty() const {return totalsize == 0;}
-    void zero(){val.assign(totalsize, 0);}
-    void fill(T value){val.assign(totalsize, value);}
+    inline bool empty() const {return totalSize == 0;}
+    void zero(){val.assign(totalSize, 0);}
+    void fill(T value){val.assign(totalSize, value);}
     inline T &operator[](std::size_t i) {return val[i];}
     inline T operator[](std::size_t i) const {return val[i];}
     bool isShapeEqual(const Tensor_ &x) const
@@ -202,7 +200,7 @@ public:
     Tensor_ reshape(Dim ...dim) const
     {
         Tensor_ x(dim...);
-        if (x.totalsize != totalsize) {
+        if (x.totalSize != totalSize) {
             return x;
         }
         x.val = val;
@@ -218,17 +216,17 @@ public:
         for (std::size_t i = 0; i < x.shape.size(); i++) {
             s *= newShape[i];
         }
-        if (s != x.totalsize) {
+        if (s != x.totalSize) {
             return;
         }
-        initParams(newShape, x.sizes, x.totalsize);
+        initParams(newShape, x.sizes, x.totalSize);
         x.shape = newShape;
         return;
     }
 
     Tensor_ flatten() const
     {
-        Tensor_ x(totalsize);
+        Tensor_ x(totalSize);
         x.val = val;
         return x;
     }
@@ -245,7 +243,7 @@ public:
     }
 
     template<typename ...Pos>
-    Tensor_ permute(Pos ...p)
+    Tensor_ permute(Pos ...p) const
     {
         /*
             shape: [3, 2, 1]
@@ -268,7 +266,7 @@ public:
         return x;
     }
 
-    Tensor_ tr()
+    Tensor_ tr() const
     {
         int r = shape[0];
         int c = shape[1];
@@ -422,7 +420,7 @@ public:
     T sum() const
     {
         T s = 0;
-        for (std::size_t i = 0; i < totalsize; i++) {
+        for (std::size_t i = 0; i < totalSize; i++) {
             s += val[i];
         }
         return s;
@@ -431,7 +429,7 @@ public:
     T mean() const
     {
         T s = sum();
-        return s/T(totalsize);
+        return s/T(totalSize);
     }
 
     T variance(T u) const
@@ -440,7 +438,7 @@ public:
         for (std::size_t i = 0; i < val.size(); i++) {
             s += (val[i] - u)*(val[i] - u);
         }
-        return s/T(totalsize);
+        return s/T(totalSize);
     }
 
     T max() const
@@ -499,33 +497,6 @@ public:
         return;
     }
 
-    void uniform(int x0, int xn)
-    {
-        std::uniform_int_distribution<int> u(x0, xn);
-        for (std::size_t i = 0; i < totalsize; i++) {
-            val[i] = u(Tensor_::engine);
-        }
-        return;
-    }
-
-    void uniform(float x0, float xn)
-    {
-        std::uniform_real_distribution<float> u(x0, xn);
-        for (std::size_t i = 0; i < totalsize; i++) {
-            val[i] = u(Tensor_::engine);
-        }
-        return;
-    }
-
-    void bernoulli(float p)
-    {
-        std::bernoulli_distribution distribution(p);
-        for (std::size_t i = 0; i < totalsize; i++) {
-            val[i] = distribution(Tensor_::engine);
-        }
-        return;
-    }
-
     void normalize()
     {
         double minValue = val[0];
@@ -560,7 +531,7 @@ public:
 
     static void foreach(Tensor_ &y, const Tensor_ &x, std::function<T(T)> func_)
     {
-        for (std::size_t i = 0; i < y.totalsize; i++) {
+        for (std::size_t i = 0; i < y.totalSize; i++) {
             y.val[i] = func_(x.val[i]);
         }
         return;
@@ -569,14 +540,14 @@ public:
     static Tensor_ func(const Tensor_ &x, std::function<T(T)> func_)
     {
         Tensor_ y(x.shape);
-        for (std::size_t i = 0; i < y.totalsize; i++) {
+        for (std::size_t i = 0; i < y.totalSize; i++) {
             y.val[i] = func_(x.val[i]);
         }
         return y;
     }
     static void func(Tensor_ &y, const Tensor_ &x, std::function<T(T)> func_)
     {
-        for (std::size_t i = 0; i < y.totalsize; i++) {
+        for (std::size_t i = 0; i < y.totalSize; i++) {
             y.val[i] = func_(x.val[i]);
         }
         return y;
@@ -584,7 +555,7 @@ public:
     static Tensor_ func(const Tensor_ &x, T(*func_)(T))
     {
         Tensor_ y(x.shape);
-        for (std::size_t i = 0; i < y.totalsize; i++) {
+        for (std::size_t i = 0; i < y.totalSize; i++) {
             y.val[i] = func_(x.val[i]);
         }
         return y;
@@ -593,15 +564,11 @@ public:
     struct MatOp {
         static void ikkj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
-            int r = x.shape[0];
-            int c = x.shape[1];
-            int c1 = x1.shape[1];
-            int c2 = x2.shape[1];
-            for (int i = 0; i < r; i++) {
-                for (int j = 0; j < c; j++) {
-                    for (int k = 0; k < c1; k++) {
-                      /* (i, j) = (i, k) x (k, j) */
-                      x.val[j + i*c] += x1.val[k + i*c1]*x2.val[j + k*c2];
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t j = 0; j < x.shape[1]; j++) {
+                    for (std::size_t k = 0; k < x1.shape[1]; k++) {
+                        /* (i, j) = (i, k) * (k, j) */
+                        x.val[i*x.shape[1] + j] += x1.val[i*x1.shape[1] + k]*x2.val[k*x2.shape[1] + j];
                     }
                 }
             }
@@ -610,16 +577,11 @@ public:
         static void kikj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
             /* transpose x1 */
-            int r = x.shape[0];
-            int c = x.shape[1];
-            int c1 = x1.shape[1];
-            int r2 = x2.shape[0];
-            int c2 = x2.shape[1];
-            for (int i = 0; i < r; i++) {
-                for (int j = 0; j < c; j++) {
-                    for (int k = 0; k < r2; k++) {
-                        /* (i, j) = (k, i)^T x (k, j) */
-                        x.val[j + i*c] += x1.val[i + k*c1]*x2.val[j + k*c2];
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t j = 0; j < x.shape[1]; j++) {
+                    for (std::size_t k = 0; k < x1.shape[0]; k++) {
+                        /* (i, j) = (k, i)^T * (k, j)^T */
+                        x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i]*x2.val[k*x2.shape[1] + j];
                     }
                 }
             }
@@ -628,16 +590,11 @@ public:
         static void ikjk(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
             /* transpose x2 */
-            int r = x.shape[0];
-            int c = x.shape[1];
-            int c1 = x1.shape[1];
-            int r2 = x2.shape[0];
-            int c2 = x2.shape[1];
-            for (int i = 0; i < r; i++) {
-                for (int j = 0; j < c; j++) {
-                    for (int k = 0; k < r2; k++) {
-                        /* (i, j) = (i, k) x (j, k)^T */
-                        x.val[j + i*c] += x1.val[k + i*c1]*x2.val[k + j*c2];
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t j = 0; j < x.shape[1]; j++) {
+                    for (std::size_t k = 0; k < x1.shape[1]; k++) {
+                        /* (i, j) = (i, k) * (j, k)^T */
+                        x.val[i*x.shape[1] + j] += x1.val[i*x1.shape[1] + k]*x2.val[j*x2.shape[1] + k];
                     }
                 }
             }
@@ -645,17 +602,12 @@ public:
         }
         static void kijk(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
-            /* transpose x1 and x2 */
-            int r = x.shape[0];
-            int c = x.shape[1];
-            int c1 = x1.shape[1];
-            int r2 = x2.shape[0];
-            int c2 = x2.shape[1];
-            for (int i = 0; i < r; i++) {
-                for (int j = 0; j < c; j++) {
-                    for (int k = 0; k < r2; k++) {
-                        /* (i, j) = (k, i)^T x (j, k)^T */
-                        x.val[j + i*c] += x1.val[i + k*c1]*x2.val[k + j*c2];
+            /* transpose x1, x2 */
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t j = 0; j < x.shape[1]; j++) {
+                    for (std::size_t k = 0; k < x1.shape[0]; k++) {
+                        /* (i, j) = (k, i)^T * (j, k)^T */
+                        x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i] * x2.val[j*x2.shape[1] + k];
                     }
                 }
             }
@@ -759,7 +711,7 @@ public:
         std::cout<<"[";
         for (std::size_t i = 0; i < val.size(); i++) {
             std::cout<<val[i];
-            if (i < totalsize - 1) {
+            if (i < totalSize - 1) {
                 std::cout<<",";
             }
         }
@@ -771,18 +723,14 @@ public:
     {
         std::cout<<"(";
         for (std::size_t i = 0; i < shape.size(); i++) {
-            std::cout<<shape[i];
-            if (i < totalsize - 1) {
-                std::cout<<",";
-            }
+            std::cout<<shape[i]<<",";
         }
         std::cout<<")"<<std::endl;
         return;
     }
 
 };
-template<typename T>
-std::default_random_engine Tensor_<T>::engine;
+
 
 using Tensori = Tensor_<int>;
 using Tensor = Tensor_<float>;

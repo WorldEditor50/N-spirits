@@ -50,7 +50,6 @@ inline void tanh(const T &x, T &y)
     }
     return;
 }
-
 template<typename T>
 inline void uniform(T &x)
 {
@@ -60,7 +59,6 @@ inline void uniform(T &x)
     }
     return;
 }
-
 template<typename T>
 inline void uniform(T &x, float x1, float x2)
 {
@@ -71,9 +69,18 @@ inline void uniform(T &x, float x1, float x2)
     return;
 }
 template<typename T>
+void bernoulli(T &x, float p)
+{
+    std::bernoulli_distribution distribution(p);
+    for (std::size_t i = 0; i < x.totalSize; i++) {
+      x.val[i] = distribution(engine);
+    }
+    return;
+}
+template<typename T>
 inline void add(T &y, const T &x1, const T &x2)
 {
-    for (std::size_t i = 0; i < y.totalsize; i++) {
+    for (std::size_t i = 0; i < y.totalSize; i++) {
         y.val[i] = x1.val[i] + x2.val[i];
     }
     return;
@@ -81,7 +88,7 @@ inline void add(T &y, const T &x1, const T &x2)
 template<typename T>
 inline void minus(T &y, const T &x1, const T &x2)
 {
-    for (std::size_t i = 0; i < y.totalsize; i++) {
+    for (std::size_t i = 0; i < y.totalSize; i++) {
         y.val[i] = x1.val[i] + x2.val[i];
     }
     return;
@@ -89,7 +96,7 @@ inline void minus(T &y, const T &x1, const T &x2)
 template<typename T>
 inline void multi(T &y, const T &x1, const T &x2)
 {
-    for (std::size_t i = 0; i < y.totalsize; i++) {
+    for (std::size_t i = 0; i < y.totalSize; i++) {
         y.val[i] = x1.val[i] * x2.val[i];
     }
     return;

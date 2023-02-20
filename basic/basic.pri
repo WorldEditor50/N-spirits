@@ -6,7 +6,7 @@ HEADERS += $$PWD/basic_def.h \
            $$PWD/kernel.h \
            $$PWD/linearalgebra.h \
            $$PWD/mat.h \
-           $$PWD/tensor.h \
+           $$PWD/tensor.hpp \
            $$PWD/utils.h \
            $$PWD/vec.h
 SOURCES += $$PWD/linearalgebra.cpp

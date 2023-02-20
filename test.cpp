@@ -2,7 +2,7 @@
 #include <tuple>
 #include "basic/mat.h"
 #include "basic/linearalgebra.h"
-#include "basic/tensor.h"
+#include "basic/tensor.hpp"
 #include "basic/complexnumber.h"
 #include "basic/utils.h"
 #include "utils/csv.h"
@@ -10,61 +10,10 @@
 #include "kmeans.h"
 #include "svm.h"
 #include "gmm.h"
-
-
-class Student
-{
-public:
-    std::string name;
-    int age;
-    float score;
-public:
-    Student(){}
-    Student(const std::string &name_, int age_, int score_)
-        :name(name_),age(age_),score(score_){}
-    static void parse(std::istringstream &stream, std::size_t cols, Student &data)
-    {
-        std::getline(stream, data.name, ',');
-        std::string age;
-        std::getline(stream, age, ',');
-        data.age = std::atoi(age.c_str());
-        std::string score;
-        std::getline(stream, score, ',');
-        data.score = std::atof(score.c_str());
-        return;
-    }
-
-    static void toString(const Student &data, std::string &line)
-    {
-        line = data.name + "," + std::to_string(data.age) + "," + std::to_string(data.score);
-        return;
-    }
-
-};
-
-void test_csv()
-{
-
-    CSV<Student> db("stu.csv");
-
-    db.save("name,age,score", {Student("Tom", 12, 90.0),
-                               Student("Jim", 15, 88.0),
-                               Student("John", 10, 70.0),
-                               Student("Jenny", 17, 80.0) });
-
-    std::string line;
-    Student stu;
-    db.read(2, stu);
-    std::cout<<stu.name<<std::endl;
-
-    std::vector<Student> students;
-    std::string title;
-    db.load(title, students);
-    for (std::size_t i = 0; i < students.size(); i++) {
-        std::cout<<students[i].name<<","<<students[i].age<<","<<students[i].score<<std::endl;
-    }
-    return;
-}
+#include "net/net.h"
+#include "net/optimizer.h"
+#include "net/layer.h"
+#include "net/loss.h"
 
 void test_lu()
 {
@@ -474,162 +423,45 @@ void test_permute()
     return;
 }
 
-struct Person {
-    int age;
-    std::string name;
-    Person():age(0),name("fool"){}
-    Person(int age_, const std::string &name_)
-        :age(age_),name(name_){}
-    void print()
-    {
-        std::cout<<"person:"<<"name:"<<name<<",age:"<<age<<std::endl;
-        return;
-    }
-};
-struct Stu {
-    std::string name;
-    int rank;
-    int score;
-    Stu():name("fool"),rank(0),score(0){}
-    Stu(const std::string &name_, int rank_, int score_):
-        name(name_),rank(rank_),score(score_){}
-    void print()
-    {
-        std::cout<<"Student:"<<"name:"<<name<<",rank:"<<rank<<",score:"<<score<<std::endl;
-        return;
-    }
-};
-
-struct Employee {
-    std::string name;
-    int salary;
-    Employee():name("fool"),salary(0){}
-    Employee(const std::string &name_, int salary_)
-        :name(name_),salary(salary_){}
-    void print()
-    {
-        std::cout<<"Employee:"<<"name:"<<name<<",salary:"<<salary<<std::endl;
-        return;
-    }
-};
-
-template<typename ...T>
-class NameList
+void test_bpnn()
 {
-public:
-    using Expand = int[];
-    using List = std::tuple<T...>;
-    constexpr static int Ni = sizeof... (T);
-    List list;
-public:
-    template<typename Tuple, int N>
-    struct Print {
-        static void impl(Tuple& value)
-        {
-            Print<Tuple, N - 1>::impl(value);
-            std::get<N - 1>(value).print();
-            return;
+    using BPNN = Net<FcLayer, FcLayer, FcLayer>;
+    BPNN bp(FcLayer(2, 4, true, ACTIVE_TANH),
+            LayerNorm(4, 4, true, ACTIVE_SIGMOID),
+            FcLayer(4, 1, true, ACTIVE_SIGMOID));
+    Optimizer<BPNN, Optimize::RMSProp> optimizer(bp, 1e-3);
+    /* train xor */
+    std::vector<Tensor> x = {Tensor({2, 1}, {1, 1}),
+                             Tensor({2, 1}, {1, 0}),
+                             Tensor({2, 1}, {0, 1}),
+                             Tensor({2, 1}, {0, 0})};
+    std::vector<Tensor> yt = {Tensor({1, 1}, {0}),
+                              Tensor({1, 1}, {1}),
+                              Tensor({1, 1}, {1}),
+                              Tensor({1, 1}, {0})};
+    std::uniform_int_distribution<int> distribution(0, 3);
+    for (int i = 0; i < 20000; i++) {
+        for (int j = 0; j < 4; j++) {
+            int k = distribution(Utils::engine);
+            /* forward */
+            Tensor& y = bp(x[k]);
+            /* loss */
+            Tensor loss = Loss::MSE(y, yt[k]);
+            /* backward */
+            optimizer.backward(loss);
+            /* grad */
+            optimizer.grad(x[k]);
         }
-    };
-    template<typename Tuple>
-    struct Print<Tuple, 1> {
-        static void impl(Tuple& value)
-        {
-            std::get<0>(value).print();
-            return;
-        }
-    };
-
-    template<typename Tuple, int N>
-    struct InversePrint {
-        static void impl(Tuple& value)
-        {
-            std::get<N - 1>(value).print();
-            InversePrint<Tuple, N - 1>::impl(value);
-            return;
-        }
-    };
-    template<typename Tuple>
-    struct InversePrint<Tuple, 1> {
-        static void impl(Tuple& value)
-        {
-            std::get<0>(value).print();
-            return;
-        }
-    };
-
-    template<typename Tuple, int N>
-    struct Foreach {
-        static void impl(Tuple& value)
-        {
-            Foreach<Tuple, N - 1>::impl(value);
-            std::cout<<N - 1<<","<<N - 2<<std::endl;
-            std::cout<<"--------"<<std::endl;
-            return;
-        }
-    };
-    template<typename Tuple>
-    struct Foreach<Tuple, 1> {
-        static void impl(Tuple& value)
-        {
-            std::cout<<"0"<<std::endl;
-            return;
-        }
-    };
-public:
-    NameList(){}
-    NameList(T&& ...type)
-        :list(std::make_tuple<T...>(std::forward<T>(type)...)){}
-
-    void print()
-    {
-        Print<List, Ni>::impl(list);
-        return;
+        /* update */
+        optimizer.update();
     }
-    void testIndex()
-    {
-        Foreach<List, Ni>::impl(list);
-        return;
+    /* predict */
+    for (int i = 0; i < 4; i++) {
+        Tensor& y = bp(x[i]);
+        y.printValue();
     }
-    void inversePrint()
-    {
-        InversePrint<List, Ni>::impl(list);
-        return;
-    }
-    template<std::size_t ...i>
-    void display_(std::index_sequence<i...>)
-    {
-        Expand{(std::get<i>(list).print(),0)...};
-        return;
-    }
-    void display()
-    {
-        display_(std::make_index_sequence<Ni>());
-        return;
-    }
-};
-
-void test_tuple()
-{
-    NameList<Person, Stu, Employee, Person, Stu, Employee>
-            list(Person(12, "person"),
-                 Stu("jim", 5, 90),
-                 Employee("tom", 1000),
-                 Person(120, "fool"),
-                 Stu("jimmy", 50, 0),
-                 Employee("tommy", 10000));
-    //list.print();
-    //list.inversePrint();
-    list.display();
-    NameList<Person, Stu, Employee> men;
-    auto& p = std::get<0>(men.list);
-    p.age = 1000;
-    p.name = "richard123";
-    //men.print();
     return;
 }
-
-
 int main()
 {
 #if 0
@@ -639,7 +471,8 @@ int main()
     test_svd();
     test_kmeans();
     test_conv();
-#endif
     test_permute();
+#endif
+    test_bpnn();
     return 0;
 }

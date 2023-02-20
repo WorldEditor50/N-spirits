@@ -6,36 +6,34 @@
 #include <memory>
 #include <tuple>
 #include <map>
-#include "layer.h"
-
+#include "tensor.hpp"
 
 template<typename ...TLayer>
 class Net
 {
 public:
     using Layers = std::tuple<TLayer...>;
-    using Grads = std::tuple<typename TLayer::GradType...>;
+    using Grads = std::tuple<typename TLayer::Grad...>;
+    template<typename Optimizer>
+    using OptimzeBlocks = std::tuple<typename TLayer::template OptimizeBlock<Optimizer>...>;
     constexpr static int N = sizeof... (TLayer);
     Layers layers;
 public:
     /* forward */
     template<int Ni>
     struct Forward {
-        static void impl(Layers& layers, const Tensor& x)
+        static Tensor& impl(Layers& layers, const Tensor& x)
         {
-            Forward<Ni - 1>::impl(x);
-            Tensor& o = std::get<Ni - 2>(layers).o;
-            std::get<Ni - 1>(layers).forward(o);
-            return;
+            Tensor& o = Forward<Ni - 1>::impl(layers, x);
+            return std::get<Ni - 1>(layers).forward(o);
         }
     };
 
     template<>
     struct Forward<1> {
-        static void impl(Layers& layers, const Tensor& x)
+        static Tensor& impl(Layers& layers, const Tensor& x)
         {
-            std::get<0>(layers).forward(x);
-            return;
+            return std::get<0>(layers).forward(x);
         }
     };
 
@@ -44,7 +42,7 @@ public:
     struct Save {
         static void impl(Layers& layers, std::ofstream &file)
         {
-            Save<Ni - 1>::impl(layers);
+            Save<Ni - 1>::impl(layers, file);
             std::get<Ni - 1>(layers).save(file);
             return;
         }
@@ -63,7 +61,7 @@ public:
     struct Load {
         static void impl(Layers& layers, std::ifstream &file)
         {
-            Save<Ni - 1>::impl(layers);
+            Save<Ni - 1>::impl(layers, file);
             std::get<Ni - 1>(layers).load(file);
             return;
         }
@@ -81,10 +79,9 @@ public:
     explicit Net(TLayer&& ...layer)
         :layers(layer...){}
 
-    void operator()(const Tensor &x)
-    {
-        Forward<N>::impl(layers, x);
-        return;
+    Tensor& operator()(const Tensor &x)
+    {  
+        return Forward<N>::impl(layers, x);
     }
 
     void load(const std::string& fileName)

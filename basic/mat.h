@@ -1,13 +1,13 @@
 #ifndef MAT_H
 #define MAT_H
 #include <vector>
-#include <random>
 #include <functional>
 #include <cmath>
 #include <ctime>
 #include <string>
 #include <sstream>
 #include <iostream>
+#include "assert.h"
 
 class Mat
 {
@@ -527,6 +527,40 @@ public:
                 }
             }
             return;
+        }
+    };
+    struct Concat {
+
+        static Mat col(const Mat &x1, const Mat &x2)
+        {
+            assert(x1.rows == x2.rows);
+            Mat y(x1.rows, x1.cols + x2.cols);
+            for (std::size_t i = 0; i < y.rows; i++) {
+                for (std::size_t j = 0; i < y.cols; j++) {
+                    if (j < x1.cols) {
+                        y(i, j) = x1(i, j);
+                    } else {
+                        y(i, j) = x2(i, j - x1.cols);
+                    }
+                }
+            }
+            return y;
+        }
+
+        static Mat row(const Mat &x1, const Mat &x2)
+        {
+            assert(x1.cols == x2.cols);
+            Mat y(x1.rows + x2.rows, x1.cols);
+            for (std::size_t i = 0; i < y.rows; i++) {
+                for (std::size_t j = 0; i < y.cols; j++) {
+                    if (i < x1.rows) {
+                        y(i, j) = x1(i, j);
+                    } else {
+                        y(i, j) = x2(i - x1.rows, j);
+                    }
+                }
+            }
+            return y;
         }
     };
     static void parse(std::istringstream &stream, std::size_t cols, Mat &x)

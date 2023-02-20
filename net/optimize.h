@@ -1,6 +1,6 @@
 #ifndef OPTIMIZE_H
 #define OPTIMIZE_H
-#include "../basic/tensor.h"
+#include "../basic/tensor.hpp"
 
 namespace Optimize {
 class SGD
@@ -11,7 +11,7 @@ public:
     SGD(){}
     void operator()(Tensor& w, Tensor& dw, float learningRate)
     {
-        for (std::size_t i = 0; i < w.totalsize; i++) {
+        for (std::size_t i = 0; i < w.totalSize; i++) {
             w.val[i] = (1 - decay)*w.val[i] - learningRate*dw.val[i];
         }
         dw.zero();
@@ -34,10 +34,11 @@ public:
     }
     void operator()(Tensor& w, Tensor& dw, float learningRate)
     {
-        for (std::size_t i = 0; i < w.totalsize; i++) {
+        for (std::size_t i = 0; i < w.totalSize; i++) {
             s.val[i] = rho*s.val[i] + (1 - rho) * dw.val[i]*dw.val[i];
             w.val[i] = (1 - decay)*w.val[i] - learningRate*dw.val[i]/(sqrt(s.val[i]) + 1e-9);
         }
+        dw.zero();
         return;
     }
 };
@@ -66,18 +67,19 @@ public:
     {
         alpha_ *= alpha;
         beta_ *= beta;
-        for (std::size_t i = 0; i < w.totalsize; i++) {
+        for (std::size_t i = 0; i < w.totalSize; i++) {
             v[i] = alpha*v[i] + (1 - alpha)*dw[i];
             s[i] = beta*s[i] + (1 - beta)*dw[i]*dw[i];
             float v_ = v[i]/(1 - alpha_);
             float s_ = s[i]/(1 - beta_);
             w[i] = (1 - decay)*w[i] - learningRate*v_/(sqrt(s_) + 1e-9);
         }
+        dw.zero();
         return;
     }
 };
 float Adam::decay = 0;
-float Adam::alpha = 0.9;
-float Adam::beta = 0.99;
+float Adam::alpha = 0.9f;
+float Adam::beta = 0.99f;
 }
 #endif // OPTIMIZE_H
