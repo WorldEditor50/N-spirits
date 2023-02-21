@@ -4,7 +4,29 @@
 #include <fstream>
 #include "activate.h"
 #include "utils.h"
-#include "layerparam.h"
+#include "layerdef.h"
+
+class FcParam
+{
+public:
+    int id;
+    int inputDim;
+    int outputDim;
+    bool bias;
+    /* type */
+    int opType;
+    int activeType;
+    int layerType;
+public:
+    FcParam():inputDim(0),outputDim(0),bias(false),
+    opType(OP_FORWARD),activeType(ACTIVE_LINEAR),layerType(LAYER_FC){}
+    FcParam(int inDim_, int outDim_, bool bias_, int activeType_):
+        inputDim(inDim_),outputDim(outDim_),bias(bias_),
+        opType(OP_FORWARD),activeType(activeType_),layerType(LAYER_FC){}
+    FcParam(const FcParam &param):
+        inputDim(param.inputDim),outputDim(param.outputDim),bias(param.bias),
+        opType(param.opType),activeType(param.activeType),layerType(param.layerType){}
+};
 
 class FcLayer: public FcParam
 {
@@ -28,6 +50,18 @@ public:
             delta = Tensor(outputDim, 1);
         }
 
+        void backward(const FcLayer &layer, Tensor &delta_)
+        {
+            /*
+                delta_: (inputDim, 1)
+                w:      (outputDim, inputDim)
+                delta:  (outputDim, 1)
+                delta_ = w^T * delta
+            */
+            Tensor::MatOp::kikj(delta_, layer.w, delta);
+            return;
+        }
+
         void eval(const Tensor &x, const Tensor &o)
         {
             Tensor dy(outputDim, 1);
@@ -44,18 +78,6 @@ public:
             Tensor::MatOp::ikjk(dw, dy, x);
             db += dy;
             delta.zero();
-            return;
-        }
-
-        void backward(FcLayer &layer, Tensor &delta_)
-        {
-            /*
-                delta_: (inputDim, 1)
-                w:      (outputDim, inputDim)
-                delta:  (outputDim, 1)
-                delta_ = w^T * delta
-            */
-            Tensor::MatOp::kikj(delta_, layer.w, delta);
             return;
         }
 
@@ -195,7 +217,7 @@ public:
     }
 };
 
-class Softmax : public FcLayer
+class SoftmaxLayer : public FcLayer
 {
 public:
     class Grad : public FcLayer::Grad
@@ -207,20 +229,20 @@ public:
         void eval(const Tensor &x, const Tensor &o, const Tensor &yt)
         {
             Tensor dy(outputDim, 1);
-            for (std::size_t i = 0; i < dy.totalSize; i++) {
-                dy.val[i] = o.val[i] - yt.val[i];
-            }
+            Utils::minus(dy, o, yt);
             Tensor::MatOp::ikjk(dw, dy, x);
-            db += dy;
             delta.zero();
             return;
         }
     };
 public:
-    Softmax(){}
-    ~Softmax(){}
-    explicit Softmax(int inDim_, int outDim_)
-        :FcLayer(inDim_, outDim_, false, ACTIVE_LINEAR){}
+    SoftmaxLayer(){}
+    ~SoftmaxLayer(){}
+    explicit SoftmaxLayer(int inDim_, int outDim_)
+        :FcLayer(inDim_, outDim_, false, ACTIVE_LINEAR)
+    {
+        layerType = LAYER_SOFTMAX;
+    }
 
     Tensor& forward(const Tensor &x) override
     {
@@ -257,7 +279,10 @@ public:
     Dropout(){}
     ~Dropout(){}
     explicit Dropout(int inDim_, int outDim_, bool bias_, int activeType_, float p_, bool withGrad_)
-        :FcLayer(inDim_, outDim_, bias_, activeType_),p(p_), withGrad(withGrad_),mask(outDim_, 1){}
+        :FcLayer(inDim_, outDim_, bias_, activeType_),p(p_), withGrad(withGrad_),mask(outDim_, 1)
+    {
+        layerType = LAYER_DROPOUT;
+    }
 
     Tensor& forward(const Tensor &x) override
     {
@@ -280,7 +305,7 @@ public:
         Grad(){}
         explicit Grad(const FcParam &param)
             :FcLayer::Grad(param){}
-        void backward(LayerNorm &layer, Tensor &delta_)
+        void backward(const LayerNorm &layer, Tensor &delta_)
         {
             delta_ *= layer.gamma;
             Tensor::MatOp::kikj(delta_, layer.w, delta);
@@ -293,18 +318,22 @@ public:
 public:
     LayerNorm(){}
     explicit LayerNorm(int inDim_, int outDim_, bool bias_, int activeType_)
-        :FcLayer(inDim_, outDim_, bias_, activeType_), gamma(1){}
+        :FcLayer(inDim_, outDim_, bias_, activeType_), gamma(1)
+    {
+        layerType = LAYER_NORM;
+    }
 
     Tensor& forward(const Tensor &x) override
     {
-        Tensor::MatOp::kikj(o, w, x);
-
+        Tensor::MatOp::ikkj(o, w, x);
         float u = o.mean();
         float sigma = o.variance(u);
         gamma = 1/std::sqrt(sigma + 1e-9);
-
         for (std::size_t i = 0; i < o.totalSize; i++) {
             o.val[i] = gamma*(o.val[i] - u);
+        }
+        if (bias == true) {
+            o += b;
         }
         Active::func[activeType].f(o, o);
         return o;

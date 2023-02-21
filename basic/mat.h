@@ -434,7 +434,7 @@ public:
         for (std::size_t i = 0; i < totalSize; i++) {
             s += (val[i] - u)*(val[i] - u);
         }
-        return s;
+        return std::sqrt(s/float(totalSize));
     }
 
     static Mat kronecker(const Mat &x1, const Mat &x2)

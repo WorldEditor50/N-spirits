@@ -3,12 +3,14 @@
 #include "../basic/tensor.hpp"
 
 namespace Optimize {
+
 class SGD
 {
 public:
     static float decay;
 public:
     SGD(){}
+    explicit SGD(const std::vector<int> &){}
     void operator()(Tensor& w, Tensor& dw, float learningRate)
     {
         for (std::size_t i = 0; i < w.totalSize; i++) {

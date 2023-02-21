@@ -14,6 +14,7 @@
 #include "net/optimizer.h"
 #include "net/layer.h"
 #include "net/loss.h"
+#include "net/conv.h"
 
 void test_lu()
 {
@@ -425,7 +426,7 @@ void test_permute()
 
 void test_bpnn()
 {
-    using BPNN = Net<FcLayer, FcLayer, FcLayer>;
+    using BPNN = Net<FcLayer, LayerNorm, FcLayer>;
     BPNN bp(FcLayer(2, 4, true, ACTIVE_TANH),
             LayerNorm(4, 4, true, ACTIVE_SIGMOID),
             FcLayer(4, 1, true, ACTIVE_SIGMOID));
@@ -448,9 +449,7 @@ void test_bpnn()
             /* loss */
             Tensor loss = Loss::MSE(y, yt[k]);
             /* backward */
-            optimizer.backward(loss);
-            /* grad */
-            optimizer.grad(x[k]);
+            optimizer.backward(loss, x[k]);
         }
         /* update */
         optimizer.update();
@@ -460,6 +459,20 @@ void test_bpnn()
         Tensor& y = bp(x[i]);
         y.printValue();
     }
+    return;
+}
+
+void test_lenet5()
+{
+    using LeNet5 = Net<Conv2d, MaxPooling2d, Conv2d, MaxPooling2d, FcLayer, FcLayer, SoftmaxLayer>;
+
+    LeNet5 lenet5(Conv2d(3, 32, 32, 6, 5, 1, 0),
+                  MaxPooling2d(6, 28, 28, 2, 2),
+                  Conv2d(6, 14, 14, 16, 5, 1, 0),
+                  MaxPooling2d(2, 10, 10, 2, 2),
+                  FcLayer(16*5*5, 120, true, ACTIVE_LEAKRELU),
+                  FcLayer(120, 84, true, ACTIVE_LEAKRELU),
+                  SoftmaxLayer(84, 10));
     return;
 }
 int main()
@@ -473,6 +486,7 @@ int main()
     test_conv();
     test_permute();
 #endif
+    //test_lenet5();
     test_bpnn();
     return 0;
 }

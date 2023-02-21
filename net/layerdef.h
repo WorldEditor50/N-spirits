@@ -10,7 +10,7 @@ enum OperateType {
 };
 
 enum LayerType {
-    LAYER_FORWARD = 0,
+    LAYER_FC = 0,
     LAYER_DROPOUT,
     LAYER_NORM,
     LAYER_SOFTMAX,
@@ -18,7 +18,7 @@ enum LayerType {
     LAYER_LSTM,
     LAYER_CONV2D,
     LAYER_MAXPOOLING,
-    LAYER_AVERAGEPOOLING
+    LAYER_AVGPOOLING
 };
 
 #endif // LAYERDEF_H

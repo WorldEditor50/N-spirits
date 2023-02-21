@@ -14,7 +14,6 @@ public:
     int stride;
     int padding;
     bool bias;
-    bool withGrad;
     /* i/o */
     int hi;
     int wi;
@@ -27,34 +26,109 @@ public:
     int layerType;
 public:
     Conv2dParam():inChannels(0),outChannels(0),kernelSize(0),stride(0),padding(0){}
+    explicit Conv2dParam(const Conv2dParam &param)
+        : inChannels(param.inChannels),outChannels(param.outChannels),kernelSize(param.kernelSize),
+          stride(param.stride),padding(param.padding),bias(param.bias),
+          id(0),opType(OP_FORWARD),activeType(ACTIVE_LINEAR),layerType(LAYER_CONV2D){}
     explicit Conv2dParam(int inChannels_,
                          int outChannels_ ,
                          int kernelSize_=3,
                          int stride_=1,
                          int padding_=0,
                          bool bias_=false,
-                         bool withGrad_=false):
+                         ActiveType activeType_=ACTIVE_LEAKRELU):
         inChannels(inChannels_),outChannels(outChannels_),kernelSize(kernelSize_),
-    stride(stride_),padding(padding_),bias(bias_),withGrad(withGrad_),
-    id(0),opType(OP_FORWARD),activeType(ACTIVE_LINEAR),layerType(LAYER_CONV2D){}
-};
-
-class Conv2dGrad
-{
-public:
-    /* grad */
-    Tensor dkernels;
-    Tensor db;
-    Tensor delta;
-public:
-
+    stride(stride_),padding(padding_),bias(bias_),
+    id(0),opType(OP_FORWARD),activeType(activeType_),layerType(LAYER_CONV2D){}
 };
 
 class Conv2d : public Conv2dParam
 {
 public:
     using ParamType = Conv2dParam;
-    using GradType = Conv2dGrad;
+    class Grad : public Conv2dParam
+    {
+    public:
+        /* grad */
+        Tensor dkernels;
+        Tensor db;
+        Tensor delta;
+    public:
+        Grad(){}
+        explicit Grad(const Conv2dParam &param)
+            :Conv2dParam(param)
+        {
+            dkernels = Tensor(outChannels, inChannels, kernelSize, kernelSize);
+            if (bias == true) {
+                db = Tensor(outChannels, kernelSize, kernelSize);
+            }
+            delta = Tensor(outChannels, ho, wo);
+            layerType = LAYER_CONV2D;
+        }
+        void backward(const Conv2d &layer, Tensor &delta_)
+        {
+            /* delta_: previous delta, the shape is same as delta and output */
+            for (int n = 0; n < delta_.shape[0]; n++) {
+                for (int i = 0; i < delta_.shape[1]; i++) {
+                    for (int j = 0; j < delta_.shape[2]; j++) {
+
+                        int h0 = (i - kernelSize + 1)/stride;
+                        h0 = h0 > 0 ? std::ceil(h0):0;
+                        int hn = i/stride;
+                        hn = hn < ho ? std::floor(hn):ho;
+
+                        int k0 = (j - kernelSize + 1)/stride;
+                        k0 = k0 > 0 ? std::ceil(k0):0;
+                        int kn = j/stride;
+                        kn = kn < wo ? std::floor(kn):wo;
+
+                        for (int c = 0; c < layer.kernels.shape[0]; c++) {
+                            for (int h = h0; h < hn; h++) {
+                                for (int k = k0; k < kn; k++) {
+                                    delta_(n, i, j) += layer.kernels(n, c, i - h*stride, j - k*stride)*delta(c, h, k);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return;
+        }
+
+        void eval(const Tensor &x, const Tensor &o)
+        {
+            Tensor dy(o.shape);
+            Active::func[activeType].df(dy, o);
+            dy *= delta;
+            for (int n = 0; n < x.shape[0]; n++) {
+                for (int i = 0; i < x.shape[1]; i++) {
+                    for (int j = 0; j < x.shape[2]; j++) {
+
+                        int h0 = (i - kernelSize + 1)/stride;
+                        h0 = h0 > 0 ? std::ceil(h0):0;
+                        int hn = i/stride;
+                        hn = hn < ho ? std::floor(hn):ho;
+
+                        int k0 = (j - kernelSize + 1)/stride;
+                        k0 = k0 > 0 ? std::ceil(k0):0;
+                        int kn = j/stride;
+                        kn = kn < wo ? std::floor(kn):wo;
+
+                        for (int c = 0; c < dkernels.shape[1]; c++) {
+                            for (int h = h0; h < hn; h++) {
+                                for (int k = k0; k < kn; k++) {
+                                    dkernels(n, c, h, k) += x(n, i, j)*dy(n, h, k);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return;
+        }
+
+    };
+
     template<typename Optimizer>
     class OptimizeBlock
     {
@@ -68,7 +142,7 @@ public:
             optKernels = Optimizer(layer.kernels.shape);
             optB = Optimizer(layer.b.shape);
         }
-        void operator()(Conv2d& layer, GradType& grad, float learningRate)
+        void operator()(Conv2d& layer, Grad& grad, float learningRate)
         {
             optW(layer.kernels, grad.dkernels, learningRate);
             optB(layer.b, grad.db, learningRate);
@@ -82,10 +156,6 @@ public:
     Tensor o;
     /* (N, ho, wo) */
     Tensor b;
-    /* grad */
-    Tensor dkernels;
-    Tensor db;
-    Tensor delta;
 public:
     Conv2d(){}
     explicit Conv2d(int inChannels_,
@@ -96,8 +166,8 @@ public:
                     int stride_=1,
                     int padding_=0,
                     bool bias_=false,
-                    bool withGrad_=false):
-        Conv2dParam(inChannels_, outChannels_, kernelSize_, stride_, padding_, bias_, withGrad_)
+                    ActiveType activeType_=ACTIVE_LEAKRELU):
+        Conv2dParam(inChannels_, outChannels_, kernelSize_, stride_, padding_, bias_, activeType_)
     {
         kernels = Tensor(outChannels, inChannels, kernelSize, kernelSize);
         hi = h;
@@ -108,14 +178,7 @@ public:
         if (bias == true) {
             b = Tensor(outChannels, kernelSize, kernelSize);
         }
-        /* grad */
-        if (withGrad == true) {
-            dkernels = Tensor(outChannels, inChannels, kernelSize, kernelSize);
-            if (bias == true) {
-                db = Tensor(outChannels, kernelSize, kernelSize);
-            }
-            delta = Tensor(outChannels, ho, wo);
-        }
+        layerType = LAYER_MAXPOOLING;
     }
 
     Tensor& forward(const Tensor &x)
@@ -127,7 +190,7 @@ public:
             o += b;
         }
         /* activate */
-        Sigmoid::f(o, o);
+        Active::func[activeType].f(o, o);
         return o;
     }
 
@@ -226,75 +289,70 @@ public:
         return;
     }
 
-    void backward(Tensor &delta_)
-    {
-        /* delta_: previous delta, the shape is same as delta and output */
-        for (int n = 0; n < delta_.shape[0]; n++) {
-            for (int i = 0; i < delta_.shape[1]; i++) {
-                for (int j = 0; j < delta_.shape[2]; j++) {
-
-                    int h0 = (i - kernelSize + 1)/stride;
-                    h0 = h0 > 0 ? std::ceil(h0):0;
-                    int hn = i/stride;
-                    hn = hn < ho ? std::floor(hn):ho;
-
-                    int k0 = (j - kernelSize + 1)/stride;
-                    k0 = k0 > 0 ? std::ceil(k0):0;
-                    int kn = j/stride;
-                    kn = kn < wo ? std::floor(kn):wo;
-
-                    for (int c = 0; c < kernels.shape[0]; c++) {
-                        for (int h = h0; h < hn; h++) {
-                            for (int k = k0; k < kn; k++) {
-                                delta_(n, i, j) += kernels(n, c, i - h*stride, j - k*stride)*delta(c, h, k);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return;
-    }
-
-    void grad(const Tensor &x)
-    {
-        for (int n = 0; n < x.shape[0]; n++) {
-            for (int i = 0; i < x.shape[1]; i++) {
-                for (int j = 0; j < x.shape[2]; j++) {
-
-                    int h0 = (i - kernelSize + 1)/stride;
-                    h0 = h0 > 0 ? std::ceil(h0):0;
-                    int hn = i/stride;
-                    hn = hn < ho ? std::floor(hn):ho;
-
-                    int k0 = (j - kernelSize + 1)/stride;
-                    k0 = k0 > 0 ? std::ceil(k0):0;
-                    int kn = j/stride;
-                    kn = kn < wo ? std::floor(kn):wo;
-
-                    for (int c = 0; c < dkernels.shape[1]; c++) {
-                        for (int h = h0; h < hn; h++) {
-                            for (int k = k0; k < kn; k++) {
-                                dkernels(n, c, h, k) += x(n, i, j)*delta(n, h, k);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return;
-    }
 };
 
 class MaxPooling2d: public Conv2dParam
 {
 public:
     using ParamType = Conv2dParam;
-    using GradType = Conv2dGrad;
+    /* grad */
+    class Grad : public Conv2dParam
+    {
+    public:
+        Tensor delta;
+    public:
+        Grad(){}
+        explicit Grad(const Conv2dParam &param)
+            :Conv2dParam(param)
+        {
+            delta = Tensor(outChannels, ho, wo);
+        }
+        void backward(MaxPooling2d &layer, Tensor &delta_)
+        {
+            /* delta_: previous delta, the shape is same as delta and output */
+            for (int n = 0; n < delta_.shape[0]; n++) {
+                for (int i = 0; i < delta_.shape[1]; i++) {
+                    for (int j = 0; j < delta_.shape[2]; j++) {
+
+                        int h0 = (i - kernelSize + 1)/stride;
+                        h0 = h0 > 0 ? std::ceil(h0):0;
+                        int hn = i/stride;
+                        hn = hn < ho ? std::floor(hn):ho;
+
+                        int k0 = (j - kernelSize + 1)/stride;
+                        k0 = k0 > 0 ? std::ceil(k0):0;
+                        int kn = j/stride;
+                        kn = kn < wo ? std::floor(kn):wo;
+
+                        for (int h = h0; h < hn; h++) {
+                            for (int k = k0; k < kn; k++) {
+                                delta_(n, i, j) += layer.mask(n, h, k)*delta(n, h, k);
+                            }
+                        }
+                    }
+                }
+            }
+            layer.mask.zero();
+            return;
+        }
+
+        void eval(const Tensor &x, const Tensor &o)
+        {
+            return;
+        }
+    };
+    /* optimizer */
+    template<typename Optimizer>
+    class OptimizeBlock
+    {
+    public:
+        OptimizeBlock(){}
+        OptimizeBlock(const MaxPooling2d &){}
+        void operator()(MaxPooling2d&, Grad&, float){}
+    };
 public:
     Tensor o;
     Tensor mask;
-    Tensor delta;
 public:
     MaxPooling2d(){}
     explicit MaxPooling2d(int inChannels_,
@@ -309,10 +367,8 @@ public:
         ho = std::floor((hi - kernelSize)/stride) + 1;
         wo = std::floor((wi - kernelSize)/stride) + 1;
         o = Tensor(outChannels, ho, wo);
-        if (withGrad == true) {
-            mask = Tensor(outChannels, ho, wo);
-            delta = Tensor(outChannels, ho, wo);
-        }
+        mask = Tensor(outChannels, ho, wo);
+        layerType = LAYER_MAXPOOLING;
     }
     void forward(const Tensor &x)
     {
@@ -336,48 +392,73 @@ public:
         }
         return;
     }
+};
 
-    void backward(Tensor &delta_)
+class AvgPooling2d: public Conv2dParam
+{
+public:
+    using ParamType = Conv2dParam;
+    /* grad */
+    class Grad : public Conv2dParam
     {
-        /* delta_: previous delta, the shape is same as delta and output */
-        for (int n = 0; n < delta_.shape[0]; n++) {
-            for (int i = 0; i < delta_.shape[1]; i++) {
-                for (int j = 0; j < delta_.shape[2]; j++) {
+    public:
+        Tensor delta;
+    public:
+        Grad(){}
+        explicit Grad(const Conv2dParam &param)
+            :Conv2dParam(param)
+        {
+            delta = Tensor(outChannels, ho, wo);
+        }
 
-                    int h0 = (i - kernelSize + 1)/stride;
-                    h0 = h0 > 0 ? std::ceil(h0):0;
-                    int hn = i/stride;
-                    hn = hn < ho ? std::floor(hn):ho;
+        void backward(AvgPooling2d &layer, Tensor &delta_)
+        {
+            /* delta_: previous delta, the shape is same as delta and output */
+            for (int n = 0; n < delta_.shape[0]; n++) {
+                for (int i = 0; i < delta_.shape[1]; i++) {
+                    for (int j = 0; j < delta_.shape[2]; j++) {
 
-                    int k0 = (j - kernelSize + 1)/stride;
-                    k0 = k0 > 0 ? std::ceil(k0):0;
-                    int kn = j/stride;
-                    kn = kn < wo ? std::floor(kn):wo;
+                        int h0 = (i - kernelSize + 1)/stride;
+                        h0 = h0 > 0 ? std::ceil(h0):0;
+                        int hn = i/stride;
+                        hn = hn < ho ? std::floor(hn):ho;
 
-                    for (int h = h0; h < hn; h++) {
-                        for (int k = k0; k < kn; k++) {
-                            delta_(n, i, j) += mask(n, h, k)*delta(n, h, k);
+                        int k0 = (j - kernelSize + 1)/stride;
+                        k0 = k0 > 0 ? std::ceil(k0):0;
+                        int kn = j/stride;
+                        kn = kn < wo ? std::floor(kn):wo;
+
+                        for (int h = h0; h < hn; h++) {
+                            for (int k = k0; k < kn; k++) {
+                                delta_(n, i, j) += delta(n, h, k);
+                            }
                         }
                     }
                 }
             }
+            return;
         }
-        mask.zero();
-        return;
-    }
-};
 
-class AveragePooling2d: public Conv2dParam
-{
-public:
-    using ParamType = Conv2dParam;
-    using GradType = Conv2dGrad;
+        void eval(const Tensor &x, const Tensor &o)
+        {
+            return;
+        }
+    };
+
+    /* optimizer */
+    template<typename Optimizer>
+    class OptimizeBlock
+    {
+    public:
+        OptimizeBlock(){}
+        OptimizeBlock(const AvgPooling2d &){}
+        void operator()(AvgPooling2d&, Grad&, float){}
+    };
 public:
     Tensor o;
-    Tensor delta;
 public:
-    AveragePooling2d(){}
-    explicit AveragePooling2d(int inChannels_,
+    AvgPooling2d(){}
+    explicit AvgPooling2d(int inChannels_,
                               int h,
                               int w,
                               int kernelSize_=2,
@@ -389,9 +470,7 @@ public:
         ho = std::floor((hi - kernelSize)/stride) + 1;
         wo = std::floor((wi - kernelSize)/stride) + 1;
         o = Tensor(outChannels, ho, wo);
-        if (withGrad == true) {
-            delta = Tensor(outChannels, ho, wo);
-        }
+        layerType = LAYER_AVGPOOLING;
     }
     void forward(const Tensor &x)
     {
@@ -411,33 +490,7 @@ public:
         }
         return;
     }
-    void backward(Tensor &delta_)
-    {
-        /* delta_: previous delta, the shape is same as delta and output */
-        for (int n = 0; n < delta_.shape[0]; n++) {
-            for (int i = 0; i < delta_.shape[1]; i++) {
-                for (int j = 0; j < delta_.shape[2]; j++) {
 
-                    int h0 = (i - kernelSize + 1)/stride;
-                    h0 = h0 > 0 ? std::ceil(h0):0;
-                    int hn = i/stride;
-                    hn = hn < ho ? std::floor(hn):ho;
-
-                    int k0 = (j - kernelSize + 1)/stride;
-                    k0 = k0 > 0 ? std::ceil(k0):0;
-                    int kn = j/stride;
-                    kn = kn < wo ? std::floor(kn):wo;
-
-                    for (int h = h0; h < hn; h++) {
-                        for (int k = k0; k < kn; k++) {
-                            delta_(n, i, j) += delta(n, h, k);
-                        }
-                    }
-                }
-            }
-        }
-        return;
-    }
 };
 
 #endif // CONV_H

@@ -40,7 +40,14 @@ public:
         val = std::vector<T>(totalSize, 0);
     }
 
-    explicit Tensor_(const std::vector<int> &shape_, const std::vector<T> &val_):
+    explicit Tensor_(const std::vector<int> &shape_, const std::initializer_list<T> &val_):
+        totalSize(1),shape(shape_),val(val_)
+    {
+        initParams(shape, sizes, totalSize);
+    }
+
+
+    explicit Tensor_(const std::initializer_list<int> &shape_, const std::initializer_list<T> &val_):
         totalSize(1),shape(shape_),val(val_)
     {
         initParams(shape, sizes, totalSize);
@@ -529,6 +536,13 @@ public:
         return;
     }
 
+    static void copy(Tensor_ &x, const Tensor_ &x_)
+    {
+        for (std::size_t i = 0; i < x.totalSize; i++) {
+            x.val[i] = x_.val[i];
+        }
+        return;
+    }
     static void foreach(Tensor_ &y, const Tensor_ &x, std::function<T(T)> func_)
     {
         for (std::size_t i = 0; i < y.totalSize; i++) {
