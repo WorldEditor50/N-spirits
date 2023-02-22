@@ -11,10 +11,10 @@
 #include "svm.h"
 #include "gmm.h"
 #include "net/net.h"
-#include "net/optimizer.h"
-#include "net/layer.h"
-#include "net/loss.h"
-#include "net/conv.h"
+#include "../net/optimizer.h"
+#include "../net/layer.h"
+#include "../net/loss.h"
+#include "../net/conv.h"
 
 void test_lu()
 {
@@ -427,9 +427,9 @@ void test_permute()
 void test_bpnn()
 {
     using BPNN = Net<FcLayer, LayerNorm, FcLayer>;
-    BPNN bp(FcLayer(2, 4, true, ACTIVE_TANH),
-            LayerNorm(4, 4, true, ACTIVE_SIGMOID),
-            FcLayer(4, 1, true, ACTIVE_SIGMOID));
+    BPNN bp(FcLayer(2, 4, true, ACTIVE_LEAKRELU),
+            LayerNorm(4, 4, true, ACTIVE_LEAKRELU),
+            FcLayer(4, 1, true, ACTIVE_LEAKRELU));
     Optimizer<BPNN, Optimize::RMSProp> optimizer(bp, 1e-3);
     /* train xor */
     std::vector<Tensor> x = {Tensor({2, 1}, {1, 1}),
@@ -441,7 +441,7 @@ void test_bpnn()
                               Tensor({1, 1}, {1}),
                               Tensor({1, 1}, {0})};
     std::uniform_int_distribution<int> distribution(0, 3);
-    for (int i = 0; i < 20000; i++) {
+    for (int i = 0; i < 10000; i++) {
         for (int j = 0; j < 4; j++) {
             int k = distribution(Utils::engine);
             /* forward */

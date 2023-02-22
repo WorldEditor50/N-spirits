@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include "activate.h"
-#include "utils.h"
+#include "../basic/utils.h"
 #include "layerdef.h"
 
 class FcParam
@@ -49,7 +49,10 @@ public:
             }
             delta = Tensor(outputDim, 1);
         }
-
+        inline Tensor& deltaRef()
+        {
+            return delta;
+        }
         void backward(const FcLayer &layer, Tensor &delta_)
         {
             /*
@@ -82,7 +85,7 @@ public:
         }
 
     };
-
+    /* optimizer */
     template<typename Optimizer>
     class OptimizeBlock
     {
@@ -96,7 +99,7 @@ public:
             optW = Optimizer(layer.w.shape);
             optB = Optimizer(layer.b.shape);
         }
-        void operator()(FcLayer& layer, Grad& grad, float learningRate)
+        inline void operator()(FcLayer& layer, Grad& grad, float learningRate)
         {
             optW(layer.w, grad.dw, learningRate);
             optB(layer.b, grad.db, learningRate);
@@ -130,6 +133,7 @@ public:
            x: (inputDim, 1)
            o = Active(w * x + b)
         */
+        o.zero();
         Tensor::MatOp::ikkj(o, w, x);
         if (bias == true) {
             o += b;
@@ -260,9 +264,14 @@ public:
     class Grad : public FcLayer::Grad
     {
     public:
+        static bool enable;
+    public:
         Grad(){}
         explicit Grad(const FcParam &param)
-            :FcLayer::Grad(param){}
+            :FcLayer::Grad(param)
+        {
+            enable = true;
+        }
         void backward(Dropout &layer, Tensor &delta_)
         {
             delta_ *= layer.mask;
@@ -273,13 +282,12 @@ public:
 
 public:
     float p;
-    bool withGrad;
     Tensor mask;
 public:
     Dropout(){}
     ~Dropout(){}
-    explicit Dropout(int inDim_, int outDim_, bool bias_, int activeType_, float p_, bool withGrad_)
-        :FcLayer(inDim_, outDim_, bias_, activeType_),p(p_), withGrad(withGrad_),mask(outDim_, 1)
+    explicit Dropout(int inDim_, int outDim_, bool bias_, int activeType_, float p_)
+        :FcLayer(inDim_, outDim_, bias_, activeType_),p(p_), mask(outDim_, 1)
     {
         layerType = LAYER_DROPOUT;
     }
@@ -287,7 +295,7 @@ public:
     Tensor& forward(const Tensor &x) override
     {
         FcLayer::forward(x);
-        if (withGrad == true) {
+        if (Grad::enable == true) {
             Utils::bernoulli(mask, p);
             mask /= (1 - p);
             FcLayer::o *= mask;
@@ -295,6 +303,7 @@ public:
         return o;
     }
 };
+bool Dropout::Grad::enable = false;
 
 class LayerNorm : public FcLayer
 {
@@ -325,6 +334,7 @@ public:
 
     Tensor& forward(const Tensor &x) override
     {
+        o.zero();
         Tensor::MatOp::ikkj(o, w, x);
         float u = o.mean();
         float sigma = o.variance(u);
@@ -340,23 +350,95 @@ public:
     }
 };
 
-class BatchNorm
+class BatchNorm1dParam
 {
 public:
-    /* (in_channels) */
+    int inputDim;
+    int outputDim;
+    int batchSize;
+public:
+    BatchNorm1dParam(){}
+    BatchNorm1dParam(const BatchNorm1dParam &param)
+        :inputDim(param.inputDim),
+         outputDim(param.outputDim),batchSize(param.batchSize){}
+};
+class BatchNorm1D : public BatchNorm1dParam
+{
+public:
+    using ParamType = BatchNorm1dParam;
+    /* grad */
+    class Grad : public BatchNorm1dParam
+    {
+    public:
+        Tensor dGamma;
+        Tensor dBeta;
+        std::vector<Tensor> deltas;
+    public:
+        Grad(){}
+        Grad(const BatchNorm1dParam &param)
+            :BatchNorm1dParam((param))
+        {
+            dGamma = Tensor(outputDim, 1);
+            dBeta  = Tensor(outputDim, 1);
+            deltas = std::vector<Tensor>(batchSize, Tensor(outputDim, 1));
+        }
+        inline Tensor& deltaRef()
+        {
+            return deltas[0];
+        }
+        void backward(const BatchNorm1D &layer, Tensor &delta/* output */)
+        {
+            return;
+        }
+        void eval(const Tensor &x, const Tensor &o)
+        {
+
+            return;
+        }
+    };
+    /* optimizer */
+    template<typename Optimizer>
+    class OptimizeBlock
+    {
+    public:
+        Optimizer optGamma;
+        Optimizer optBeta;
+    public:
+        OptimizeBlock(){}
+        OptimizeBlock(const BatchNorm1D &layer)
+        {
+            optGamma = Optimizer(layer.gamma.shape);
+            optBeta = Optimizer(layer.beta.shape);
+        }
+        inline void operator()(BatchNorm1D& layer, Grad& grad, float learningRate)
+        {
+            optGamma(layer.gamma, grad.dGamma, learningRate);
+            optBeta(layer.beta, grad.dBeta, learningRate);
+            return;
+        }
+    };
+public:
     Tensor u;
-    /* (in_channels) */
     Tensor sigma;
     std::vector<Tensor> xh;
+    std::vector<Tensor> o;
+    Tensor beta;
+    Tensor gamma;
 public:
-    BatchNorm(){}
-    explicit BatchNorm(int inChannels)
+    BatchNorm1D(){}
+    explicit BatchNorm1D(int inputDim, int outputDim, int batchSize)
     {
-        u = Tensor(inChannels);
-        sigma = Tensor(inChannels);
+        u     = Tensor(inputDim, 1);
+        sigma = Tensor(inputDim, 1);
+
+        beta     = Tensor(outputDim, 1);
+        gamma = Tensor::ones(outputDim, 1);
+
+        o     = std::vector<Tensor>(batchSize, Tensor(outputDim, 1));
+        xh    = std::vector<Tensor>(batchSize, Tensor(outputDim, 1));
     }
     void forward(const std::vector<Tensor> &x)
-    {
+    {    
         /* batchsize */
         float batchsize = x.size();
         /* u */
@@ -365,25 +447,28 @@ public:
         }
         u /= batchsize;
         /* xh */
+        xh = std::vector<Tensor>(batchsize, Tensor(u.shape));
         for (std::size_t i = 0; i < x.size(); i++) {
             Utils::minus(xh[i], x[i], u);
         }
         /* sigma */
-        std::vector<Tensor> sigmas(x.size(), Tensor(u.totalSize));
-        for (std::size_t i = 0; i < x.size(); i++) {
-            Utils::multi(sigmas[i], xh[i], xh[i]);
-        }
-        for (std::size_t i = 0; i < x.size(); i++) {
-            sigma += x[i];
+        Tensor r(u.shape);
+        for (std::size_t i = 0; i < xh.size(); i++) {
+            Utils::multi(r, xh[i], xh[i]);
+            sigma += r;
         }
         sigma /= batchsize;
         sigma += 1e-9;
         Utils::sqrt(sigma, sigma);
-        /* xh */
+        /* xh = (xi - u)/sqrt(sigma + 1e-9) */
         for (std::size_t i = 0; i < x.size(); i++) {
             xh[i] /= sigma;
         }
-
+        /* o = gamma*xh + b */
+        for (std::size_t i = 0; i < xh.size(); i++) {
+            Utils::multi(o[i], gamma, xh[i]);
+            o[i] += beta;
+        }
         return;
     }
 };
@@ -444,6 +529,32 @@ public:
     {
         Tensor h(b.shape);
         return sampleVisible(h);
+    }
+};
+
+
+class Gate
+{
+public:
+    Tensor w;
+    Tensor u;
+    Tensor b;
+    Tensor o;
+public:
+    Gate(){}
+    Gate(int inputDim, int hiddenDim, int outputDim)
+    {
+        w = Tensor(outputDim, inputDim);
+        u = Tensor(hiddenDim, hiddenDim);
+        b = Tensor(outputDim, 1);
+        o = Tensor(outputDim, 1);
+    }
+    Tensor& forward(const Tensor &x, const Tensor &h)
+    {
+        Tensor::MatOp::ikkj(o, w, x);
+        Tensor::MatOp::ikkj(o, u, h);
+        o += b;
+        return o;
     }
 };
 

@@ -11,7 +11,7 @@ public:
 public:
     SGD(){}
     explicit SGD(const std::vector<int> &){}
-    void operator()(Tensor& w, Tensor& dw, float learningRate)
+    inline void operator()(Tensor& w, Tensor& dw, float learningRate)
     {
         for (std::size_t i = 0; i < w.totalSize; i++) {
             w.val[i] = (1 - decay)*w.val[i] - learningRate*dw.val[i];
@@ -20,7 +20,7 @@ public:
         return;
     }
 };
-float SGD::decay = 0;
+float SGD::decay = 0.0f;
 
 class RMSProp
 {
@@ -34,7 +34,7 @@ public:
     {
         s = Tensor(shape);
     }
-    void operator()(Tensor& w, Tensor& dw, float learningRate)
+    inline void operator()(Tensor& w, Tensor& dw, float learningRate)
     {
         for (std::size_t i = 0; i < w.totalSize; i++) {
             s.val[i] = rho*s.val[i] + (1 - rho) * dw.val[i]*dw.val[i];
@@ -44,8 +44,8 @@ public:
         return;
     }
 };
-float RMSProp::decay = 0;
-float RMSProp::rho = 0.9;
+float RMSProp::decay = 0.0f;
+float RMSProp::rho = 0.9f;
 
 class Adam
 {
@@ -65,7 +65,7 @@ public:
         s = Tensor(shape);
         v = Tensor(shape);
     }
-    void operator()(Tensor& w, Tensor& dw, float learningRate)
+    inline void operator()(Tensor& w, Tensor& dw, float learningRate)
     {
         alpha_ *= alpha;
         beta_ *= beta;

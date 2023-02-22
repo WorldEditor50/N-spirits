@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include "utils/csv.h"
+#include "metautil.h"
 
 struct Person {
     int age;
@@ -10,7 +11,7 @@ struct Person {
     Person():age(0),name("fool"){}
     Person(int age_, const std::string &name_)
         :age(age_),name(name_){}
-    void print()
+    void print() const
     {
         std::cout<<"person:"<<"name:"<<name<<",age:"<<age<<std::endl;
         return;
@@ -23,7 +24,7 @@ struct Stu {
     Stu():name("fool"),rank(0),score(0){}
     Stu(const std::string &name_, int rank_, int score_):
         name(name_),rank(rank_),score(score_){}
-    void print()
+    void print() const
     {
         std::cout<<"Student:"<<"name:"<<name<<",rank:"<<rank<<",score:"<<score<<std::endl;
         return;
@@ -36,7 +37,7 @@ struct Employee {
     Employee():name("fool"),salary(0){}
     Employee(const std::string &name_, int salary_)
         :name(name_),salary(salary_){}
-    void print()
+    void print() const
     {
         std::cout<<"Employee:"<<"name:"<<name<<",salary:"<<salary<<std::endl;
         return;
@@ -106,6 +107,8 @@ public:
             return;
         }
     };
+
+
 public:
     NameList(){}
     NameList(T&& ...type)
@@ -137,6 +140,8 @@ public:
         display_(std::make_index_sequence<Ni>());
         return;
     }
+
+
 };
 
 void test_tuple()
@@ -156,6 +161,10 @@ void test_tuple()
     p.age = 1000;
     p.name = "richard123";
     //men.print();
+    std::cout<<"index travel:"<<std::endl;
+    foreachTuple(men.list, [](auto && item){
+        item.print();
+    });
     return;
 }
 
@@ -213,8 +222,11 @@ void test_csv()
     return;
 }
 
+
+
 int main()
 {
-    test_csv();
+    //test_csv();
+    test_tuple();
     return 0;
 }

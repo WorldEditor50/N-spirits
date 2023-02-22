@@ -6,7 +6,10 @@
 #include <memory>
 #include <tuple>
 #include <map>
-#include "tensor.hpp"
+#include <type_traits>
+#include "../basic/tensor.hpp"
+#include "layerdef.h"
+
 
 template<typename ...TLayer>
 class Net
@@ -20,17 +23,26 @@ public:
     Layers layers;
 public:
     /* forward */
-    template<int Ni>
+    template<int Ni, typename LayerN1>
     struct Forward {
         static Tensor& impl(Layers& layers, const Tensor& x)
         {
-            Tensor& o = Forward<Ni - 1>::impl(layers, x);
+            using LayerN2 = std::tuple_element_t<Ni - 2, Layers>;
+            Tensor& o = Forward<Ni - 1, LayerN2>::impl(layers, x);
             return std::get<Ni - 1>(layers).forward(o);
         }
     };
 
+    template<typename LayerN1>
+    struct Forward<1, LayerN1> {
+        static Tensor& impl(Layers& layers, const Tensor& x)
+        {
+            return std::get<0>(layers).forward(x);
+        }
+    };
+
     template<>
-    struct Forward<1> {
+    struct Forward<1, BatchNorm1D> {
         static Tensor& impl(Layers& layers, const Tensor& x)
         {
             return std::get<0>(layers).forward(x);
@@ -79,9 +91,20 @@ public:
     explicit Net(TLayer&& ...layer)
         :layers(layer...){}
 
-    Tensor& operator()(const Tensor &x)
+    inline Tensor& operator()(const Tensor &x)
     {  
-        return Forward<N>::impl(layers, x);
+        using LayerN1 = std::tuple_element_t<Net::N - 1, Layers>;
+        return Forward<N, LayerN1>::impl(layers, x);
+    }
+
+    inline void operator()(const std::vector<Tensor> &x, std::vector<Tensor> &y)
+    {
+        using LayerN1 = std::tuple_element_t<Net::N - 1, Layers>;
+        y = std::vector<Tensor>(x.size());
+        for (std::size_t i = 0; i < x.size(); i++) {
+            y[i] = Forward<N, LayerN1>::impl(layers, x[i]);
+        }
+        return;
     }
 
     void load(const std::string& fileName)

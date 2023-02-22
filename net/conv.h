@@ -182,8 +182,9 @@ public:
     }
 
     Tensor& forward(const Tensor &x)
-    {
+    {           
         /* conv */
+        o.zero();
         conv(o, kernels, x, stride, padding);
         /* bias */
         if (bias == true) {

@@ -5,13 +5,6 @@
 #include "optimize.h"
 #include "layerdef.h"
 
-class FcLayer;
-class SoftmatLayer;
-class LSTM;
-class Conv2d;
-class MaxPooling2d;
-class AvgPooling2d;
-
 template<typename Net, typename OptimizeMethod>
 class Optimizer
 {
@@ -33,7 +26,7 @@ public:
             auto &layer = std::get<N - 1>(layers);
             /* grad */
             auto &grad = std::get<N - 1>(grads);
-            using Layer = typename std::remove_reference<decltype(layer)>::type;
+            using Layer = std::tuple_element_t<N - 1, Layers>;
             using ParamType = typename Layer::ParamType;
             using GradType = typename Layer::Grad;
             grad = GradType(static_cast<ParamType>(layer));
@@ -52,7 +45,7 @@ public:
             auto &layer = std::get<0>(layers);
             auto &grad = std::get<0>(grads);
             /* grad */
-            using Layer = typename std::remove_reference<decltype(layer)>::type;
+            using Layer = std::tuple_element_t<0, Layers>;
             using ParamType = typename Layer::ParamType;
             using GradType = typename Layer::Grad;
             grad = GradType(static_cast<ParamType>(layer));
@@ -64,37 +57,34 @@ public:
         }
     };
     /* backward */
-    template<int N, typename TLayer>
+    template<int N, typename LayerN1>
     struct Backward {
         static void impl(Grads &grads, Layers& layers, const Tensor &x)
         {
-            auto& layer = std::get<N - 1>(layers);
-            auto& grad = std::get<N - 1>(grads);
-            auto& preLayer = std::get<N - 2>(layers);
-            auto& preGrad = std::get<N - 2>(grads);
-            using PreLayer = typename std::remove_reference<decltype(preLayer)>::type;
+            auto& layerN1 = std::get<N - 1>(layers);
+            auto& gradN1 = std::get<N - 1>(grads);
+            auto& gradN2 = std::get<N - 2>(grads);
             /* backward */
-            grad.backward(layer, preGrad.delta);
+            gradN1.backward(layerN1, gradN2.delta);
             /* evaluate */
-            Tensor &x_ = std::get<N - 2>(layers).o;
-            grad.eval(x_, layer.o);
-            Backward<N - 1, PreLayer>::impl(grads, layers, x);
+            Tensor &x1 = std::get<N - 2>(layers).o;
+            gradN1.eval(x1, layerN1.o);
+            /* next */
+            using LayerN2 = std::tuple_element_t<N - 2, Layers>;
+            Backward<N - 1, LayerN2>::impl(grads, layers, x);
             return;
         }
     };
 
-    template<typename TLayer>
-    struct Backward<1, TLayer> {
+    template<typename LayerN1>
+    struct Backward<1, LayerN1> {
         static void impl(Grads &grads, Layers& layers, const Tensor &x)
         {
-            auto& layer = std::get<1>(layers);
-            auto& grad = std::get<1>(grads);
-            auto& preGrad = std::get<0>(grads);
-            /* backward */
-            grad.backward(layer, preGrad.delta);
+            auto& layer0 = std::get<0>(layers);
+            auto& grad0 = std::get<0>(grads);
+            /* no backward */
             /* evaluate */
-            auto& preLayer = std::get<0>(layers);
-            preGrad.eval(x, preLayer.o);
+            grad0.eval(x, layer0.o);
             return;
         }
     };
@@ -103,11 +93,27 @@ public:
     struct Backward<1, LSTM> {
         static void impl(Grads &grads, Layers& layers, const Tensor &x)
         {
-            auto& layer = std::get<1>(layers);
-            auto& grad = std::get<1>(grads);
-            auto& preGrad = std::get<0>(grads);
+            auto& layer1 = std::get<1>(layers);
+            auto& grad1 = std::get<1>(grads);
+            auto& grad0 = std::get<0>(grads);
             /* backward through time */
-            grad.backwardAtTime(layer, grad.delta, x);
+            grad1.backwardAtTime(layer1, grad1.delta, x);
+            return;
+        }
+    };
+
+    template<>
+    struct Backward<1, BatchNorm1D> {
+        static void impl(Grads &grads, Layers& layers, const Tensor &x)
+        {
+            auto& layer1 = std::get<1>(layers);
+            auto& grad1 = std::get<1>(grads);
+            auto& batchNormGrad = std::get<0>(grads);
+            Tensor &delta = batchNormGrad.deltas[0];
+            /* backward delta to batchnorm */
+            grad1.backward(layer1, delta);
+            /* evaluate */
+            batchNormGrad.eval(x, layer1.o);
             return;
         }
     };
@@ -115,15 +121,15 @@ public:
     struct Backward<N, MaxPooling2d> {
         static void impl(Grads &grads, Layers& layers, const Tensor &x)
         {
-            auto& layer = std::get<N - 1>(layers);
-            auto& grad = std::get<N - 1>(grads);
-            auto& preLayer = std::get<N - 2>(layers);
-            auto& preGrad = std::get<N - 2>(grads);
-            using PreLayer = typename std::remove_reference<decltype(preLayer)>::type;
+            auto& layerN1 = std::get<N - 1>(layers);
+            auto& gradN1 = std::get<N - 1>(grads);
+            auto& gradN2 = std::get<N - 2>(grads);
             /* backward */
-            grad.backward(layer, preGrad.delta);
+            gradN1.backward(layerN1, gradN2.delta);
             /* no gradient */
-            Backward<N - 1, PreLayer>::impl(grads, layers, x);
+            /* next */
+            using LayerN2 = std::tuple_element_t<N - 2, Layers>;
+            Backward<N - 1, LayerN2>::impl(grads, layers, x);
             return;
         }
     };
@@ -132,15 +138,14 @@ public:
     struct Backward<N, AvgPooling2d> {
         static void impl(Grads &grads, Layers& layers, const Tensor &x)
         {
-            auto& layer = std::get<N - 1>(layers);
-            auto& grad = std::get<N - 1>(grads);
-            auto& preLayer = std::get<N - 2>(layers);
-            auto& preGrad = std::get<N - 2>(grads);
-            using PreLayer = typename std::remove_reference<decltype(preLayer)>::type;
+            auto& layerN1 = std::get<N - 1>(layers);
+            auto& gradN1 = std::get<N - 1>(grads);
+            auto& gradN2 = std::get<N - 2>(grads);
             /* backward */
-            grad.backward(layer, preGrad.delta);
+            gradN1.backward(layerN1, gradN2.delta);
             /* no gradient */
-            Backward<N - 1, PreLayer>::impl(grads, layers, x);
+            using LayerN2 = std::tuple_element_t<N - 2, Layers>;
+            Backward<N - 1, LayerN2>::impl(grads, layers, x);
             return;
         }
     };
@@ -182,8 +187,8 @@ public:
         auto &grad = std::get<Net::N - 1>(grads);
         grad.delta = loss;
         auto &layer = std::get<Net::N - 1>(net.layers);
-        using Layer = typename std::remove_reference<decltype(layer)>::type;
-        Backward<Net::N, Layer>::impl(grads, net.layers, x);
+        using LayerN1 = std::tuple_element_t<Net::N - 1, Layers>;
+        Backward<Net::N, LayerN1>::impl(grads, net.layers, x);
         return;
     }
 
@@ -194,8 +199,8 @@ public:
         auto &layer = std::get<Net::N - 1>(net.layers);
         Tensor &x_ = std::get<Net::N - 2>(net.layers).o;
         grad.eval(x_, layer.o, yt);
-        using Layer = typename std::remove_reference<decltype(layer)>::type;
-        Backward<Net::N - 1, Layer>::impl(grads, net.layers,  x);
+        using LayerN2 = std::tuple_element_t<Net::N - 2, Layers>;
+        Backward<Net::N - 1, LayerN2>::impl(grads, net.layers,  x);
         return;
     }
 

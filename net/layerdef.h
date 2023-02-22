@@ -1,6 +1,5 @@
 #ifndef LAYERDEF_H
 #define LAYERDEF_H
-#include "activate.h"
 
 enum OperateType {
     OP_INPUT = 0,
@@ -20,5 +19,13 @@ enum LayerType {
     LAYER_MAXPOOLING,
     LAYER_AVGPOOLING
 };
+
+class FcLayer;
+class SoftmatLayer;
+class BatchNorm1D;
+class LSTM;
+class Conv2d;
+class MaxPooling2d;
+class AvgPooling2d;
 
 #endif // LAYERDEF_H

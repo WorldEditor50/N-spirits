@@ -1,5 +1,6 @@
-# SimpleML
-practices of ML algorithm
+# N-spirits
+fun with cpp
+
 - kmeans
 - gmm
 - svm
