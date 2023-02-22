@@ -17,3 +17,8 @@ HEADERS += \
     kmeans.h \
     linearregression.h \
     svm.h
+
+msvc {
+    QMAKE_CFLAGS += /bigobj
+    QMAKE_CXXFLAGS += /bigobj
+}

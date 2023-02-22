@@ -1,6 +1,7 @@
 #include <iostream>
 #include <tuple>
 #include "basic/mat.h"
+#include "basic/mats.hpp"
 #include "basic/linearalgebra.h"
 #include "basic/tensor.hpp"
 #include "basic/complexnumber.h"
@@ -175,6 +176,37 @@ void test_transpose_multiply()
     return;
 }
 
+void test_static_matrix()
+{
+    Mats<3, 3> x1 = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+    Mats<3, 3> x2 = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+    /* case 1 */
+    std::cout<<"-------case1:-------"<<std::endl;
+    x1 /= 2;
+    x1.show();
+    x1 += 2;
+    x1.show();
+    /* case 2 */
+    std::cout<<"-------case2:-------"<<std::endl;
+    Mats<3, 3> x3 = x1 + x2;
+    x3.show();
+    /* case 3 */
+    std::cout<<"-------case3:-------"<<std::endl;
+    x1 += x2;
+    x1.show();
+    /* case 4 */
+    std::cout<<"-------case4:-------"<<std::endl;
+    float p = expt::dot(x1, x2);
+    std::cout<<"p:"<<p<<std::endl;
+    /* case 5 */
+    std::cout<<"-------case5:-------"<<std::endl;
+    /* msvc config: /bigobj */
+    Mats<200, 200> x4(4);
+    Mats<200, 200> x5(5);
+    p = expt::dot(x4, x5);
+    std::cout<<"p:"<<p<<std::endl;
+    return;
+}
 void test_kmeans()
 {
     /* load data */
@@ -487,6 +519,7 @@ int main()
     test_permute();
 #endif
     //test_lenet5();
-    test_bpnn();
+    //test_bpnn();
+    test_static_matrix();
     return 0;
 }

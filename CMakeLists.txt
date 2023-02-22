@@ -8,6 +8,8 @@ if (MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+	add_compile_options("$<$<C_COMPILER_ID:MSVC>:/bigobj>")
+    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/bigobj>")
 endif()
 # basic
 add_subdirectory(${PROJECT_SOURCE_DIR}/basic)
