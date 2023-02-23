@@ -10,6 +10,8 @@ if (MSVC)
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 	add_compile_options("$<$<C_COMPILER_ID:MSVC>:/bigobj>")
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/bigobj>")
+	add_compile_options("$<$<C_COMPILER_ID:MSVC>:/arch:AVX2>")
+	add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>")
 endif()
 # basic
 add_subdirectory(${PROJECT_SOURCE_DIR}/basic)

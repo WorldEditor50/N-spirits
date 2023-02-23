@@ -42,7 +42,7 @@ public:
     };
 
     template<>
-    struct Forward<1, BatchNorm1D> {
+    struct Forward<1, BatchNorm1d> {
         static Tensor& impl(Layers& layers, const Tensor& x)
         {
             return std::get<0>(layers).forward(x);

@@ -167,6 +167,19 @@ inline float lp(const T &x1, const T &x2, float p)
     return std::pow(s, 1/p);
 }
 
+template <typename T>
+inline float l8(const T &x1, const T &x2)
+{
+    float s = x1.val[0] - x2.val[0];
+    for (std::size_t i = 1; i < x1.totalSize; i++) {
+        float delta = x1.val[i] - x2.val[i];
+        if (delta > s) {
+            s = delta;
+        }
+    }
+    return s;
+}
+
 }
 
 inline void cov(Mat &y, const Mat &x)

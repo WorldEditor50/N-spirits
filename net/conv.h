@@ -95,10 +95,10 @@ public:
             return;
         }
 
-        void eval(const Tensor &x, const Tensor &o)
+        void eval(const Tensor &x, Tensor &o)
         {
-            Tensor dy(o.shape);
-            Active::func[activeType].df(dy, o);
+            Tensor &dy = o;
+            Active::func[activeType].df(dy);
             dy *= delta;
             for (int n = 0; n < x.shape[0]; n++) {
                 for (int i = 0; i < x.shape[1]; i++) {
@@ -191,7 +191,7 @@ public:
             o += b;
         }
         /* activate */
-        Active::func[activeType].f(o, o);
+        Active::func[activeType].f(o);
         return o;
     }
 

@@ -201,10 +201,12 @@ void test_static_matrix()
     /* case 5 */
     std::cout<<"-------case5:-------"<<std::endl;
     /* msvc config: /bigobj */
+#if 0 // compile cost too much time
     Mats<200, 200> x4(4);
     Mats<200, 200> x5(5);
     p = expt::dot(x4, x5);
     std::cout<<"p:"<<p<<std::endl;
+#endif
     return;
 }
 void test_kmeans()
@@ -510,6 +512,7 @@ void test_lenet5()
 int main()
 {
 #if 0
+    test_static_matrix();
     test_lu();
     test_qr();
     test_det();
@@ -519,7 +522,6 @@ int main()
     test_permute();
 #endif
     //test_lenet5();
-    //test_bpnn();
-    test_static_matrix();
+    test_bpnn();
     return 0;
 }

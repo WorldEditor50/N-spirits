@@ -18,6 +18,19 @@ protected:
 public:
     inline T operator[](std::size_t i) const {return val[i];}
     inline T& operator[](std::size_t i) {return val[i];}
+
+    template<std::size_t Ni>
+    inline expt::SubExpr<Mats, Mats<Ni, 1>> operator[](const Mats<Ni, 1> &indexes)
+    {
+        return expt::SubExpr<Mats, Mats<Ni, 1>>(*this, indexes);
+    }
+
+    template<std::size_t Ni>
+    inline decltype(auto) operator[](const Mats<Ni, 1> &indexes) const
+    {
+        return expt::SubExpr<Mats, Mats<Ni, 1>>(*this, indexes);
+    }
+
     inline T& at(std::size_t i) {return val[i];}
     inline std::size_t size() const {return val.size();}
     inline T operator()(std::size_t i, std::size_t j) const {return val[i*COL + j];}

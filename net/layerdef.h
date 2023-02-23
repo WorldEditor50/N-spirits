@@ -22,7 +22,7 @@ enum LayerType {
 
 class FcLayer;
 class SoftmatLayer;
-class BatchNorm1D;
+class BatchNorm1d;
 class LSTM;
 class Conv2d;
 class MaxPooling2d;

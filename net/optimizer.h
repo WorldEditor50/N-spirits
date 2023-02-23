@@ -103,7 +103,7 @@ public:
     };
 
     template<>
-    struct Backward<1, BatchNorm1D> {
+    struct Backward<1, BatchNorm1d> {
         static void impl(Grads &grads, Layers& layers, const Tensor &x)
         {
             auto& layer1 = std::get<1>(layers);
@@ -186,7 +186,6 @@ public:
     {
         auto &grad = std::get<Net::N - 1>(grads);
         grad.delta = loss;
-        auto &layer = std::get<Net::N - 1>(net.layers);
         using LayerN1 = std::tuple_element_t<Net::N - 1, Layers>;
         Backward<Net::N, LayerN1>::impl(grads, net.layers, x);
         return;

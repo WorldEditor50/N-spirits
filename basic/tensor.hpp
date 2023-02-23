@@ -185,9 +185,9 @@ public:
 
     inline std::vector<int> indexOf(int pos) const
     {
-        std::vector<int> indexs(shape.size(), 0);
-        indexOf(pos, indexs);
-        return indexs;
+        std::vector<int> indexes(shape.size(), 0);
+        indexOf(pos, indexes);
+        return indexes;
     }
 
     template<typename ...Index>

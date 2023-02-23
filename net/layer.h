@@ -65,10 +65,10 @@ public:
             return;
         }
 
-        void eval(const Tensor &x, const Tensor &o)
+        void eval(const Tensor &x, Tensor &o)
         {
-            Tensor dy(outputDim, 1);
-            Active::func[activeType].df(dy, o);
+            Tensor &dy = o;
+            Active::func[activeType].df(dy);
             dy *= delta;
             /*
                 dw: (outputDim, inputDim)
@@ -138,7 +138,7 @@ public:
         if (bias == true) {
             o += b;
         }
-        Active::func[activeType].f(o, o);
+        Active::func[activeType].f(o);
         return o;
     }
 
@@ -345,7 +345,7 @@ public:
         if (bias == true) {
             o += b;
         }
-        Active::func[activeType].f(o, o);
+        Active::func[activeType].f(o);
         return o;
     }
 };
@@ -362,7 +362,7 @@ public:
         :inputDim(param.inputDim),
          outputDim(param.outputDim),batchSize(param.batchSize){}
 };
-class BatchNorm1D : public BatchNorm1dParam
+class BatchNorm1d : public BatchNorm1dParam
 {
 public:
     using ParamType = BatchNorm1dParam;
@@ -386,7 +386,7 @@ public:
         {
             return deltas[0];
         }
-        void backward(const BatchNorm1D &layer, Tensor &delta/* output */)
+        void backward(const BatchNorm1d &layer, Tensor &delta/* output */)
         {
             return;
         }
@@ -405,12 +405,12 @@ public:
         Optimizer optBeta;
     public:
         OptimizeBlock(){}
-        OptimizeBlock(const BatchNorm1D &layer)
+        OptimizeBlock(const BatchNorm1d &layer)
         {
             optGamma = Optimizer(layer.gamma.shape);
             optBeta = Optimizer(layer.beta.shape);
         }
-        inline void operator()(BatchNorm1D& layer, Grad& grad, float learningRate)
+        inline void operator()(BatchNorm1d& layer, Grad& grad, float learningRate)
         {
             optGamma(layer.gamma, grad.dGamma, learningRate);
             optBeta(layer.beta, grad.dBeta, learningRate);
@@ -425,8 +425,8 @@ public:
     Tensor beta;
     Tensor gamma;
 public:
-    BatchNorm1D(){}
-    explicit BatchNorm1D(int inputDim, int outputDim, int batchSize)
+    BatchNorm1d(){}
+    explicit BatchNorm1d(int inputDim, int outputDim, int batchSize)
     {
         u     = Tensor(inputDim, 1);
         sigma = Tensor(inputDim, 1);

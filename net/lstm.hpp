@@ -18,6 +18,7 @@ public:
         :inputDim(inputDim_),hiddenDim(hiddenDim_),outputDim(outputDim_){}
 };
 
+/* SOA style */
 class LSTMCells : public LSTMParam
 {
 public:

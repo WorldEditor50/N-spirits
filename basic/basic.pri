@@ -11,5 +11,6 @@ HEADERS += $$PWD/basic_def.h \
            $$PWD/utils.h \
            $$PWD/vec.h \
            $$PWD/expt.hpp \
-           $$PWD/mats.hpp
+           $$PWD/mats.hpp \
+           $$PWD/simd.hpp
 SOURCES += $$PWD/linearalgebra.cpp

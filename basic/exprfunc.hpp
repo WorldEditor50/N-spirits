@@ -20,39 +20,39 @@ struct Sigmoid { inline static T apply(T x) {return 1 / (1 + std::exp(-x));} };
 struct Relu { inline static T apply(T x) {return x > 0 ? x : 0;} };
 
 /* expr function */
-template<typename TExpr>
-inline UnaryOp<Sqrt, TExpr>
-sqrt(const Expr<TExpr> &expr)
+template<typename Exprt>
+inline UnaryOp<Sqrt, Exprt>
+sqrt(const Expr<Exprt> &expr)
 {
-    return UnaryOp<Sqrt, TExpr>(expr);
+    return UnaryOp<Sqrt, Exprt>(expr);
 }
 
-template<typename TExpr>
-inline UnaryOp<Exp, TExpr>
-exp(const Expr<TExpr> &expr)
+template<typename Exprt>
+inline UnaryOp<Exp, Exprt>
+exp(const Expr<Exprt> &expr)
 {
-    return UnaryOp<Exp, TExpr>(expr);
+    return UnaryOp<Exp, Exprt>(expr);
 }
 
-template<typename TExpr>
-inline UnaryOp<Tanh, TExpr>
-tanh(const Expr<TExpr> &expr)
+template<typename Exprt>
+inline UnaryOp<Tanh, Exprt>
+tanh(const Expr<Exprt> &expr)
 {
-    return UnaryOp<Tanh, TExpr>(expr);
+    return UnaryOp<Tanh, Exprt>(expr);
 }
 
-template<typename TExpr>
-inline UnaryOp<Sigmoid, TExpr>
-sigmoid(const Expr<TExpr> &expr)
+template<typename Exprt>
+inline UnaryOp<Sigmoid, Exprt>
+sigmoid(const Expr<Exprt> &expr)
 {
-    return UnaryOp<Sigmoid, TExpr>(expr);
+    return UnaryOp<Sigmoid, Exprt>(expr);
 }
 
-template<typename TExpr>
-inline UnaryOp<Relu, TExpr>
-relu(const Expr<TExpr> &expr)
+template<typename Exprt>
+inline UnaryOp<Relu, Exprt>
+relu(const Expr<Exprt> &expr)
 {
-    return UnaryOp<Relu, TExpr>(expr);
+    return UnaryOp<Relu, Exprt>(expr);
 }
 
 
@@ -120,6 +120,26 @@ inline T dot(const Type &x1, const Type &x2)
 {
     return Dot<Type, Type::N - 1>::eval(x1, x2);
 }
+
+/* sum */
+template<typename Type, std::size_t N>
+struct Sum {
+    inline static T eval(const Type &x)
+    {
+        return x[N] + Dot<Type, N - 1>::eval(x);
+    }
+};
+template<typename Type>
+struct Sum<Type, 0> {
+    inline static T eval(const Type &x){return x[0];}
+};
+template <typename Type>
+inline T sum(const Type &x)
+{
+    return Dot<Type, Type::N - 1>::eval(x);
+}
+
+
 
 } // expt
 

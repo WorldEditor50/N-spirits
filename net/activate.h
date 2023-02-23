@@ -8,18 +8,18 @@
 struct Sigmoid {
     inline static float f(float x) {return 1/(1 + std::exp(-x));}
     inline static float df(float y) {return y*(1 - y);}
-    inline static void f(Tensor& y, const Tensor &x)
+    inline static void f(Tensor &x)
     {
         for (std::size_t i = 0; i < x.totalSize; i++) {
-            y.val[i] = 1/(1 + exp(-x.val[i]));
+            x.val[i] = 1/(1 + exp(-x.val[i]));
         }
         return;
     }
 
-    inline static void df(Tensor &dy, const Tensor &y)
+    inline static void df(Tensor &y)
     {
-        for (std::size_t i = 0; i < dy.totalSize; i++) {
-            dy.val[i] = y.val[i]*(1 - y.val[i]);
+        for (std::size_t i = 0; i < y.totalSize; i++) {
+            y.val[i] = y.val[i]*(1 - y.val[i]);
         }
         return;
     }
@@ -45,18 +45,18 @@ struct Sigmoid {
 struct Tanh {
     inline static float f(float x) {return tanh(x);}
     inline static float df(float y) {return 1 - y*y;}
-    inline static void f(Tensor& y, const Tensor &x)
+    inline static void f(Tensor &x)
     {
         for (std::size_t i = 0; i < x.totalSize; i++) {
-            y.val[i] = tanh(x.val[i]);
+            x.val[i] = tanh(x.val[i]);
         }
         return;
     }
 
-    inline static void df(Tensor &dy, const Tensor &y)
+    inline static void df(Tensor &y)
     {
-        for (std::size_t i = 0; i < dy.totalSize; i++) {
-            dy.val[i] = 1 - y.val[i]*y.val[i];
+        for (std::size_t i = 0; i < y.totalSize; i++) {
+            y.val[i] = 1 - y.val[i]*y.val[i];
         }
         return;
     }
@@ -83,18 +83,18 @@ struct Tanh {
 struct Relu {
     inline static float f(float x) {return x > 0 ? x : 0;}
     inline static float df(float y) {return y > 0 ? 1 : 0;}
-    inline static void f(Tensor& y, const Tensor &x)
+    inline static void f(Tensor &x)
     {
         for (std::size_t i = 0; i < x.totalSize; i++) {
-            y.val[i] = x.val[i] > 0 ? x.val[i] : 0;
+            x.val[i] = x.val[i] > 0 ? x.val[i] : 0;
         }
         return;
     }
 
-    inline static void df(Tensor &dy, const Tensor &y)
+    inline static void df(Tensor &y)
     {
-        for (std::size_t i = 0; i < dy.totalSize; i++) {
-            dy.val[i] = y.val[i] > 0 ? 1 : 0;
+        for (std::size_t i = 0; i < y.totalSize; i++) {
+            y.val[i] = y.val[i] > 0 ? 1 : 0;
         }
         return;
     }
@@ -121,18 +121,18 @@ struct Relu {
 struct LeakyRelu {
     inline static float f(float x) {return x > 0 ? x : 0.01*x;}
     inline static float df(float y) {return y > 0 ? 1 : 0.01;}
-    inline static void f(Tensor& y, const Tensor &x)
+    inline static void f(Tensor &x)
     {
         for (std::size_t i = 0; i < x.totalSize; i++) {
-            y.val[i] = x.val[i] > 0 ? x.val[i] : 0.01*x.val[i];
+            x.val[i] = x.val[i] > 0 ? x.val[i] : 0.01*x.val[i];
         }
         return;
     }
 
-    inline static void df(Tensor &dy, const Tensor &y)
+    inline static void df(Tensor &y)
     {
-        for (std::size_t i = 0; i < dy.totalSize; i++) {
-            dy.val[i] = y.val[i] > 0 ? 1 : 0.01;
+        for (std::size_t i = 0; i < y.totalSize; i++) {
+            y.val[i] = y.val[i] > 0 ? 1 : 0.01;
         }
         return;
     }
@@ -158,15 +158,11 @@ struct LeakyRelu {
 struct Linear {
     inline static float f(float x) {return x;}
     inline static float df(float) {return 1;}
-    inline static void f(Tensor& y, const Tensor &x)
-    {
-        y = x;
-        return;
-    }
+    inline static void f(Tensor &x){}
 
-    inline static void df(Tensor &dy, const Tensor &y)
+    inline static void df(Tensor &y)
     {
-        dy.fill(1);
+        y.fill(1);
         return;
     }
     inline static Tensor f(const Tensor &x)
@@ -234,8 +230,8 @@ class Active
 {
 public:
     struct Functor {
-        void(*f)(Tensor& y, const Tensor &x);
-        void(*df)(Tensor &dy, const Tensor &y);
+        void(*f)(Tensor &x);
+        void(*df)(Tensor &y);
     };
 public:
     static std::map<int, Functor> func;
