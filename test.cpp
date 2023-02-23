@@ -518,39 +518,52 @@ void test_simd_matmul()
     std::cout<<"__m128d/double:"<<sizeof (__m128d)/sizeof (double)<<std::endl;
     std::cout<<"__m256/float:"<<sizeof (__m256)/sizeof (float)<<std::endl;
     std::cout<<"__m256d/double:"<<sizeof (__m256d)/sizeof (double)<<std::endl;
-    Tensor x(32, 32);
-    Tensor x1(32, 32);
-    Tensor x2(32, 32);
+    Tensor x(512, 512);
+    Tensor x1(512, 512);
+    Tensor x2(512, 512);
     Utils::uniform(x1, -9, 9);
     Utils::uniform(x2, -9, 9);
     /* simd matmul */
-    std::cout<<"simd matmul:"<<std::endl;
-    float* xPtr = x.val.data();
-    float* x1Ptr = x1.val.data();
-    float* x2Ptr = x2.val.data();
+    float* xPtr = x.ptr();
+    float* x1Ptr = x1.ptr();
+    float* x2Ptr = x2.ptr();
     {
         auto t1 = Clock::tiktok();
         simd::AVX2::matMul8(xPtr, x.shape[0], x.shape[1],
                             x1Ptr, x1.shape[0], x1.shape[1],
                             x2Ptr, x2.shape[0], x2.shape[1]);
         auto t2 = Clock::tiktok();
-        double cost = Clock::duration(t1, t2);
-        std::cout<<"simd matmul cost:"<<cost<<std::endl;
+        double cost = Clock::duration(t2, t1);
+        std::cout<<"simd matmul cost:"<<cost<<"s"<<std::endl;
     }
     //x.printValue();
-    /* simd matmul */
-    std::cout<<"matmul:"<<std::endl;
+    /* matmul */
     x.zero();
     {
         auto t1 = Clock::tiktok();
         Tensor::MatOp::ikkj(x, x1, x2);
         auto t2 = Clock::tiktok();
-        double cost = Clock::duration(t1, t2);
-        std::cout<<"matmul cost:"<<cost<<std::endl;
+        double cost = Clock::duration(t2, t1);
+        std::cout<<"matmul cost:"<<cost<<"s"<<std::endl;
     }
     //x.printValue();
     return;
 }
+void test_simd()
+{
+    /* max */
+    Tensor x(100);
+    Utils::uniform(x, 0, 100);
+    x[50] = 101;
+    x.printValue();
+    std::cout<<"max:"<<simd::AVX2::max(x.ptr(), x.totalSize)<<std::endl;
+    /* sum */
+    Tensor x1(100, 100);
+    x1.fill(1.0);
+    std::cout<<"sum:"<<simd::AVX2::sum(x1.ptr(), x1.totalSize)<<std::endl;
+    return;
+}
+
 int main()
 {
 #if 0
@@ -566,5 +579,6 @@ int main()
     //test_lenet5();
     //test_bpnn();
     test_simd_matmul();
+    test_simd();
     return 0;
 }

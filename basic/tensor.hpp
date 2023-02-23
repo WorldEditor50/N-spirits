@@ -123,6 +123,8 @@ public:
         }
         return y;
     }
+    inline T* ptr() { return val.data(); }
+    inline const T* ptr() const { return val.data(); }
     inline bool empty() const {return totalSize == 0;}
     void zero(){val.assign(totalSize, 0);}
     void fill(T value){val.assign(totalSize, value);}
