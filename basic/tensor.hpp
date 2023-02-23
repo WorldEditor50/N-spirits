@@ -4,6 +4,7 @@
 #include <functional>
 #include <iostream>
 #include <assert.h>
+#include "simd.hpp"
 
 template<typename T>
 class Tensor_
@@ -579,8 +580,8 @@ public:
         static void ikkj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
             for (std::size_t i = 0; i < x.shape[0]; i++) {
-                for (std::size_t j = 0; j < x.shape[1]; j++) {
-                    for (std::size_t k = 0; k < x1.shape[1]; k++) {
+                for (std::size_t k = 0; k < x1.shape[1]; k++) {
+                    for (std::size_t j = 0; j < x.shape[1]; j++) {
                         /* (i, j) = (i, k) * (k, j) */
                         x.val[i*x.shape[1] + j] += x1.val[i*x1.shape[1] + k]*x2.val[k*x2.shape[1] + j];
                     }

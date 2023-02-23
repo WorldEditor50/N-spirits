@@ -16,7 +16,9 @@ struct SSE2 {
         __m128d vecx;
         __m128d vecy;
         __m128d vecz;
-        for (std::size_t i = 0; i < N/2; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m256)/sizeof (double);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 2 double into __m128d */
             vecx = _mm_load_pd(px);
             vecy = _mm_load_pd(py);
@@ -25,9 +27,9 @@ struct SSE2 {
             /* store result */
             _mm_store_pd(pz, vecz);
             /* move */
-            px += 2;
-            py += 2;
-            pz += 2;
+            px += offset;
+            py += offset;
+            pz += offset;
         }
         return;
     }
@@ -41,7 +43,9 @@ struct SSE2 {
         __m128d vecx;
         __m128d vecy;
         __m128d vecz;
-        for (std::size_t i = 0; i < N/2; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m128d)/sizeof (double);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 2 double into __m128d */
             vecx = _mm_load_pd(px);
             vecy = _mm_load_pd(py);
@@ -50,9 +54,9 @@ struct SSE2 {
             /* store result */
             _mm_store_pd(pz, vecz);
             /* move */
-            px += 2;
-            py += 2;
-            pz += 2;
+            px += offset;
+            py += offset;
+            pz += offset;
         }
         return;
     }
@@ -66,7 +70,9 @@ struct SSE2 {
         __m128d vecx;
         __m128d vecy;
         __m128d vecz;
-        for (std::size_t i = 0; i < N/2; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m128d)/sizeof (double);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 2 double into __m128d */
             vecx = _mm_load_pd(px);
             vecy = _mm_load_pd(py);
@@ -75,9 +81,9 @@ struct SSE2 {
             /* store result */
             _mm_store_pd(pz, vecz);
             /* move */
-            px += 2;
-            py += 2;
-            pz += 2;
+            px += offset;
+            py += offset;
+            pz += offset;
         }
         return;
     }
@@ -91,7 +97,9 @@ struct SSE2 {
         __m128d vecx;
         __m128d vecy;
         __m128d vecz;
-        for (std::size_t i = 0; i < N/2; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m128d)/sizeof (double);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 2 double into __m128d */
             vecx = _mm_load_pd(px);
             vecy = _mm_load_pd(py);
@@ -100,9 +108,9 @@ struct SSE2 {
             /* store result */
             _mm_store_pd(pz, vecz);
             /* move */
-            px += 2;
-            py += 2;
-            pz += 2;
+            px += offset;
+            py += offset;
+            pz += offset;
         }
         return;
     }
@@ -116,7 +124,9 @@ struct SSE2 {
         __m128 vecx;
         __m128 vecy;
         __m128 vecz;
-        for (std::size_t i = 0; i < N/2; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m128)/sizeof (float);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 2 float into __m128 */
             vecx = _mm_loadu_ps(px);
             vecy = _mm_loadu_ps(py);
@@ -125,9 +135,9 @@ struct SSE2 {
             /* store result */
             _mm_storeu_ps(pz, vecz);
             /* move */
-            px += 2;
-            py += 2;
-            pz += 2;
+            px += offset;
+            py += offset;
+            pz += offset;
         }
         return;
     }
@@ -141,7 +151,9 @@ struct SSE2 {
         __m128 vecx;
         __m128 vecy;
         __m128 vecz;
-        for (std::size_t i = 0; i < N/2; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m128)/sizeof (float);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 2 float into __m128 */
             vecx = _mm_loadu_ps(px);
             vecy = _mm_loadu_ps(py);
@@ -150,9 +162,9 @@ struct SSE2 {
             /* store result */
             _mm_storeu_ps(pz, vecz);
             /* move */
-            px += 2;
-            py += 2;
-            pz += 2;
+            px += offset;
+            py += offset;
+            pz += offset;
         }
         return;
     }
@@ -166,7 +178,9 @@ struct SSE2 {
         __m128 vecx;
         __m128 vecy;
         __m128 vecz;
-        for (std::size_t i = 0; i < N/2; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m128)/sizeof (float);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 2 float into __m128 */
             vecx = _mm_loadu_ps(px);
             vecy = _mm_loadu_ps(py);
@@ -175,9 +189,9 @@ struct SSE2 {
             /* store result */
             _mm_storeu_ps(pz, vecz);
             /* move */
-            px += 2;
-            py += 2;
-            pz += 2;
+            px += offset;
+            py += offset;
+            pz += offset;
         }
         return;
     }
@@ -191,7 +205,9 @@ struct SSE2 {
         __m128 vecx;
         __m128 vecy;
         __m128 vecz;
-        for (std::size_t i = 0; i < N/2; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m128)/sizeof (float);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 2 float into __m128 */
             vecx = _mm_loadu_ps(px);
             vecy = _mm_loadu_ps(py);
@@ -200,9 +216,65 @@ struct SSE2 {
             /* store result */
             _mm_storeu_ps(pz, vecz);
             /* move */
-            px += 2;
-            py += 2;
-            pz += 2;
+            px += offset;
+            py += offset;
+            pz += offset;
+        }
+        return;
+    }
+
+    inline static void matMul2(double *z, std::size_t zRow, std::size_t zCol,
+                               double *x, std::size_t xRow, std::size_t xCol,
+                               double *y, std::size_t yRow, std::size_t yCol)
+    {
+        double *x_ = x;
+        double *y_ = y;
+        double *z_ = z;
+        for (std::size_t i = 0; i < zRow; i++) {
+            for (std::size_t k = 0; k < xCol; k++) {
+                double xik = x_[i*xCol + k];
+                __m128d vecx = _mm_set1_pd(xik);
+                std::size_t j = 0;
+                for (; j < zCol - 1; j+=2) {
+                    __m128d vecy = _mm_loadu_pd(y_ + k*yCol + j);
+                    __m128d vecz = _mm_loadu_pd(z_ + i*xCol + j);
+                    /* _mm256_fmadd_ps(a, b, c): a*b + c */
+                    vecz = _mm_fmadd_pd(vecx, vecy, vecz);
+                    /* store result */
+                    _mm_store_pd(z_ + i*xCol + j, vecz);
+                }
+                for (; j < zCol; j++) {
+                    z_[i*zCol + j] += xik * y_[k*yCol + j];
+                }
+            }
+        }
+        return;
+    }
+
+    inline static void matMul4(float *z, std::size_t zRow, std::size_t zCol,
+                               float *x, std::size_t xRow, std::size_t xCol,
+                               float *y, std::size_t yRow, std::size_t yCol)
+    {
+        float *x_ = x;
+        float *y_ = y;
+        float *z_ = z;
+        for (std::size_t i = 0; i < zRow; i++) {
+            for (std::size_t k = 0; k < xCol; k++) {
+                float xik = x_[i*xCol + k];
+                __m128 vecx = _mm_set1_ps(xik);
+                std::size_t j = 0;
+                for (; j < zCol - 3; j+=4) {
+                    __m128 vecy = _mm_loadu_ps(y_ + k*yCol + j);
+                    __m128 vecz = _mm_loadu_ps(z_ + i*xCol + j);
+                    /* _mm_fmadd_ps(a, b, c): a*b + c */
+                    vecz = _mm_fmadd_ps(vecx, vecy, vecz);
+                    /* store result */
+                    _mm_store_ps(z_ + i*xCol + j, vecz);
+                }
+                for (; j < zCol; j++) {
+                    z_[i*zCol + j] += xik * y_[k*yCol + j];
+                }
+            }
         }
         return;
     }
@@ -227,7 +299,9 @@ struct AVX2 {
         __m256d vecx;
         __m256d vecy;
         __m256d vecz;
-        for (std::size_t i = 0; i < N/4; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m256d)/sizeof (double);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 4 double into __m256d */
             vecx = _mm256_load_pd(px);
             vecy = _mm256_load_pd(py);
@@ -236,9 +310,9 @@ struct AVX2 {
             /* store result */
             _mm256_store_pd(pz, vecz);
             /* move */
-            px += 4;
-            py += 4;
-            pz += 4;
+            px += offset;
+            py += offset;
+            pz += offset;
         }
         return;
     }
@@ -252,7 +326,9 @@ struct AVX2 {
         __m256d vecx;
         __m256d vecy;
         __m256d vecz;
-        for (std::size_t i = 0; i < N/4; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m256d)/sizeof (double);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 4 double into __m256d */
             vecx = _mm256_load_pd(px);
             vecy = _mm256_load_pd(py);
@@ -261,9 +337,9 @@ struct AVX2 {
             /* store result */
             _mm256_store_pd(pz, vecz);
             /* move */
-            px += 4;
-            py += 4;
-            pz += 4;
+            px += offset;
+            py += offset;
+            pz += offset;
         }
         return;
     }
@@ -277,7 +353,9 @@ struct AVX2 {
         __m256d vecx;
         __m256d vecy;
         __m256d vecz;
-        for (std::size_t i = 0; i < N/4; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m256d)/sizeof (double);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 4 double into __m256d */
             vecx = _mm256_load_pd(px);
             vecy = _mm256_load_pd(py);
@@ -286,9 +364,9 @@ struct AVX2 {
             /* store result */
             _mm256_store_pd(pz, vecz);
             /* move */
-            px += 4;
-            py += 4;
-            pz += 4;
+            px += offset;
+            py += offset;
+            pz += offset;
         }
         return;
     }
@@ -302,7 +380,9 @@ struct AVX2 {
         __m256d vecx;
         __m256d vecy;
         __m256d vecz;
-        for (std::size_t i = 0; i < N/4; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m256d)/sizeof (double);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 4 double into __m256d */
             vecx = _mm256_load_pd(px);
             vecy = _mm256_load_pd(py);
@@ -311,9 +391,9 @@ struct AVX2 {
             /* store result */
             _mm256_store_pd(pz, vecz);
             /* move */
-            px += 4;
-            py += 4;
-            pz += 4;
+            px += offset;
+            py += offset;
+            pz += offset;
         }
         return;
     }
@@ -327,7 +407,9 @@ struct AVX2 {
         __m256 vecx;
         __m256 vecy;
         __m256 vecz;
-        for (std::size_t i = 0; i < N/4; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m256)/sizeof (float);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 4 float into __m256 */
             vecx = _mm256_loadu_ps(px);
             vecy = _mm256_loadu_ps(py);
@@ -336,9 +418,9 @@ struct AVX2 {
             /* store result */
             _mm256_storeu_ps(pz, vecz);
             /* move */
-            px += 4;
-            py += 4;
-            pz += 4;
+            px += offset;
+            py += offset;
+            pz += offset;
         }
     }
 
@@ -351,7 +433,9 @@ struct AVX2 {
         __m256 vecx;
         __m256 vecy;
         __m256 vecz;
-        for (std::size_t i = 0; i < N/4; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m256)/sizeof (float);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 4 float into __m256 */
             vecx = _mm256_loadu_ps(px);
             vecy = _mm256_loadu_ps(py);
@@ -360,9 +444,9 @@ struct AVX2 {
             /* store result */
             _mm256_storeu_ps(pz, vecz);
             /* move */
-            px += 4;
-            py += 4;
-            pz += 4;
+            px += offset;
+            py += offset;
+            pz += offset;
         }
     }
 
@@ -375,7 +459,9 @@ struct AVX2 {
         __m256 vecx;
         __m256 vecy;
         __m256 vecz;
-        for (std::size_t i = 0; i < N/4; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m256)/sizeof (float);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 4 float into __m256 */
             vecx = _mm256_loadu_ps(px);
             vecy = _mm256_loadu_ps(py);
@@ -384,9 +470,9 @@ struct AVX2 {
             /* store result */
             _mm256_storeu_ps(pz, vecz);
             /* move */
-            px += 4;
-            py += 4;
-            pz += 4;
+            px += offset;
+            py += offset;
+            pz += offset;
         }
     }
 
@@ -399,7 +485,9 @@ struct AVX2 {
         __m256 vecx;
         __m256 vecy;
         __m256 vecz;
-        for (std::size_t i = 0; i < N/4; i++) {
+        /* offset */
+        std::size_t offset = sizeof (__m256)/sizeof (float);
+        for (std::size_t i = 0; i < N/offset; i++) {
             /* put 4 float into __m256 */
             vecx = _mm256_loadu_ps(px);
             vecy = _mm256_loadu_ps(py);
@@ -408,9 +496,69 @@ struct AVX2 {
             /* store result */
             _mm256_storeu_ps(pz, vecz);
             /* move */
-            px += 4;
-            py += 4;
-            pz += 4;
+            px += offset;
+            py += offset;
+            pz += offset;
+        }
+        return;
+    }
+
+    inline static void matMul4(double *z, std::size_t zRow, std::size_t zCol,
+                               double *x, std::size_t xRow, std::size_t xCol,
+                               double *y, std::size_t yRow, std::size_t yCol)
+    {
+        double *x_ = x;
+        double *y_ = y;
+        double *z_ = z;
+        for (std::size_t i = 0; i < zRow; i++) {
+            for (std::size_t k = 0; k < xCol; k++) {
+                double xik = x_[i*xCol + k];
+                __m256d vecx = _mm256_set1_pd(xik);
+                std::size_t j = 0;
+                for (; j < zCol - 3; j+=4) {
+                    __m256d vecy = _mm256_loadu_pd(y_ + k*yCol + j);
+                    __m256d vecz = _mm256_loadu_pd(z_ + i*xCol + j);
+                    /* _mm256_fmadd_ps(a, b, c): a*b + c */
+                    vecz = _mm256_fmadd_pd(vecx, vecy, vecz);
+                    /* store result */
+                    _mm256_store_pd(z_ + i*xCol + j, vecz);
+                }
+                for (; j < zCol; j++) {
+                    z_[i*zCol + j] += xik * y_[k*yCol + j];
+                }
+            }
+        }
+        return;
+    }
+
+    inline static void matMul8(float *z, std::size_t zRow, std::size_t zCol,
+                               float *x, std::size_t xRow, std::size_t xCol,
+                               float *y, std::size_t yRow, std::size_t yCol)
+    {
+        /*
+            origin:
+                https://blog.csdn.net/StandCrow/article/details/120206063
+        */
+        float *x_ = x;
+        float *y_ = y;
+        float *z_ = z;
+        for (std::size_t i = 0; i < zRow; i++) {
+            for (std::size_t k = 0; k < xCol; k++) {
+                float xik = x_[i*xCol + k];
+                __m256 vecx = _mm256_set1_ps(xik);
+                std::size_t j = 0;
+                for (; j < zCol - 7; j+=8) {
+                    __m256 vecy = _mm256_loadu_ps(y_ + k*yCol + j);
+                    __m256 vecz = _mm256_loadu_ps(z_ + i*xCol + j);
+                    /* _mm256_fmadd_ps(a, b, c): a*b + c */
+                    vecz = _mm256_fmadd_ps(vecx, vecy, vecz);
+                    /* store result */
+                    _mm256_store_ps(z_ + i*xCol + j, vecz);
+                }
+                for (; j < zCol; j++) {
+                    z_[i*zCol + j] += xik * y_[k*yCol + j];
+                }
+            }
         }
         return;
     }
