@@ -5,6 +5,14 @@ fun with cpp
 - gmm
 - svm
 - lr
+- BPNET
+- expression template
+- matrix
+- tensor
+- basic linear algerbra (LU, QR, SVD, PCA, det)
+- complex number
+- simd (support SSE2, AVX2)
+
 ## dataset
 - https://www.kaggle.com/datasets/harrywang/wine-dataset-for-clustering
 

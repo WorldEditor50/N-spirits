@@ -13,6 +13,7 @@
 #include "svm.h"
 #include "gmm.h"
 #include "simd.hpp"
+#include "avx2wrapper.hpp"
 #include "net/net.h"
 #include "../net/optimizer.h"
 #include "../net/layer.h"
@@ -518,9 +519,10 @@ void test_simd_matmul()
     std::cout<<"__m128d/double:"<<sizeof (__m128d)/sizeof (double)<<std::endl;
     std::cout<<"__m256/float:"<<sizeof (__m256)/sizeof (float)<<std::endl;
     std::cout<<"__m256d/double:"<<sizeof (__m256d)/sizeof (double)<<std::endl;
-    Tensor x(512, 512);
-    Tensor x1(512, 512);
-    Tensor x2(512, 512);
+    int s = 2000;
+    Tensor x(s, s);
+    Tensor x1(s, s);
+    Tensor x2(s, s);
     Utils::uniform(x1, -9, 9);
     Utils::uniform(x2, -9, 9);
     /* simd matmul */
@@ -529,19 +531,44 @@ void test_simd_matmul()
     float* x2Ptr = x2.ptr();
     {
         auto t1 = Clock::tiktok();
-        simd::AVX2::matMul8(xPtr, x.shape[0], x.shape[1],
-                            x1Ptr, x1.shape[0], x1.shape[1],
-                            x2Ptr, x2.shape[0], x2.shape[1]);
+        simd::AVX2::matMul(xPtr, x.shape[0], x.shape[1],
+                           x1Ptr, x1.shape[0], x1.shape[1],
+                           x2Ptr, x2.shape[0], x2.shape[1]);
         auto t2 = Clock::tiktok();
         double cost = Clock::duration(t2, t1);
-        std::cout<<"simd matmul cost:"<<cost<<"s"<<std::endl;
+        std::cout<<"simd matmul8 cost:"<<cost<<"s"<<std::endl;
+        //x.printValue();
     }
-    //x.printValue();
-    /* matmul */
-    x.zero();
+
     {
+        x.zero();
         auto t1 = Clock::tiktok();
-        Tensor::MatOp::ikkj(x, x1, x2);
+        simd::AVX2::matMul64(xPtr, x.shape[0], x.shape[1],
+                             x1Ptr, x1.shape[0], x1.shape[1],
+                             x2Ptr, x2.shape[0], x2.shape[1]);
+        auto t2 = Clock::tiktok();
+        double cost = Clock::duration(t2, t1);
+        std::cout<<"simd matmul32 cost:"<<cost<<"s"<<std::endl;
+        //x.printValue();
+    }
+
+    {
+        x.zero();
+        auto t1 = Clock::tiktok();
+        wrap::AVX2<float>::matMul(xPtr, x.shape[0], x.shape[1],
+                                  x1Ptr, x1.shape[0], x1.shape[1],
+                                  x2Ptr, x2.shape[0], x2.shape[1]);
+        auto t2 = Clock::tiktok();
+        double cost = Clock::duration(t2, t1);
+        std::cout<<"avx2 wrapper matmul cost:"<<cost<<"s"<<std::endl;
+        //x.printValue();
+    }
+    return;
+    /* matmul */
+    {
+        x.zero();
+        auto t1 = Clock::tiktok();
+        Tensor::Mat::ikkj(x, x1, x2);
         auto t2 = Clock::tiktok();
         double cost = Clock::duration(t2, t1);
         std::cout<<"matmul cost:"<<cost<<"s"<<std::endl;
@@ -561,6 +588,59 @@ void test_simd()
     Tensor x1(100, 100);
     x1.fill(1.0);
     std::cout<<"sum:"<<simd::AVX2::sum(x1.ptr(), x1.totalSize)<<std::endl;
+    /* mean, variance */
+    {
+        Tensorsi_<float, simd::AVX2> x1(512, 512);
+        Utils::uniform(x1, -1, 1);
+        float u = x1.mean();
+        auto t1 = Clock::tiktok();
+        float sigma = x1.variance(u);
+        auto t2 = Clock::tiktok();
+        double cost = Clock::duration(t2, t1);
+        std::cout<<"cost time:"<<cost<<std::endl;
+        std::cout<<"u:"<<u<<" sigma:"<<sigma<<std::endl;
+    }
+    /* exp */
+    {
+        Tensor y1(100);
+        x.fill(3);
+        simd::AVX2::exp(y1.ptr(), x.ptr(), x.totalSize);
+        std::cout<<"simd exp:"<<std::endl;
+        y1.printValue();
+        std::cout<<"cmath exp:"<<std::endl;
+        Tensor y2(100);
+        Utils::exp(x, y2);
+        y2.printValue();
+    }
+    return;
+}
+
+void test_simd_transpose()
+{
+    /* not work */
+    {
+        Tensor_<double> x(8, 8);
+        Tensor_<double> y(8, 8);
+        Utils::uniform(x, 0, 9);
+        simd::AVX2::transpose(y.ptr(), 8, 8,
+                              x.ptr(), 8, 8);
+        Tensor_<double>::Mat::print(x);
+        std::cout<<"transpose:"<<std::endl;
+        Tensor_<double> x1 = x.tr();
+        Tensor_<double>::Mat::print(x1);
+        std::cout<<"simd transpose:"<<std::endl;
+        Tensor_<double>::Mat::print(y);
+    } 
+    {
+        Tensor x(16, 16);
+        Tensor y(16, 16);
+        Utils::uniform(x, 0, 9);
+        simd::AVX2::transpose(y.ptr(), 16, 16,
+                              x.ptr(), 16, 16);
+        Tensor::Mat::print(x);
+        std::cout<<"simd transpose:"<<std::endl;
+        Tensor::Mat::print(y);
+    }
     return;
 }
 
@@ -575,10 +655,12 @@ int main()
     test_kmeans();
     test_conv();
     test_permute();
+    test_bpnn();
+    test_simd_matmul();
 #endif
     //test_lenet5();
-    //test_bpnn();
+    //test_simd();
     test_simd_matmul();
-    test_simd();
+
     return 0;
 }

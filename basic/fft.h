@@ -57,16 +57,16 @@ namespace FFT {
     {
         for (int i = 0; i < src.shape[0]; i++) {
             CTensor row(1, src.shape[1]);
-            CTensor::MatOp::row(src, i, row);
+            CTensor::Mat::row(src, i, row);
             transform1D(row, opt);
-            CTensor::MatOp::setRow(dst, i, row);
+            CTensor::Mat::setRow(dst, i, row);
         }
 
         for (int i = 0; i < src.shape[1]; i++) {
             CTensor column(src.shape[0], 1);
-            CTensor::MatOp::row(src, i, column);
+            CTensor::Mat::row(src, i, column);
             transform1D(column, opt);
-            CTensor::MatOp::setColumn(dst, i, column);
+            CTensor::Mat::setColumn(dst, i, column);
         }
         return;
     }

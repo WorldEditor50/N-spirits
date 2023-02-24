@@ -163,12 +163,12 @@ public:
         {
             State delta(hiddenDim, outputDim);
             /* delta = W^T * E */
-            Tensor::MatOp::kikj(delta.h, lstm.W, loss);
+            Tensor::Mat::kikj(delta.h, lstm.W, loss);
             /* delta = U * delta_ */
-            Tensor::MatOp::ikkj(delta.h, lstm.Uf, sdelta.i);
-            Tensor::MatOp::ikkj(delta.h, lstm.Ui, sdelta.f);
-            Tensor::MatOp::ikkj(delta.h, lstm.Ug, sdelta.g);
-            Tensor::MatOp::ikkj(delta.h, lstm.Uo, sdelta.o);
+            Tensor::Mat::ikkj(delta.h, lstm.Uf, sdelta.i);
+            Tensor::Mat::ikkj(delta.h, lstm.Ui, sdelta.f);
+            Tensor::Mat::ikkj(delta.h, lstm.Ug, sdelta.g);
+            Tensor::Mat::ikkj(delta.h, lstm.Uo, sdelta.o);
             /*
                 δht = E + δht+1
                 δct = δht ⊙ ot ⊙ dtanh(ct) + δct+1 ⊙ ft+1
@@ -194,18 +194,18 @@ public:
                 h: (hiddenDim, 1)
                 dw = E * h^T
             */
-            Tensor::MatOp::ikjk(d.W, loss, states[t].h);
-            Tensor::MatOp::ikjk(d.B, loss, states[t].y);
+            Tensor::Mat::ikjk(d.W, loss, states[t].h);
+            Tensor::Mat::ikjk(d.B, loss, states[t].y);
             /*
                 dw:    (hiddenDim, inputDim)
                 delta: (hiddenDim, 1)
                 x:     (inputDim, 1)
                 dw = delta * x^T
             */
-            Tensor::MatOp::ikjk(d.Wi, delta.i, x);
-            Tensor::MatOp::ikjk(d.Wf, delta.f, x);
-            Tensor::MatOp::ikjk(d.Wg, delta.g, x);
-            Tensor::MatOp::ikjk(d.Wo, delta.o, x);
+            Tensor::Mat::ikjk(d.Wi, delta.i, x);
+            Tensor::Mat::ikjk(d.Wf, delta.f, x);
+            Tensor::Mat::ikjk(d.Wg, delta.g, x);
+            Tensor::Mat::ikjk(d.Wo, delta.o, x);
 
             /*
                 du:    (hiddenDim, hiddenDim)
@@ -214,10 +214,10 @@ public:
                 du = delta * _h^T
             */
             Tensor _h = t > 0 ? states[t - 1].h : Tensor(hiddenDim, 1);
-            Tensor::MatOp::ikjk(d.Ui, delta.i, _h);
-            Tensor::MatOp::ikjk(d.Uf, delta.f, _h);
-            Tensor::MatOp::ikjk(d.Ug, delta.g, _h);
-            Tensor::MatOp::ikjk(d.Uo, delta.o, _h);
+            Tensor::Mat::ikjk(d.Ui, delta.i, _h);
+            Tensor::Mat::ikjk(d.Uf, delta.f, _h);
+            Tensor::Mat::ikjk(d.Ug, delta.g, _h);
+            Tensor::Mat::ikjk(d.Uo, delta.o, _h);
 
             d.Bi += delta.i;
             d.Bf += delta.f;
@@ -355,15 +355,15 @@ public:
         */
         State state(hiddenDim, outputDim);
 
-        Tensor::MatOp::ikkj(state.f, Wf, x);
-        Tensor::MatOp::ikkj(state.i, Wi, x);
-        Tensor::MatOp::ikkj(state.g, Wg, x);
-        Tensor::MatOp::ikkj(state.o, Wo, x);
+        Tensor::Mat::ikkj(state.f, Wf, x);
+        Tensor::Mat::ikkj(state.i, Wi, x);
+        Tensor::Mat::ikkj(state.g, Wg, x);
+        Tensor::Mat::ikkj(state.o, Wo, x);
 
-        Tensor::MatOp::ikkj(state.f, Uf, _h);
-        Tensor::MatOp::ikkj(state.i, Ui, _h);
-        Tensor::MatOp::ikkj(state.g, Ug, _h);
-        Tensor::MatOp::ikkj(state.o, Uo, _h);
+        Tensor::Mat::ikkj(state.f, Uf, _h);
+        Tensor::Mat::ikkj(state.i, Ui, _h);
+        Tensor::Mat::ikkj(state.g, Ug, _h);
+        Tensor::Mat::ikkj(state.o, Uo, _h);
 
         for (std::size_t i = 0; i < state.f.totalSize; i++) {
             state.f[i] = Sigmoid::f(state.f[i] + Bf[i]);
@@ -374,7 +374,7 @@ public:
             state.h[i] = state.o[i] * Tanh::f(state.c[i]);
         }
 
-        Tensor::MatOp::ikkj(state.y, W, state.h);
+        Tensor::Mat::ikkj(state.y, W, state.h);
         state.y += B;
         return state;
     }

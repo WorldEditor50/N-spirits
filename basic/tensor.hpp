@@ -41,7 +41,7 @@ public:
         val = std::vector<T>(totalSize, 0);
     }
 
-    explicit Tensor_(const std::vector<int> &shape_, const std::initializer_list<T> &val_):
+    explicit Tensor_(const std::vector<int> &shape_, const std::vector<T> &val_):
         totalSize(1),shape(shape_),val(val_)
     {
         initParams(shape, sizes, totalSize);
@@ -578,7 +578,7 @@ public:
         return y;
     }
     /* matrix operation */
-    struct MatOp {
+    struct Mat {
         static void ikkj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
             for (std::size_t i = 0; i < x.shape[0]; i++) {
@@ -595,8 +595,9 @@ public:
         {
             /* transpose x1 */
             for (std::size_t i = 0; i < x.shape[0]; i++) {
-                for (std::size_t j = 0; j < x.shape[1]; j++) {
-                    for (std::size_t k = 0; k < x1.shape[0]; k++) {
+                for (std::size_t k = 0; k < x1.shape[0]; k++) {
+                    for (std::size_t j = 0; j < x.shape[1]; j++) {
+
                         /* (i, j) = (k, i)^T * (k, j)^T */
                         x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i]*x2.val[k*x2.shape[1] + j];
                     }
@@ -608,8 +609,8 @@ public:
         {
             /* transpose x2 */
             for (std::size_t i = 0; i < x.shape[0]; i++) {
-                for (std::size_t j = 0; j < x.shape[1]; j++) {
-                    for (std::size_t k = 0; k < x1.shape[1]; k++) {
+                for (std::size_t k = 0; k < x1.shape[1]; k++) {
+                    for (std::size_t j = 0; j < x.shape[1]; j++) {
                         /* (i, j) = (i, k) * (j, k)^T */
                         x.val[i*x.shape[1] + j] += x1.val[i*x1.shape[1] + k]*x2.val[j*x2.shape[1] + k];
                     }
@@ -621,8 +622,8 @@ public:
         {
             /* transpose x1, x2 */
             for (std::size_t i = 0; i < x.shape[0]; i++) {
-                for (std::size_t j = 0; j < x.shape[1]; j++) {
-                    for (std::size_t k = 0; k < x1.shape[0]; k++) {
+                for (std::size_t k = 0; k < x1.shape[0]; k++) {
+                    for (std::size_t j = 0; j < x.shape[1]; j++) {
                         /* (i, j) = (k, i)^T * (j, k)^T */
                         x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i] * x2.val[j*x2.shape[1] + k];
                     }
@@ -689,6 +690,21 @@ public:
             }
             return;
         }
+
+        static void print(const Tensor_ &x)
+        {
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t j = 0; j < x.shape[1]; j++) {
+                    std::cout<<x.val[i*x.shape[1] + j];
+                    if (i < x.totalSize - 1) {
+                        std::cout<<",";
+                    }
+                }
+                std::cout<<std::endl;
+            }
+            std::cout<<std::endl;
+            return;
+        }
     };
     /* tensor product */
     static Tensor_ product2D(const Tensor_& x1, const Tensor_& x2)
@@ -748,6 +764,176 @@ public:
 
 };
 
+template<typename T ,  typename Simd>
+class Tensorsi_ : public Tensor_<T>
+{
+public:
+    using instruct = Simd;
+    using Tensor_<T>::totalSize;
+    using Tensor_<T>::val;
+    using Tensor_<T>::shape;
+public:
+    Tensorsi_(){}
+    /* contruct with shape */
+    explicit Tensorsi_(const std::vector<int> &shape_)
+        :Tensor_<T>(shape_){}
+    explicit Tensorsi_(const std::vector<int> &shape_, const std::vector<T> &val_)
+        :Tensor_<T>(shape_, val_){}
+    explicit Tensorsi_(const std::initializer_list<int> &shape_, const std::initializer_list<T> &val_)
+        :Tensor_<T>(shape_, val_){}
+    /* construct with shape */
+    template<typename ...Dim>
+    explicit Tensorsi_(Dim ...dim):Tensor_<T>(dim...){}
+    /* operator */
+    Tensorsi_ operator +(const Tensorsi_ &x) const
+    {
+        Tensorsi_ y(shape);
+        if (x.totalSize < instruct::step) {
+            return Tensor_<T>::operator+(x);
+        }
+        instruct::add(y.ptr(), ptr(), x.ptr(), totalSize);
+        return y;
+    }
+
+    Tensorsi_ operator -(const Tensorsi_ &x) const
+    {
+        Tensorsi_ y(shape);
+        if (x.totalSize < instruct::step) {
+            return Tensor_<T>::operator-(x);
+        }
+        instruct::sub(y.ptr(), ptr(), x.ptr(), totalSize);
+        return y;
+    }
+
+    Tensorsi_ operator *(const Tensorsi_ &x) const
+    {
+        Tensorsi_ y(shape);
+        if (x.totalSize < instruct::step) {
+            return Tensor_<T>::operator*(x);
+        }
+        instruct::mul(y.ptr(), ptr(), x.ptr(), totalSize);
+        return y;
+    }
+
+    Tensorsi_ operator /(const Tensorsi_ &x) const
+    {
+        Tensorsi_ y(shape);
+        if (x.totalSize < instruct::step) {
+            return Tensor_<T>::operator/(x);
+        }
+        instruct::div(y.ptr(), ptr(), x.ptr(), totalSize);
+        return y;
+    }
+
+    Tensorsi_ operator +(T x) const
+    {
+        Tensorsi_ y(shape);
+        if (x.totalSize < instruct::step) {
+            return Tensor_<T>::operator+(x);
+        }
+        instruct::add(y.ptr(), ptr(), x, totalSize);
+        return y;
+    }
+
+    Tensorsi_ operator -(T x) const
+    {
+        Tensorsi_ y(shape);
+        if (x.totalSize < instruct::step) {
+            return Tensor_<T>::operator-(x);
+        }
+        instruct::sub(y.ptr(), ptr(), x, totalSize);
+        return y;
+    }
+
+    Tensorsi_ operator *(T x) const
+    {
+        Tensorsi_ y(shape);
+        if (x.totalSize < instruct::step) {
+            return Tensor_<T>::operator*(x);
+        }
+        instruct::mul(y.ptr(), ptr(), x, totalSize);
+        return y;
+    }
+
+    Tensorsi_ operator /(T x) const
+    {
+        Tensorsi_ y(shape);
+        if (x.totalSize < instruct::step) {
+            return Tensor_<T>::operator*(x);
+        }
+        instruct::div(y.ptr(), ptr(), x, totalSize);
+        return y;
+    }
+
+    /* statistics */
+    T sum() const { return instruct::sum(ptr(), totalSize);
+    }
+
+    T mean() const
+    {
+        T s = sum();
+        return s/T(totalSize);
+    }
+
+    T variance(T u) const { return instruct::variance(ptr(), u, totalSize); }
+
+    T max() const { return instruct::max(ptr(), totalSize); }
+
+    T min() const { return instruct::min(ptr(), totalSize); }
+
+    /* matrix operation */
+    struct MatMul {
+        static void ikkj(Tensorsi_ &x, const Tensorsi_ &x1, const Tensorsi_ &x2)
+        {
+            instruct::matMul(x.ptr(), x.shape[0], x.shape[1],
+                          x1.ptr(), x1.shape[0], x1.shape[1],
+                          x2.ptr(), x2.shape[0], x2.shape[1]);
+            return;
+        }
+        static void kikj(Tensorsi_ &x, const Tensorsi_ &x1, const Tensorsi_ &x2)
+        {
+            /* transpose x1 */
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t k = 0; k < x1.shape[0]; k++) {
+                    for (std::size_t j = 0; j < x.shape[1]; j++) {
+
+                        /* (i, j) = (k, i)^T * (k, j)^T */
+                        x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i]*x2.val[k*x2.shape[1] + j];
+                    }
+                }
+            }
+            return;
+        }
+        static void ikjk(Tensorsi_ &x, const Tensorsi_ &x1, const Tensorsi_ &x2)
+        {
+            /* transpose x2 */
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t k = 0; k < x1.shape[1]; k++) {
+                    for (std::size_t j = 0; j < x.shape[1]; j++) {
+                        /* (i, j) = (i, k) * (j, k)^T */
+                        x.val[i*x.shape[1] + j] += x1.val[i*x1.shape[1] + k]*x2.val[j*x2.shape[1] + k];
+                    }
+                }
+            }
+            return;
+        }
+        static void kijk(Tensorsi_ &x, const Tensorsi_ &x1, const Tensorsi_ &x2)
+        {
+            /* transpose x1, x2 */
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t k = 0; k < x1.shape[0]; k++) {
+                    for (std::size_t j = 0; j < x.shape[1]; j++) {
+                        /* (i, j) = (k, i)^T * (j, k)^T */
+                        x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i] * x2.val[j*x2.shape[1] + k];
+                    }
+                }
+            }
+            return;
+        }
+
+    };
+
+};
 
 using Tensori = Tensor_<int>;
 using Tensor = Tensor_<float>;
