@@ -27,6 +27,30 @@ struct SSE2 {
         constexpr static std::size_t value = sizeof (__m128)/sizeof (float);
     };
 
+
+    inline static double reduce(const double * const adr)
+    {
+        double s;
+        __m128d low = _mm_loadu_pd(&adr[0]);
+        __m128d high = _mm_loadu_pd(&adr[2]);
+        __m128d hsum = _mm_add_pd(low, high);
+        hsum = _mm_hadd_pd(hsum, hsum);
+        _mm_store_sd(&s, hsum);
+        return s;
+    }
+
+    inline static float reduce(const float * const adr)
+    {
+        float s;
+        __m128 low = _mm_loadu_ps(&adr[0]);
+        __m128 high = _mm_loadu_ps(&adr[4]);
+        __m128 hsum = _mm_add_ps(low, high);
+        hsum = _mm_hadd_ps(hsum, hsum);
+        hsum = _mm_hadd_ps(hsum, hsum);
+        _mm_store_ss(&s, hsum);
+        return s;
+    }
+
     inline static void add(double* __restrict z, const double* __restrict y, const double* __restrict x, std::size_t N)
     {
         const double *px = x;

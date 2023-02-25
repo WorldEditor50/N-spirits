@@ -519,7 +519,7 @@ void test_simd_matmul()
     std::cout<<"__m128d/double:"<<sizeof (__m128d)/sizeof (double)<<std::endl;
     std::cout<<"__m256/float:"<<sizeof (__m256)/sizeof (float)<<std::endl;
     std::cout<<"__m256d/double:"<<sizeof (__m256d)/sizeof (double)<<std::endl;
-    int s = 2000;
+    int s = 2048;
     Tensor x(s, s);
     Tensor x1(s, s);
     Tensor x2(s, s);
@@ -529,6 +529,7 @@ void test_simd_matmul()
     float* xPtr = x.ptr();
     float* x1Ptr = x1.ptr();
     float* x2Ptr = x2.ptr();
+    /* 8-channel */
     {
         auto t1 = Clock::tiktok();
         simd::AVX2::matMul(xPtr, x.shape[0], x.shape[1],
@@ -540,6 +541,7 @@ void test_simd_matmul()
         //x.printValue();
     }
 
+    /* 64 channel */
     {
         x.zero();
         auto t1 = Clock::tiktok();
@@ -548,10 +550,11 @@ void test_simd_matmul()
                              x2Ptr, x2.shape[0], x2.shape[1]);
         auto t2 = Clock::tiktok();
         double cost = Clock::duration(t2, t1);
-        std::cout<<"simd matmul32 cost:"<<cost<<"s"<<std::endl;
+        std::cout<<"simd matmul64 cost:"<<cost<<"s"<<std::endl;
         //x.printValue();
     }
 
+    /* 8-channel wrapper */
     {
         x.zero();
         auto t1 = Clock::tiktok();
@@ -563,21 +566,30 @@ void test_simd_matmul()
         std::cout<<"avx2 wrapper matmul cost:"<<cost<<"s"<<std::endl;
         //x.printValue();
     }
-    return;
-    /* matmul */
+    /* trivial matmul */
+    if (false)
     {
         x.zero();
         auto t1 = Clock::tiktok();
         Tensor::Mat::ikkj(x, x1, x2);
         auto t2 = Clock::tiktok();
         double cost = Clock::duration(t2, t1);
-        std::cout<<"matmul cost:"<<cost<<"s"<<std::endl;
+        std::cout<<"trivial matmul cost:"<<cost<<"s"<<std::endl;
+        //x.printValue();
     }
-    //x.printValue();
     return;
 }
 void test_simd()
 {
+    /* horizontal sum */
+    {
+        __m256 x1 = _mm256_setr_ps(1, 1, 1, 1, 1, 1, 1, 1);
+        float s1 = simd::AVX2::reduce(x1);
+        std::cout<<"horizontal sum float = "<<s1<<std::endl;
+        __m256d x2 = _mm256_setr_pd(1, 2, 3, 4);
+        double s2 = simd::AVX2::reduce(x2);
+        std::cout<<"horizontal sum double = "<<s2<<std::endl;
+    }
     /* max */
     Tensor x(100);
     Utils::uniform(x, 0, 100);
@@ -611,6 +623,15 @@ void test_simd()
         Tensor y2(100);
         Utils::exp(x, y2);
         y2.printValue();
+    }
+    /* sqrt */
+    {
+        Tensor x1 = Tensor::ones(16, 16, 16);
+        Tensor x2 = Tensor::ones(16, 16, 16);
+        x1 += x2;
+        Tensor x3 = Tensor::ones(16, 16, 16);
+        simd::AVX2::sqrt(x3.ptr(), x1.ptr(), x1.totalSize);
+        x3.printValue();
     }
     return;
 }
@@ -661,6 +682,5 @@ int main()
     //test_lenet5();
     //test_simd();
     test_simd_matmul();
-
     return 0;
 }

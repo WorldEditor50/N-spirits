@@ -23,6 +23,7 @@ msvc {
     QMAKE_CXXFLAGS += /bigobj
     QMAKE_CFLAGS += /arch:AVX2
     QMAKE_CXXFLAGS += /arch:AVX2
-    QMAKE_CXXFLAGS += /-O3
+    QMAKE_CXXFLAGS_DEBUG += -O3
+    QMAKE_CFLAGS_DEBUG += -O3
 }
 

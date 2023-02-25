@@ -5,31 +5,68 @@
 #include <cmath>
 namespace simd {
 
-/*
-   avx2 on windows:
-        implement command "bcdedit/set xsavedisable 0" and set compiler option: "/arch:AVX2"
-        https://devblogs.microsoft.com/cppblog/avx2-support-in-visual-studio-c-compiler/
-
-   avx2 on linux: sudo apt-get install libmkl-dev libmkl-avx
-
-*/
 
 struct AVX2 {
 
 #if defined(__AVX2__)
 
     template<typename T>
-    struct Unit {
+    struct Step {
         constexpr static std::size_t value = 0;
     };
     template<>
-    struct Unit<double> {
+    struct Step<double> {
         constexpr static std::size_t value = sizeof (__m256d)/sizeof (double);
     };
     template<>
-    struct Unit<float> {
+    struct Step<float> {
         constexpr static std::size_t value = sizeof (__m256)/sizeof (float);
     };
+
+    inline static float reduce(__m256& ymm)
+    {
+        float result[8];
+        ymm = _mm256_hadd_ps(ymm, ymm);
+        ymm = _mm256_hadd_ps(ymm, ymm);
+        _mm256_storeu_ps(result, ymm);
+        return result[0] + result[4];
+    }
+
+    inline static double reduce(__m256d& ymm)
+    {
+        double result[4];
+        ymm = _mm256_hadd_pd(ymm, ymm);
+        _mm256_storeu_pd(result, ymm);
+        return result[0] + result[2];
+    }
+
+    inline static void fill(double* __restrict x, double x0, std::size_t N)
+    {
+        double* px = x;
+        std::size_t r = N%4;
+        __m256d vecx0 = _mm256_setr_pd(x0, x0, x0, x0);
+        for (std::size_t i = 0; i < N - r; i+=4) {
+            _mm256_store_pd(px + i, vecx0);
+        }
+        for (std::size_t i = N - r; i < N; i++) {
+            x[i] = x0;
+        }
+        return;
+    }
+
+    inline static void fill(float* __restrict x, float x0, std::size_t N)
+    {
+        float* px = x;
+        std::size_t r = N%8;
+        __m256 vecx0 = _mm256_setr_ps(x0, x0, x0, x0, x0, x0, x0, x0);
+        for (std::size_t i = 0; i < N - r; i+=8) {
+            _mm256_store_ps(px + i, vecx0);
+        }
+        for (std::size_t i = N - r; i < N; i++) {
+            x[i] = x0;
+        }
+        return;
+    }
 
     inline static void add(double* __restrict z, const double* __restrict y, const double* __restrict x, std::size_t N)
     {
@@ -224,6 +261,167 @@ struct AVX2 {
         return;
     }
 
+    inline static void add(double* __restrict z, const double* __restrict y, double x, std::size_t N)
+    {
+        const double *py = y;
+        double *pz = z;
+        __m256d vecx = _mm256_setr_pd(x, x, x, x);
+        __m256d vecy;
+        __m256d vecz;
+        std::size_t step = 4;
+        std::size_t r = N%step;
+        for (std::size_t i = 0; i < N - r; i+= step) {
+            vecy = _mm256_loadu_pd(py + i);
+            vecz = _mm256_add_pd(vecy, vecx);
+            _mm256_storeu_pd(pz + i, vecz);
+        }
+        for (std::size_t i = N - r; i < N; i++) {
+            z[i] = y[i] + x;
+        }
+        return;
+    }
+
+    inline static void sub(double* __restrict z, const double* __restrict y, double x, std::size_t N)
+    {
+        const double *py = y;
+        double *pz = z;
+        __m256d vecx = _mm256_setr_pd(x, x, x, x);
+        __m256d vecy;
+        __m256d vecz;
+        std::size_t step = 4;
+        std::size_t r = N%step;
+        for (std::size_t i = 0; i < N - r; i+= step) {
+            vecy = _mm256_loadu_pd(py + i);
+            vecz = _mm256_sub_pd(vecy, vecx);
+            _mm256_storeu_pd(pz + i, vecz);
+        }
+        for (std::size_t i = N - r; i < N; i++) {
+            z[i] = y[i] - x;
+        }
+        return;
+    }
+
+    inline static void mul(double* __restrict z, const double* __restrict y, double x, std::size_t N)
+    {
+        const double *py = y;
+        double *pz = z;
+        __m256d vecx = _mm256_setr_pd(x, x, x, x);
+        __m256d vecy;
+        __m256d vecz;
+        std::size_t step = 4;
+        std::size_t r = N%step;
+        for (std::size_t i = 0; i < N - r; i+= step) {
+            vecy = _mm256_loadu_pd(py + i);
+            vecz = _mm256_mul_pd(vecy, vecx);
+            _mm256_storeu_pd(pz + i, vecz);
+        }
+        for (std::size_t i = N - r; i < N; i++) {
+            z[i] = y[i] * x;
+        }
+        return;
+    }
+
+    inline static void div(double* __restrict z, const double* __restrict y, double x, std::size_t N)
+    {
+        const double *py = y;
+        double *pz = z;
+        __m256d vecx = _mm256_setr_pd(x, x, x, x);
+        __m256d vecy;
+        __m256d vecz;
+        std::size_t step = 4;
+        std::size_t r = N%step;
+        for (std::size_t i = 0; i < N - r; i+= step) {
+            vecy = _mm256_loadu_pd(py + i);
+            vecz = _mm256_sub_pd(vecy, vecx);
+            _mm256_storeu_pd(pz + i, vecz);
+        }
+        for (std::size_t i = N - r; i < N; i++) {
+            z[i] = y[i] / x;
+        }
+        return;
+    }
+
+    inline static void add(float* __restrict z, const float* __restrict y, float x, std::size_t N)
+    {
+        const float *py = y;
+        float *pz = z;
+        __m256 vecx = _mm256_setr_ps(x, x, x, x, x, x, x, x);
+        __m256 vecy;
+        __m256 vecz;
+        std::size_t step = 8;
+        std::size_t r = N%step;
+        for (std::size_t i = 0; i < N - r; i+= step) {
+            vecy = _mm256_loadu_ps(py + i);
+            vecz = _mm256_add_ps(vecy, vecx);
+            _mm256_storeu_ps(pz + i, vecz);
+        }
+        for (std::size_t i = N - r; i < N; i++) {
+            z[i] = y[i] + x;
+        }
+        return;
+    }
+
+    inline static void sub(float* __restrict z, const float* __restrict y, float x, std::size_t N)
+    {
+        const float *py = y;
+        float *pz = z;
+        __m256 vecx = _mm256_setr_ps(x, x, x, x, x, x, x, x);
+        __m256 vecy;
+        __m256 vecz;
+        std::size_t step = 8;
+        std::size_t r = N%step;
+        for (std::size_t i = 0; i < N - r; i+= step) {
+            vecy = _mm256_loadu_ps(py + i);
+            vecz = _mm256_sub_ps(vecy, vecx);
+            _mm256_storeu_ps(pz + i, vecz);
+        }
+        for (std::size_t i = N - r; i < N; i++) {
+            z[i] = y[i] - x;
+        }
+        return;
+    }
+
+    inline static void mul(float* __restrict z, const float* __restrict y, float x, std::size_t N)
+    {
+        const float *py = y;
+        float *pz = z;
+        __m256 vecx = _mm256_setr_ps(x, x, x, x, x, x, x, x);
+        __m256 vecy;
+        __m256 vecz;
+        std::size_t step = 8;
+        std::size_t r = N%step;
+        for (std::size_t i = 0; i < N - r; i+= step) {
+            vecy = _mm256_loadu_ps(py + i);
+            vecz = _mm256_mul_ps(vecy, vecx);
+            _mm256_storeu_ps(pz + i, vecz);
+        }
+        for (std::size_t i = N - r; i < N; i++) {
+            z[i] = y[i] * x;
+        }
+        return;
+    }
+
+    inline static void div(float* __restrict z, const float* __restrict y, float x, std::size_t N)
+    {
+        const float *py = y;
+        float *pz = z;
+        __m256 vecx = _mm256_setr_ps(x, x, x, x, x, x, x, x);
+        __m256 vecy;
+        __m256 vecz;
+        std::size_t step = 8;
+        std::size_t r = N%step;
+        for (std::size_t i = 0; i < N - r; i+= step) {
+            vecy = _mm256_loadu_ps(py + i);
+            vecz = _mm256_div_ps(vecy, vecx);
+            _mm256_storeu_ps(pz + i, vecz);
+        }
+        for (std::size_t i = N - r; i < N; i++) {
+            z[i] = y[i] / x;
+        }
+        return;
+    }
+
+
     inline static double max(const double* __restrict x, std::size_t N)
     {
         const double *px = x;
@@ -354,18 +552,13 @@ struct AVX2 {
         const float *px = x;
         /* init */
         std::size_t r = N%8;
-        float result[8] = {0};
         __m256 vecs = _mm256_setzero_ps();
         for (std::size_t i = 0; i < N - r; i+=8) {
             __m256 vecx = _mm256_loadu_ps(px + i);
             vecs = _mm256_add_ps(vecs, vecx);
         }
         /* sum up result */
-        /* _mm256_hadd_ps: horizontal add */
-        vecs = _mm256_hadd_ps(vecs, vecs);
-        vecs = _mm256_hadd_ps(vecs, vecs);
-        _mm256_storeu_ps(result, vecs);
-        float s = result[0] + result[4];
+        float s = reduce(vecs);
         /* sum up the rest elements */
         for (std::size_t i = N - r; i < N; i++) {
             s += px[i];
@@ -471,12 +664,7 @@ struct AVX2 {
             vecy = _mm256_fmadd_pd(vecx1, vecx2, vecy);
         }
         /* sum up result */
-        double results[4] = {0};
-        _mm256_storeu_pd(results, vecy);
-        double s = 0;
-        for (std::size_t i = 0; i < 4; i++) {
-            s += results[i];
-        }
+        double s = reduce(vecy);
         /* dot the rest elements */
         for (std::size_t i = N - r; i < N; i++) {
             s += px1[i]*px2[i];
@@ -500,12 +688,7 @@ struct AVX2 {
             vecy = _mm256_fmadd_ps(vecx1, vecx2, vecy);
         }
         /* sum up result */
-        float results[8] = {0};
-        _mm256_storeu_ps(results, vecy);
-        float s = 0;
-        for (std::size_t i = 0; i < 8; i++) {
-            s += results[i];
-        }
+        float s = reduce(vecy);
         /* dot the rest elements */
         for (std::size_t i = N - r; i < N; i++) {
             s += px1[i]*px2[i];
@@ -529,12 +712,7 @@ struct AVX2 {
             vecy = _mm256_fmadd_pd(vecx, vecx, vecy);
         }
         /* sum up result */
-        double results[4] = {0};
-        _mm256_storeu_pd(results, vecy);
-        double s = 0;
-        for (std::size_t i = 0; i < 4; i++) {
-            s += results[i];
-        }
+        double s = reduce(vecy);
         /* the rest elements */
         for (std::size_t i = N - r; i < N; i++) {
             s += (px1[i] - px2[i])*(px1[i] - px2[i]);
@@ -558,12 +736,7 @@ struct AVX2 {
             vecy = _mm256_fmadd_ps(vecx, vecx, vecy);
         }
         /* sum up result */
-        float results[8] = {0};
-        _mm256_storeu_ps(results, vecy);
-        float s = 0;
-        for (std::size_t i = 0; i < 8; i++) {
-            s += results[i];
-        }
+        float s = reduce(vecy);
         /* the rest elements */
         for (std::size_t i = N - r; i < N; i++) {
             s += (px1[i] - px2[i])*(px1[i] - px2[i]);
@@ -585,12 +758,7 @@ struct AVX2 {
             vecy = _mm256_fmadd_pd(vecx, vecx, vecy);
         }
         /* sum up result */
-        double results[4] = {0};
-        _mm256_storeu_pd(results, vecy);
-        double s = 0;
-        for (std::size_t i = 0; i < 4; i++) {
-            s += results[i];
-        }
+        double s = reduce(vecy);
         /* the rest elements */
         for (std::size_t i = N - r; i < N; i++) {
             s += (px[i] - u)*(px[i] - u);
@@ -612,12 +780,7 @@ struct AVX2 {
             vecy = _mm256_fmadd_ps(vecx, vecx, vecy);
         }
         /* sum up result */
-        float results[8] = {0};
-        _mm256_storeu_ps(results, vecy);
-        float s = 0;
-        for (std::size_t i = 0; i < 8; i++) {
-            s += results[i];
-        }
+        float s = reduce(vecy);
         /* the rest elements */
         for (std::size_t i = N - r; i < N; i++) {
             s += (px[i] - u)*(px[i] - u);
@@ -857,10 +1020,6 @@ struct AVX2 {
         }
         return;
     }
-
-
-
-
 
     inline static void transpose(double* __restrict y, std::size_t yRow, std::size_t yCol,
                                  const double* __restrict x, std::size_t xRow, std::size_t xCol)

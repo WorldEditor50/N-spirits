@@ -253,7 +253,7 @@ public:
     }
 
     template<typename ...Pos>
-    Tensor_ permute(Pos ...p) const
+    inline Tensor_ permute(Pos ...p) const
     {
         /*
             shape: [3, 2, 1]
@@ -764,7 +764,7 @@ public:
 
 };
 
-template<typename T ,  typename Simd>
+template<typename T , typename Simd>
 class Tensorsi_ : public Tensor_<T>
 {
 public:
@@ -772,6 +772,9 @@ public:
     using Tensor_<T>::totalSize;
     using Tensor_<T>::val;
     using Tensor_<T>::shape;
+    using Tensor_<T>::sizes;
+    using Shape = typename Tensor_<T>::Shape;
+    constexpr static std::size_t step = Simd::template Step<T>::value;
 public:
     Tensorsi_(){}
     /* contruct with shape */
@@ -783,12 +786,84 @@ public:
         :Tensor_<T>(shape_, val_){}
     /* construct with shape */
     template<typename ...Dim>
-    explicit Tensorsi_(Dim ...dim):Tensor_<T>(dim...){}
+    explicit Tensorsi_(Dim ...dim)
+        :Tensor_<T>(dim...){}
+    /* copy construct */
+    Tensorsi_(const Tensor_<T> &r)
+        :Tensor_<T> (r){}
+    Tensorsi_(const Tensorsi_ &r)
+        :Tensor_<T>(r.shape, r.val){}
+    /* assign operator */
+    Tensorsi_ &operator=(const Tensorsi_ &r)
+    {
+        if (this == &r) {
+            return *this;
+        }
+        Tensor_<T>::operator=(r);
+        return *this;
+    }
+    Tensorsi_ &operator=(const Tensor_<T> &r)
+    {
+        if (this == &r) {
+            return *this;
+        }
+        Tensor_<T>::operator=(r);
+        return *this;
+    }
+
+    void zero()
+    {
+        if (totalSize < step) {
+            return Tensor_<T>::zero();
+        }
+        instruct::fill(ptr(), 0, totalSize);
+        return;
+    }
+    void fill(T value)
+    {
+        if (totalSize < step) {
+            return Tensor_<T>::fill(value);
+        }
+        instruct::fill(ptr(), value, totalSize);
+        return;
+    }
+
+    static Tensorsi_ zeros(Shape &shape)
+    {
+        Tensorsi_ x(shape);
+        return x;
+    }
+
+    template<typename ...Dim>
+    static Tensorsi_ zeros(Dim ...dim)
+    {
+        Tensorsi_ x(dim...);
+        return x;
+    }
+
+    static Tensorsi_ ones(Shape &shape)
+    {
+        Tensorsi_ x(shape);
+        if (totalSize < step) {
+            return Tensor_<T>::fill(1);
+        }
+        instruct::fill(ptr(), 1, totalSize);
+        return x;
+    }
+
+    template<typename ...Dim>
+    static Tensorsi_ ones(Dim ...dim)
+    {
+        Tensorsi_ x(dim...);
+        instruct::fill(x.ptr(), 1, x.totalSize);
+        return x;
+    }
+
     /* operator */
     Tensorsi_ operator +(const Tensorsi_ &x) const
     {
         Tensorsi_ y(shape);
-        if (x.totalSize < instruct::step) {
+        if (x.totalSize < step) {
             return Tensor_<T>::operator+(x);
         }
         instruct::add(y.ptr(), ptr(), x.ptr(), totalSize);
@@ -798,7 +873,7 @@ public:
     Tensorsi_ operator -(const Tensorsi_ &x) const
     {
         Tensorsi_ y(shape);
-        if (x.totalSize < instruct::step) {
+        if (x.totalSize < step) {
             return Tensor_<T>::operator-(x);
         }
         instruct::sub(y.ptr(), ptr(), x.ptr(), totalSize);
@@ -808,7 +883,7 @@ public:
     Tensorsi_ operator *(const Tensorsi_ &x) const
     {
         Tensorsi_ y(shape);
-        if (x.totalSize < instruct::step) {
+        if (x.totalSize < step) {
             return Tensor_<T>::operator*(x);
         }
         instruct::mul(y.ptr(), ptr(), x.ptr(), totalSize);
@@ -818,7 +893,7 @@ public:
     Tensorsi_ operator /(const Tensorsi_ &x) const
     {
         Tensorsi_ y(shape);
-        if (x.totalSize < instruct::step) {
+        if (totalSize < step) {
             return Tensor_<T>::operator/(x);
         }
         instruct::div(y.ptr(), ptr(), x.ptr(), totalSize);
@@ -828,7 +903,7 @@ public:
     Tensorsi_ operator +(T x) const
     {
         Tensorsi_ y(shape);
-        if (x.totalSize < instruct::step) {
+        if (totalSize < step) {
             return Tensor_<T>::operator+(x);
         }
         instruct::add(y.ptr(), ptr(), x, totalSize);
@@ -838,7 +913,7 @@ public:
     Tensorsi_ operator -(T x) const
     {
         Tensorsi_ y(shape);
-        if (x.totalSize < instruct::step) {
+        if (totalSize < step) {
             return Tensor_<T>::operator-(x);
         }
         instruct::sub(y.ptr(), ptr(), x, totalSize);
@@ -848,7 +923,7 @@ public:
     Tensorsi_ operator *(T x) const
     {
         Tensorsi_ y(shape);
-        if (x.totalSize < instruct::step) {
+        if (totalSize < step) {
             return Tensor_<T>::operator*(x);
         }
         instruct::mul(y.ptr(), ptr(), x, totalSize);
@@ -858,22 +933,96 @@ public:
     Tensorsi_ operator /(T x) const
     {
         Tensorsi_ y(shape);
-        if (x.totalSize < instruct::step) {
-            return Tensor_<T>::operator*(x);
+        if (totalSize < step) {
+            return Tensor_<T>::operator/(x);
         }
         instruct::div(y.ptr(), ptr(), x, totalSize);
         return y;
     }
 
-    /* statistics */
-    T sum() const { return instruct::sum(ptr(), totalSize);
+    Tensorsi_ &operator +=(const Tensorsi_& x)
+    {
+        if (totalSize < step) {
+            Tensor_<T>::operator+=(x);
+            return *this;
+        }
+        instruct::add(ptr(), ptr(), x.ptr(), totalSize);
+        return *this;
     }
 
-    T mean() const
+    Tensorsi_ &operator -=(const Tensorsi_& x)
     {
-        T s = sum();
-        return s/T(totalSize);
+        if (totalSize < step) {
+            Tensor_<T>::operator-=(x);
+            return *this;
+        }
+        instruct::sub(ptr(), ptr(), x.ptr(), totalSize);
+        return *this;
     }
+
+    Tensorsi_ &operator *=(const Tensorsi_& x)
+    {
+        if (totalSize < step) {
+            Tensor_<T>::operator*=(x);
+            return *this;
+        }
+        instruct::mul(ptr(), ptr(), x.ptr(), totalSize);
+        return *this;
+    }
+
+    Tensorsi_ &operator /=(const Tensorsi_& x)
+    {
+        if (totalSize < step) {
+            Tensor_<T>::operator/=(x);
+            return *this;
+        }
+        instruct::div(ptr(), ptr(), x.ptr(), totalSize);
+        return *this;
+    }
+
+    Tensorsi_ &operator +=(T x)
+    {
+        if (totalSize < step) {
+            Tensor_<T>::operator+=(x);
+            return *this;
+        }
+        instruct::add(ptr(), ptr(), x, totalSize);
+        return *this;
+    }
+
+    Tensorsi_ &operator -=(T x)
+    {
+        if (totalSize < step) {
+            Tensor_<T>::operator-=(x);
+            return *this;
+        }
+        instruct::sub(ptr(), ptr(), x, totalSize);
+        return *this;
+    }
+
+    Tensorsi_ &operator *=(T x)
+    {
+        if (totalSize < step) {
+            Tensor_<T>::operator*=(x);
+            return *this;
+        }
+        instruct::mul(ptr(), ptr(), x, totalSize);
+        return *this;
+    }
+
+    Tensorsi_ &operator /=(T x)
+    {
+        if (totalSize < step) {
+            Tensor_<T>::operator/=(x);
+            return *this;
+        }
+        instruct::div(ptr(), ptr(), x, totalSize);
+        return *this;
+    }
+    /* statistics */
+    T sum() const { return instruct::sum(ptr(), totalSize);}
+
+    T mean() const{ return instruct::sum(ptr(), totalSize)/T(totalSize);}
 
     T variance(T u) const { return instruct::variance(ptr(), u, totalSize); }
 
@@ -882,7 +1031,7 @@ public:
     T min() const { return instruct::min(ptr(), totalSize); }
 
     /* matrix operation */
-    struct MatMul {
+    struct Mul {
         static void ikkj(Tensorsi_ &x, const Tensorsi_ &x1, const Tensorsi_ &x2)
         {
             instruct::matMul(x.ptr(), x.shape[0], x.shape[1],
@@ -936,5 +1085,8 @@ public:
 };
 
 using Tensori = Tensor_<int>;
-using Tensor = Tensor_<float>;
+using Tensorf = Tensor_<float>;
+using Tensord = Tensor_<double>;
+using Tensor = Tensorsi_<float, simd::AVX2>;
+
 #endif // TENSOR_H

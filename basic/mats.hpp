@@ -76,53 +76,67 @@ public:
 
     Mats& operator += (const Mats &r)
     {
-        expt::BinaryEvaluator<Mats, expt::Plus, N>::impl(*this, *this, r);
+        expt::BinaryEvaluator<Mats, expt::Add, N>::impl(*this, *this, r);
         return *this;
     }
 
     Mats& operator -= (const Mats &r)
     {
-        expt::BinaryEvaluator<Mats, expt::Minus, N>::impl(*this, *this, r);
+        expt::BinaryEvaluator<Mats, expt::Sub, N>::impl(*this, *this, r);
         return *this;
     }
 
     Mats& operator *= (const Mats &r)
     {
-        expt::BinaryEvaluator<Mats, expt::Multi, N>::impl(*this, *this, r);
+        expt::BinaryEvaluator<Mats, expt::Mul, N>::impl(*this, *this, r);
         return *this;
     }
 
     Mats& operator /= (const Mats &r)
     {
-        expt::BinaryEvaluator<Mats, expt::Divide, N>::impl(*this, *this, r);
+        expt::BinaryEvaluator<Mats, expt::Div, N>::impl(*this, *this, r);
         return *this;
     }
 
     Mats& operator += (T x)
     {
-        expt::BinaryEvaluator<Mats, expt::Plus, N>::impl(*this, *this, x);
+        expt::BinaryEvaluator<Mats, expt::Add, N>::impl(*this, *this, x);
         return *this;
     }
 
     Mats& operator -= (T x)
     {
-        expt::BinaryEvaluator<Mats, expt::Minus, N>::impl(*this, *this, x);
+        expt::BinaryEvaluator<Mats, expt::Sub, N>::impl(*this, *this, x);
         return *this;
     }
 
     Mats& operator *= (T x)
     {
-        expt::BinaryEvaluator<Mats, expt::Multi, N>::impl(*this, *this, x);
+        expt::BinaryEvaluator<Mats, expt::Mul, N>::impl(*this, *this, x);
         return *this;
     }
 
     Mats& operator /= (T x)
     {
-        expt::BinaryEvaluator<Mats, expt::Divide, N>::impl(*this, *this, x);
+        expt::BinaryEvaluator<Mats, expt::Div, N>::impl(*this, *this, x);
         return *this;
     }
 
-    void show()
+    template<std::size_t COL_>
+    static Mats<ROW, COL_> mul(const Mats &x1, const Mats<COL, COL_> &x2)
+    {
+        Mats<ROW, COL_> y;
+        for (std::size_t i = 0; i < y.rows; i++) {
+            for (std::size_t j = 0; j < y.cols; j++) {
+                for (std::size_t k = 0; k < cols; k++) {
+                    y.val[i*y.cols + j] += x1.val[i*cols + k] * x2.val[k*x2.cols + j];
+                }
+            }
+        }
+        return y;
+    }
+
+    void show() const
     {
         for (size_t i = 0; i < ROW; i++) {
             for (std::size_t j = 0; j < COL; j++) {

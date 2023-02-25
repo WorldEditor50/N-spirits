@@ -6,12 +6,30 @@
 #include <cmath>
 
 /*
-    the wrapper will double the cost time of running matrix multiply
+    Start:
+        avx2 on windows:
+            1. implement command "bcdedit/set xsavedisable 0" and set compiler option: "/arch:AVX2"
+            2. https://devblogs.microsoft.com/cppblog/avx2-support-in-visual-studio-c-compiler/
 
-    simd operations:
-            1. load or set values
-            2. process values
-            3. store values
+        avx2 on linux:
+            sudo apt-get install libmkl-dev libmkl-avx
+
+    Note:
+       1. when compile with msvc debug mode, compiler may not perform inlining ,
+          the wrapper will cost double time
+       2. memory alignment is easy to make simd running in parallel
+       3. use reference or pointer of variable will make function run faster
+       4. use keyword __restrict、 noexcept
+       5. simd operations:
+            a. load or set values
+            b. process values
+            b. store values
+
+    Warning:
+        1. this wrapper will work while the data size is greater than
+
+    Resource:
+        1. https://www.cs.virginia.edu/~cr4bd/3330/F2018/simdref.html
 */
 
 #ifdef _MSC_VER
@@ -27,94 +45,95 @@ class AVX2
 {
 public:
     using Type = T;
+
 #if defined(__AVX2__)
 
+
     struct M256d {
-        constexpr static std::size_t step = sizeof (__m256d)/sizeof (double);
-        using m256 = __m256d;
-        /* wrapper */
-        inline static void load(__m256d& __restrict __r, float const* __restrict __p)
+
+        FORCE_INLINE static __m256d load(double const* __restrict __p) noexcept
         {
-            __r = _mm256_load_pd(__p);
-            return;
+            return _mm256_load_pd(__p);
         }
-        inline static void loadu(__m256d& __restrict __r, float const* __restrict __p)
+        FORCE_INLINE static __m256d loadu(double const* __restrict __p) noexcept
         {
-            __r = _mm256_loadu_pd(__p);
+            return _mm256_loadu_pd(__p);
         }
-        inline static void set1(__m256d& __restrict __r, float& __restrict __w)
+        FORCE_INLINE static __m256d set1(double& __restrict __w) noexcept
         {
-            __r = _mm256_set1_pd(__w);
+            return _mm256_set1_pd(__w);
         }
-        inline static void zero(__m256d& __restrict __r)
+        FORCE_INLINE static __m256d zero() noexcept
         {
-            __r = _mm256_setzero_pd();
+            return _mm256_setzero_pd();
         }
-        inline static void store(float* __restrict __p, __m256d& __restrict __a)
+        FORCE_INLINE static void store(double* __restrict __p, __m256d& __restrict __a) noexcept
         {
             return _mm256_store_pd(__p, __a);
         }
-        inline static void add(__m256d& __restrict __r, __m256d& __restrict __a, __m256d& __restrict __b)
+        FORCE_INLINE static void storeu(double* __restrict __p, __m256d& __restrict __a) noexcept
         {
-            __r = _mm256_add_pd(__a, __b);
+            return _mm256_storeu_pd(__p, __a);
         }
-        inline static void sub(__m256d& __restrict __r, __m256d& __restrict __a, __m256d& __restrict __b)
+        FORCE_INLINE static __m256d add(__m256d& __restrict __a, __m256d& __restrict __b) noexcept
         {
-            __r = _mm256_sub_pd(__a, __b);
+            return _mm256_add_pd(__a, __b);
         }
-        inline static void mul(__m256& __restrict __r,  __m256d& __restrict __a, __m256d& __restrict __b)
+        FORCE_INLINE static __m256d sub(__m256d& __restrict __a, __m256d& __restrict __b) noexcept
         {
-            __r = _mm256_mul_pd(__a, __b);
+            return _mm256_sub_pd(__a, __b);
         }
-        inline static void div(__m256d& __restrict __r, __m256d& __restrict __a, __m256d& __restrict __b)
+        FORCE_INLINE static __m256d mul(__m256d& __restrict __a, __m256d& __restrict __b) noexcept
         {
-            __r = _mm256_div_pd(__a, __b);
+            return _mm256_mul_pd(__a, __b);
         }
-        inline static void hadd(__m256d& __restrict __r, __m256d& __restrict __a, __m256d& __restrict __b)
+        FORCE_INLINE static __m256d div(__m256d& __restrict __a, __m256d& __restrict __b) noexcept
         {
-            __r = _mm256_hadd_pd(__a, __b);
+            return _mm256_div_pd(__a, __b);
         }
-        inline static void hsub(__m256d& __restrict __r, __m256d& __restrict __a, __m256d& __restrict __b)
+        FORCE_INLINE static __m256d hadd(__m256d& __restrict __a, __m256d& __restrict __b) noexcept
         {
-            __r = _mm256_hsub_pd(__a, __b);
+            return _mm256_hadd_pd(__a, __b);
         }
-        inline static void fmadd(__m256& __restrict __r, __m256d& __restrict __a, __m256d& __restrict __b, __m256& __restrict __c)
+        FORCE_INLINE static __m256d hsub(__m256d& __restrict __a, __m256d& __restrict __b) noexcept
         {
-            __r = _mm256_fmadd_pd(__a, __b, __c);
+            return _mm256_hsub_pd(__a, __b);
         }
-        inline static void fmsub(__m256d& __restrict __r, __m256d& __restrict __a, __m256d& __restrict __b, __m256& __restrict __c)
+        FORCE_INLINE static __m256d fmadd(__m256d& __restrict __a, __m256d& __restrict __b, __m256& __restrict __c) noexcept
         {
-            __r = _mm256_fmsub_pd(__a, __b, __c);
+            return _mm256_fmadd_pd(__a, __b, __c);
+        }
+        FORCE_INLINE static __m256d fmsub(__m256d& __restrict __a, __m256d& __restrict __b, __m256& __restrict __c) noexcept
+        {
+            return _mm256_fmsub_pd(__a, __b, __c);
         }
 
-        inline static void max(__m256d& __restrict __r, __m256d& __restrict __a, __m256d& __restrict __b)
+        FORCE_INLINE static __m256d max(__m256d& __restrict __a, __m256d& __restrict __b) noexcept
         {
-            __r = _mm256_max_pd(__a, __b);
+            return _mm256_max_pd(__a, __b);
         }
-        inline static void min(__m256d& __restrict __r, __m256d& __restrict __a, __m256d& __restrict __b)
+        FORCE_INLINE static __m256d min(__m256d& __restrict __a, __m256d& __restrict __b) noexcept
         {
-            __r = _mm256_min_pd(__a, __b);
+            return _mm256_min_pd(__a, __b);
         }
-        inline static void sqrt(__m256d& __restrict __r, __m256d& __restrict __a)
+        FORCE_INLINE static __m256d sqrt(__m256d& __restrict __a) noexcept
         {
-            __r = _mm256_sqrt_pd(__a);
-            return;
+            return _mm256_sqrt_pd(__a);
         }
 
         /* rewrap */
-        using Add = void (*)(__m256d& __restrict, __m256d& __restrict , __m256d& __restrict );
-        using Sub = void (*)(__m256d& __restrict, __m256d& __restrict , __m256d& __restrict );
-        using Mul = void (*)(__m256d& __restrict, __m256d& __restrict , __m256d& __restrict );
-        using Div = void (*)(__m256d& __restrict, __m256d& __restrict , __m256d& __restrict );
-        using Max = void (*)(__m256d& __restrict, __m256d& __restrict , __m256d& __restrict );
-        using Min = void (*)(__m256d& __restrict, __m256d& __restrict , __m256d& __restrict );
+        using Add = __m256d (*)(__m256d& __restrict , __m256d& __restrict );
+        using Sub = __m256d (*)(__m256d& __restrict , __m256d& __restrict );
+        using Mul = __m256d (*)(__m256d& __restrict , __m256d& __restrict );
+        using Div = __m256d (*)(__m256d& __restrict , __m256d& __restrict );
+        using Max = __m256d (*)(__m256d& __restrict , __m256d& __restrict );
+        using Min = __m256d (*)(__m256d& __restrict , __m256d& __restrict );
 
     };
 
     struct M256 {
-        constexpr static std::size_t step = sizeof (__m256)/sizeof (float);
-        using m256 = __m256;
         /* wrapper */
+#if 0
         FORCE_INLINE static void load(__m256& __restrict __r, float const* __restrict __p) noexcept
         {
             __r = _mm256_load_ps(__p);
@@ -135,6 +154,10 @@ public:
         FORCE_INLINE static void store(float* __restrict __p, __m256& __restrict __a) noexcept
         {
             return _mm256_store_ps(__p, __a);
+        }
+        FORCE_INLINE static void storeu(float* __restrict __p, __m256& __restrict __a) noexcept
+        {
+            return _mm256_storeu_ps(__p, __a);
         }
         FORCE_INLINE static void add(__m256& __restrict __r, __m256& __restrict __a, __m256& __restrict __b) noexcept
         {
@@ -182,33 +205,111 @@ public:
             __r = _mm256_sqrt_ps(__a);
             return;
         }
+#endif
 
+        FORCE_INLINE static __m256 load(float const* __restrict __p) noexcept
+        {
+            return _mm256_load_ps(__p);
+        }
+        FORCE_INLINE static __m256 loadu(float const* __restrict __p) noexcept
+        {
+            return _mm256_loadu_ps(__p);
+        }
+        FORCE_INLINE static __m256 set1(float& __restrict __w) noexcept
+        {
+            return _mm256_set1_ps(__w);
+        }
+        FORCE_INLINE static __m256 zero() noexcept
+        {
+            return _mm256_setzero_ps();
+        }
+        FORCE_INLINE static void store(float* __restrict __p, __m256& __restrict __a) noexcept
+        {
+            return _mm256_store_ps(__p, __a);
+        }
+        FORCE_INLINE static void storeu(float* __restrict __p, __m256& __restrict __a) noexcept
+        {
+            return _mm256_storeu_ps(__p, __a);
+        }
+        FORCE_INLINE static __m256 add(__m256& __restrict __a, __m256& __restrict __b) noexcept
+        {
+            return _mm256_add_ps(__a, __b);
+        }
+        FORCE_INLINE static __m256 sub(__m256& __restrict __a, __m256& __restrict __b) noexcept
+        {
+            return _mm256_sub_ps(__a, __b);
+        }
+        FORCE_INLINE static __m256 mul(__m256& __restrict __a, __m256& __restrict __b) noexcept
+        {
+            return _mm256_mul_ps(__a, __b);
+        }
+        FORCE_INLINE static __m256 div(__m256& __restrict __a, __m256& __restrict __b) noexcept
+        {
+            return _mm256_div_ps(__a, __b);
+        }
+        FORCE_INLINE static __m256 hadd(__m256& __restrict __a, __m256& __restrict __b) noexcept
+        {
+            return _mm256_hadd_ps(__a, __b);
+        }
+        FORCE_INLINE static __m256 hsub( __m256& __restrict __a, __m256& __restrict __b) noexcept
+        {
+            return _mm256_hsub_ps(__a, __b);
+        }
+        FORCE_INLINE static __m256 fmadd(__m256& __restrict __a, __m256& __restrict __b, __m256& __restrict __c) noexcept
+        {
+            return _mm256_fmadd_ps(__a, __b, __c);
+        }
+        FORCE_INLINE static __m256 fmsub(__m256& __restrict __a, __m256& __restrict __b, __m256& __restrict __c) noexcept
+        {
+            return _mm256_fmsub_ps(__a, __b, __c);
+        }
+
+        FORCE_INLINE static __m256 max(__m256& __restrict __a, __m256& __restrict __b) noexcept
+        {
+            return _mm256_max_ps(__a, __b);
+        }
+        FORCE_INLINE static __m256 min(__m256& __restrict __a, __m256& __restrict __b) noexcept
+        {
+            return _mm256_min_ps(__a, __b);
+        }
+        FORCE_INLINE static __m256 sqrt(__m256& __restrict __a) noexcept
+        {
+            return _mm256_sqrt_ps(__a);
+        }
         /* rewrap */
-        using Add = void (*)(__m256& __restrict, __m256& __restrict , __m256& __restrict );
-        using Sub = void (*)(__m256& __restrict, __m256& __restrict , __m256& __restrict );
-        using Mul = void (*)(__m256& __restrict, __m256& __restrict , __m256& __restrict );
-        using Div = void (*)(__m256& __restrict, __m256& __restrict , __m256& __restrict );
-        using Max = void (*)(__m256& __restrict, __m256& __restrict , __m256& __restrict );
-        using Min = void (*)(__m256& __restrict, __m256& __restrict , __m256& __restrict );
+        using Add = __m256 (*)(__m256& __restrict , __m256& __restrict );
+        using Sub = __m256 (*)(__m256& __restrict , __m256& __restrict );
+        using Mul = __m256 (*)(__m256& __restrict , __m256& __restrict );
+        using Div = __m256 (*)(__m256& __restrict , __m256& __restrict );
+        using Max = __m256 (*)(__m256& __restrict , __m256& __restrict );
+        using Min = __m256 (*)(__m256& __restrict , __m256& __restrict );
 
     };
-    using M256Func = std::conditional_t<std::is_same_v<T, float>, M256, M256d>;
 
-    /* select method */
     template<typename Ti>
     struct Selector {};
     template<>
     struct Selector<double> {
         using Type = __m256d;
-        constexpr static std::size_t step = 4;
+        using Func = M256d;
+        constexpr static std::size_t step = sizeof (__m256)/sizeof (float);
     };
     template<>
     struct Selector<float> {
         using Type = __m256;
-        constexpr static std::size_t step = 8;
+        using Func = M256;
+        constexpr static std::size_t step = sizeof (__m256)/sizeof (float);
     };
+    template<>
+    struct Selector<int> {
+        using Type = __m256i;
+        constexpr static std::size_t step = sizeof (__m256i)/sizeof (int);
+    };
+
+    /* select */
     using m256 = typename Selector<T>::Type;
     constexpr static std::size_t step = Selector<T>::step;
+    using M256Func = typename Selector<T>::Func;
 
     /* align basic operator */
     struct AddOp {
@@ -229,7 +330,7 @@ public:
     };
 
     template<typename Op>
-    struct Evaluator {
+    struct Evaluate {
         inline static void impl(T* __restrict z, const T* __restrict y, const T* __restrict x, std::size_t N)
         {
             const T *px = x;
@@ -240,10 +341,10 @@ public:
             m256 vecz;
             std::size_t r = N%step;
             for (std::size_t i = 0; i < N - r; i+= step) {
-                M256Func::load(vecx, px + i);
-                M256Func::load(vecy, py + i);
-                Op::eval(vecz, vecx, vecy);
-                M256Func::store(pz + i, vecz);
+                vecx = M256Func::load(px + i);
+                vecy = M256Func::load(py + i);
+                vecz = Op::eval(vecx, vecy);
+                M256Func::storeu(pz + i, vecz);
             }
             /* the rest of element */
             for (std::size_t i = N - r; i < N; i++) {
@@ -263,11 +364,11 @@ public:
             std::size_t r = N%step;
             for (std::size_t i = 0; i < N - r; i+= step) {
                 /* put 8 float into __m256 */
-                M256Func::load(vecy, py + i);
+                vecy = M256Func::load(py + i);
                 /* op */
-                Op::eval(vecz, vecy, vecx);
+                vecz = Op::eval(vecy, vecx);
                 /* store result */
-                M256Func::store(pz + i, vecz);
+                M256Func::storeu(pz + i, vecz);
             }
             /* the rest of element */
             for (std::size_t i = N - r; i < N; i++) {
@@ -280,42 +381,42 @@ public:
 
     inline static void add(T* __restrict z, const T* __restrict y, const T* __restrict x, std::size_t N)
     {
-        return Evaluator<AddOp>::impl(z, y, x, N);
+        return Evaluate<AddOp>::impl(z, y, x, N);
     }
 
     inline static void add(T* __restrict z, const T* __restrict y,  T x, std::size_t N)
     {
-        return Evaluator<AddOp>::impl(z, y, x, N);
+        return Evaluate<AddOp>::impl(z, y, x, N);
     }
 
     inline static void sub(T* __restrict z, const T* __restrict y, const T* __restrict x, std::size_t N)
     {
-        return Evaluator<SubOp>::impl(z, y, x, N);
+        return Evaluate<SubOp>::impl(z, y, x, N);
     }
 
     inline static void sub(T* __restrict z, const T* __restrict y,  T x, std::size_t N)
     {
-        return Evaluator<SubOp>::impl(z, y, x, N);
+        return Evaluate<SubOp>::impl(z, y, x, N);
     }
 
     inline static void mul(T* __restrict z, const T* __restrict y, const T* __restrict x, std::size_t N)
     {
-        return Evaluator<MulOp>::impl(z, y, x, N);
+        return Evaluate<MulOp>::impl(z, y, x, N);
     }
 
     inline static void mul(T* __restrict z, const T* __restrict y,  T x, std::size_t N)
     {
-        return Evaluator<MulOp>::impl(z, y, x, N);
+        return Evaluate<MulOp>::impl(z, y, x, N);
     }
 
     inline static void div(T* __restrict z, const T* __restrict y, const T* __restrict x, std::size_t N)
     {
-        return Evaluator<DivOp>::impl(z, y, x, N);
+        return Evaluate<DivOp>::impl(z, y, x, N);
     }
 
     inline static void div(T* __restrict z, const T* __restrict y,  T x, std::size_t N)
     {
-        return Evaluator<DivOp>::impl(z, y, x, N);
+        return Evaluate<DivOp>::impl(z, y, x, N);
     }
 
     /* max-min */
@@ -342,7 +443,7 @@ public:
             }
             /* find max value in result */
             T result[step];
-            M256Func::store(result, vec);
+            M256Func::storeu(result, vec);
             T value = result[0];
             for (std::size_t i = 1; i < step; i++) {
                 value = Op::impl_(result[i], value);
@@ -364,23 +465,53 @@ public:
         return Find<MinOp>::impl(x, N);
     }
 
+    /* horizontal sum */
+    inline static float reduce(__m256& ymm)
+    {
+        float result[8];
+        ymm = _mm256_hadd_ps(ymm, ymm);
+        ymm = _mm256_hadd_ps(ymm, ymm);
+        _mm256_storeu_ps(result, ymm);
+        return result[0] + result[4];
+    }
 
+    inline static double reduce(__m256d& ymm)
+    {
+        double result[4];
+        ymm = _mm256_hadd_pd(ymm, ymm);
+        _mm256_storeu_pd(result, ymm);
+        return result[0] + result[2];
+    }
+
+    /* fill */
+    inline static void fill(T* __restrict x, T x0, std::size_t N)
+    {
+        T* px = x;
+        std::size_t r = N%step;
+        T arrayX0[step] = {x0};
+        m256 vecx0 = M256Func::loadu(arrayX0);
+        for (std::size_t i = 0; i < N - r; i+=step) {
+            M256Func::storeu(px + i, vecx0);
+        }
+        for (std::size_t i = N - r; i < N; i++) {
+            x[i] = x0;
+        }
+        return;
+    }
+
+    /* sum */
     inline static T sum(const T* __restrict x, std::size_t N)
     {
         const T *px = x;
         /* init */
         std::size_t r = N%step;
-        float result[step] = {0};
         m256 vecs = M256Func::zero();
         for (std::size_t i = 0; i < N - r; i+=step) {
             m256 vecx = M256Func::loadu(px + i);
             vecs = M256Func::add(vecs, vecx);
         }
         /* sum up result */
-        vecs = M256Func::hadd(vecs, vecs);
-        vecs = M256Func::hadd(vecs, vecs);
-        M256Func::store(result, vecs);
-        float s = result[0] + result[step/2];
+        T s = reduce(vecs);
         /* sum up the rest elements */
         for (std::size_t i = N - r; i < N; i++) {
             s += px[i];
@@ -398,7 +529,7 @@ public:
         for (std::size_t i = 0; i < N - r; i+=step) {
             vecx = M256Func::loadu(px + i);
             vecy = M256Func::sqrt(vecx);
-            M256Func::store(py + i, vecy);
+            M256Func::storeu(py + i, vecy);
         }
         /* the rest elements */
         for (std::size_t i = N - r; i < N; i++) {
@@ -421,12 +552,7 @@ public:
             vecy = M256Func::fmadd(vecx1, vecx2, vecy);
         }
         /* sum up result */
-        T results[step] = {0};
-        M256Func::store(results, vecy);
-        T s = 0;
-        for (std::size_t i = 0; i < step; i++) {
-            s += results[i];
-        }
+        T s = reduce(vecy);
         /* dot the rest elements */
         for (std::size_t i = N - r; i < N; i++) {
             s += px1[i]*px2[i];
@@ -450,12 +576,7 @@ public:
             vecy = M256Func::fmadd(vecx, vecx, vecy);
         }
         /* sum up result */
-        T results[step] = {0};
-        M256Func::store(results, vecy);
-        T s = 0;
-        for (std::size_t i = 0; i < step; i++) {
-            s += results[i];
-        }
+        T s = reduce(vecy);
         /* the rest elements */
         for (std::size_t i = N - r; i < N; i++) {
             s += (px1[i] - px2[i])*(px1[i] - px2[i]);
@@ -477,12 +598,7 @@ public:
             vecy = M256Func::fmadd(vecx, vecx, vecy);
         }
         /* sum up result */
-        T results[step] = {0};
-        M256Func::store(results, vecy);
-        T s = 0;
-        for (std::size_t i = 0; i < step; i++) {
-            s += results[i];
-        }
+        T s = reduce(vecy);
         /* the rest elements */
         for (std::size_t i = N - r; i < N; i++) {
             s += (px[i] - u)*(px[i] - u);
@@ -504,15 +620,15 @@ public:
         for (std::size_t i = 0; i < zRow; i++) {
             for (std::size_t k = 0; k < xCol; k++) {
                 T xik = x_[i*xCol + k];
-                M256Func::set1(vecx, xik);
+                vecx = M256Func::set1(xik);
                 for (std::size_t j = 0; j < zCol - r; j+=step) {
                     /* put float into m256 */
-                    M256Func::loadu(vecy, y_ + k*yCol + j);
-                    M256Func::loadu(vecz, z_ + i*xCol + j);
+                    vecy = M256Func::loadu(y_ + k*yCol + j);
+                    vecz = M256Func::loadu(z_ + i*xCol + j);
                     /* _mm256_fmadd_ps(a, b, c): a*b + c */
-                    M256Func::fmadd(vecz, vecx, vecy, vecz);
+                    vecz = M256Func::fmadd(vecx, vecy, vecz);
                     /* store result */
-                    M256Func::store(z_ + i*xCol + j, vecz);
+                    M256Func::storeu(z_ + i*xCol + j, vecz);
                 }
                 for (std::size_t j = zCol - r; j < zCol; j++) {
                     z_[i*zCol + j] += xik * y_[k*yCol + j];
