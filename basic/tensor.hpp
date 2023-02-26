@@ -735,7 +735,7 @@ public:
                 }
             }
         }
-        return y;
+        return;
     }
 
     /* display */
@@ -1034,49 +1034,33 @@ public:
     struct Mul {
         static void ikkj(Tensorsi_ &x, const Tensorsi_ &x1, const Tensorsi_ &x2)
         {
-            instruct::matMul(x.ptr(), x.shape[0], x.shape[1],
-                          x1.ptr(), x1.shape[0], x1.shape[1],
-                          x2.ptr(), x2.shape[0], x2.shape[1]);
+            instruct::MatMul::ikkj(x.ptr(), x.shape[0], x.shape[1],
+                                   x1.ptr(), x1.shape[0], x1.shape[1],
+                                   x2.ptr(), x2.shape[0], x2.shape[1]);
             return;
         }
         static void kikj(Tensorsi_ &x, const Tensorsi_ &x1, const Tensorsi_ &x2)
         {
             /* transpose x1 */
-            for (std::size_t i = 0; i < x.shape[0]; i++) {
-                for (std::size_t k = 0; k < x1.shape[0]; k++) {
-                    for (std::size_t j = 0; j < x.shape[1]; j++) {
-
-                        /* (i, j) = (k, i)^T * (k, j)^T */
-                        x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i]*x2.val[k*x2.shape[1] + j];
-                    }
-                }
-            }
+            instruct::MatMul::kikj(x.ptr(), x.shape[0], x.shape[1],
+                                   x1.ptr(), x1.shape[0], x1.shape[1],
+                                   x2.ptr(), x2.shape[0], x2.shape[1]);
             return;
         }
         static void ikjk(Tensorsi_ &x, const Tensorsi_ &x1, const Tensorsi_ &x2)
         {
             /* transpose x2 */
-            for (std::size_t i = 0; i < x.shape[0]; i++) {
-                for (std::size_t k = 0; k < x1.shape[1]; k++) {
-                    for (std::size_t j = 0; j < x.shape[1]; j++) {
-                        /* (i, j) = (i, k) * (j, k)^T */
-                        x.val[i*x.shape[1] + j] += x1.val[i*x1.shape[1] + k]*x2.val[j*x2.shape[1] + k];
-                    }
-                }
-            }
+            instruct::MatMul::ikjk(x.ptr(), x.shape[0], x.shape[1],
+                                   x1.ptr(), x1.shape[0], x1.shape[1],
+                                   x2.ptr(), x2.shape[0], x2.shape[1]);
             return;
         }
         static void kijk(Tensorsi_ &x, const Tensorsi_ &x1, const Tensorsi_ &x2)
         {
             /* transpose x1, x2 */
-            for (std::size_t i = 0; i < x.shape[0]; i++) {
-                for (std::size_t k = 0; k < x1.shape[0]; k++) {
-                    for (std::size_t j = 0; j < x.shape[1]; j++) {
-                        /* (i, j) = (k, i)^T * (j, k)^T */
-                        x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i] * x2.val[j*x2.shape[1] + k];
-                    }
-                }
-            }
+            instruct::MatMul::kijk(x.ptr(), x.shape[0], x.shape[1],
+                                   x1.ptr(), x1.shape[0], x1.shape[1],
+                                   x2.ptr(), x2.shape[0], x2.shape[1]);
             return;
         }
 
@@ -1085,8 +1069,8 @@ public:
 };
 
 using Tensori = Tensor_<int>;
-using Tensorf = Tensor_<float>;
+using Tensor = Tensor_<float>;
 using Tensord = Tensor_<double>;
-using Tensor = Tensorsi_<float, simd::AVX2>;
+using Tensorsi = Tensorsi_<float, simd::AVX2>;
 
 #endif // TENSOR_H

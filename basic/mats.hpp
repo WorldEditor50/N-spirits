@@ -13,7 +13,7 @@ public:
     constexpr static std::size_t N = ROW*COL;
     constexpr static std::size_t rows = ROW;
     constexpr static std::size_t cols = COL;
-protected:
+public:
     std::vector<expt::T> val;
 public:
     inline T operator[](std::size_t i) const {return val[i];}
@@ -122,19 +122,17 @@ public:
         return *this;
     }
 
-    template<std::size_t COL_>
-    static Mats<ROW, COL_> mul(const Mats &x1, const Mats<COL, COL_> &x2)
+    Mats<COL, ROW> tr() const
     {
-        Mats<ROW, COL_> y;
-        for (std::size_t i = 0; i < y.rows; i++) {
-            for (std::size_t j = 0; j < y.cols; j++) {
-                for (std::size_t k = 0; k < cols; k++) {
-                    y.val[i*y.cols + j] += x1.val[i*cols + k] * x2.val[k*x2.cols + j];
-                }
+        Mats<COL, ROW> y;
+        for (std::size_t i = 0; i < ROW; i++) {
+            for (std::size_t j = 0; j < COL; j++) {
+                y(j, i) = *this(i, j);
             }
         }
         return y;
     }
+
 
     void show() const
     {
@@ -151,9 +149,25 @@ public:
 };
 
 template <std::size_t N>
-using ColVector = Mats<N, 1>;
+using CVector = Mats<N, 1>;
 
 template <std::size_t N>
-using RowVector = Mats<1, N>;
+using RVector = Mats<1, N>;
 
+
+namespace MatsFunc {
+    template<std::size_t I, std::size_t J, std::size_t K>
+    Mats<I, K> mul(const Mats<I, J> &x1, const Mats<J, K> &x2)
+    {
+        Mats<I, K> y;
+        for (std::size_t s = 0; s < y.size(); s++) {
+            std::size_t i = s / y.cols;
+            std::size_t j = s % y.cols;
+            for (std::size_t k = 0; k < x1.cols; k++) {
+                y.val[s] += x1.val[i*x1.cols + k] * x2.val[k*x2.cols + j];
+            }
+        }
+        return y;
+    }
+}
 #endif // MATS_HPP

@@ -203,6 +203,23 @@ void test_static_matrix()
     std::cout<<"p:"<<p<<std::endl;
     /* case 5 */
     std::cout<<"-------case5:-------"<<std::endl;
+
+    {
+        Mats<4, 3> x1 = {1, 2, 3,
+                         4, 5, 6,
+                         7, 8, 9,
+                         1, 2, 1};
+        Mats<3, 4> x2 = {1, 1, 1, 1,
+                         1, 2, 1, 2,
+                         0, 1, 0, 1};
+        auto x3 = MatsFunc::mul(x1, x2);
+        x3.show();
+
+        CVector<4> v1 = {1, 2, 3, 4};
+        RVector<3> v2 = {1, 2, 3};
+        auto x4 = MatsFunc::mul(v1, v2);
+        x4.show();
+    }
     /* msvc config: /bigobj */
 #if 0 // compile cost too much time
     Mats<200, 200> x4(4);
@@ -652,6 +669,7 @@ void test_simd_transpose()
         std::cout<<"simd transpose:"<<std::endl;
         Tensor_<double>::Mat::print(y);
     } 
+    if (0)
     {
         Tensor x(16, 16);
         Tensor y(16, 16);
@@ -681,6 +699,10 @@ int main()
 #endif
     //test_lenet5();
     //test_simd();
-    test_simd_matmul();
+    //test_simd_matmul();
+    test_simd_transpose();
     return 0;
 }
+
+
+
