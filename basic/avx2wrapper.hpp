@@ -17,16 +17,16 @@
     Note:
        1. when compile with msvc debug mode, compiler may not perform inlining ,
           the wrapper will cost double time
-       2. memory alignment is easy to make simd running in parallel
+       2. memory alignment is a easy way to make simd running in parallel
        3. use reference or pointer of variable will make function run faster
-       4. use keyword __restrict、 noexcept
+       4. use keyword __restrict, noexcept
        5. simd operations:
             a. load or set values
             b. process values
             b. store values
 
     Warning:
-        1. this wrapper will work while the data size is greater than
+        1. this wrapper will work while the data size is greater than 8 for float
 
     Resource:
         1. https://www.cs.virginia.edu/~cr4bd/3330/F2018/simdref.html
@@ -99,13 +99,14 @@ public:
         {
             return _mm256_hsub_pd(__a, __b);
         }
-        FORCE_INLINE static __m256d fmadd(__m256d& __restrict __a, __m256d& __restrict __b, __m256& __restrict __c) noexcept
+        FORCE_INLINE static void fmadd(__m256d& __restrict __a, __m256d& __restrict __b, __m256& __restrict __c) noexcept
         {
-            return _mm256_fmadd_pd(__a, __b, __c);
+            __c = _mm256_fmadd_pd(__a, __b, __c);
         }
-        FORCE_INLINE static __m256d fmsub(__m256d& __restrict __a, __m256d& __restrict __b, __m256& __restrict __c) noexcept
+        FORCE_INLINE static void fmsub(__m256d& __restrict __a, __m256d& __restrict __b, __m256& __restrict __c) noexcept
         {
-            return _mm256_fmsub_pd(__a, __b, __c);
+            __c = _mm256_fmsub_pd(__a, __b, __c);
+            return;
         }
 
         FORCE_INLINE static __m256d max(__m256d& __restrict __a, __m256d& __restrict __b) noexcept
@@ -255,13 +256,13 @@ public:
         {
             return _mm256_hsub_ps(__a, __b);
         }
-        FORCE_INLINE static __m256 fmadd(__m256& __restrict __a, __m256& __restrict __b, __m256& __restrict __c) noexcept
+        FORCE_INLINE static void fmadd(__m256& __restrict __a, __m256& __restrict __b, __m256& __restrict __c) noexcept
         {
-            return _mm256_fmadd_ps(__a, __b, __c);
+            __c =  _mm256_fmadd_ps(__a, __b, __c);
         }
-        FORCE_INLINE static __m256 fmsub(__m256& __restrict __a, __m256& __restrict __b, __m256& __restrict __c) noexcept
+        FORCE_INLINE static void fmsub(__m256& __restrict __a, __m256& __restrict __b, __m256& __restrict __c) noexcept
         {
-            return _mm256_fmsub_ps(__a, __b, __c);
+            __c = _mm256_fmsub_ps(__a, __b, __c);
         }
 
         FORCE_INLINE static __m256 max(__m256& __restrict __a, __m256& __restrict __b) noexcept
@@ -549,7 +550,7 @@ public:
         for (std::size_t i = 0; i < N - r; i+=step) {
             vecx1 = M256Func::loadu(px1 + i);
             vecx2 = M256Func::loadu(px2 + i);
-            vecy = M256Func::fmadd(vecx1, vecx2, vecy);
+            M256Func::fmadd(vecx1, vecx2, vecy);
         }
         /* sum up result */
         T s = reduce(vecy);
@@ -595,7 +596,7 @@ public:
         for (std::size_t i = 0; i < N - r; i+=step) {
             vecx1 = M256Func::loadu(px + i);
             vecx = M256Func::sub(vecx1, vecu);
-            vecy = M256Func::fmadd(vecx, vecx, vecy);
+            M256Func::fmadd(vecx, vecx, vecy);
         }
         /* sum up result */
         T s = reduce(vecy);
@@ -626,7 +627,7 @@ public:
                     vecy = M256Func::loadu(y_ + k*yCol + j);
                     vecz = M256Func::loadu(z_ + i*xCol + j);
                     /* _mm256_fmadd_ps(a, b, c): a*b + c */
-                    vecz = M256Func::fmadd(vecx, vecy, vecz);
+                    M256Func::fmadd(vecx, vecy, vecz);
                     /* store result */
                     M256Func::storeu(z_ + i*xCol + j, vecz);
                 }

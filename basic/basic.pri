@@ -1,6 +1,7 @@
 INCLUDEPATH += $$PWD
 
 HEADERS += $$PWD/basic_def.h \
+           $$PWD/alignallocator.hpp \
            $$PWD/avx2func.hpp \
            $$PWD/avx2wrapper.hpp \
            $$PWD/complexnumber.h \

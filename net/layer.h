@@ -61,7 +61,7 @@ public:
                 delta:  (outputDim, 1)
                 delta_ = w^T * delta
             */
-            Tensor::Mat::kikj(delta_, layer.w, delta);
+            Tensor::Mul::kikj(delta_, layer.w, delta);
             return;
         }
 
@@ -78,7 +78,7 @@ public:
                 dy = dActive(o)*delta
                 dw = dy * x^T
             */
-            Tensor::Mat::ikjk(dw, dy, x);
+            Tensor::Mul::ikjk(dw, dy, x);
             db += dy;
             delta.zero();
             return;
@@ -134,7 +134,7 @@ public:
            o = Active(w * x + b)
         */
         o.zero();
-        Tensor::Mat::ikkj(o, w, x);
+        Tensor::Mul::ikkj(o, w, x);
         if (bias == true) {
             o += b;
         }
@@ -234,7 +234,7 @@ public:
         {
             Tensor dy(outputDim, 1);
             Utils::minus(dy, o, yt);
-            Tensor::Mat::ikjk(dw, dy, x);
+            Tensor::Mul::ikjk(dw, dy, x);
             delta.zero();
             return;
         }
@@ -275,7 +275,7 @@ public:
         void backward(Dropout &layer, Tensor &delta_)
         {
             delta_ *= layer.mask;
-            Tensor::Mat::kikj(delta_, layer.w, delta);
+            Tensor::Mul::kikj(delta_, layer.w, delta);
             return;
         }
     };
@@ -317,7 +317,7 @@ public:
         void backward(const LayerNorm &layer, Tensor &delta_)
         {
             delta_ *= layer.gamma;
-            Tensor::Mat::kikj(delta_, layer.w, delta);
+            Tensor::Mul::kikj(delta_, layer.w, delta);
             return;
         }
     };
@@ -335,7 +335,7 @@ public:
     Tensor& forward(const Tensor &x) override
     {
         o.zero();
-        Tensor::Mat::ikkj(o, w, x);
+        Tensor::Mul::ikkj(o, w, x);
         float u = o.mean();
         float sigma = o.variance(u);
         gamma = 1/std::sqrt(sigma + 1e-9);
@@ -551,8 +551,8 @@ public:
     }
     Tensor& forward(const Tensor &x, const Tensor &h)
     {
-        Tensor::Mat::ikkj(o, w, x);
-        Tensor::Mat::ikkj(o, u, h);
+        Tensor::Mul::ikkj(o, w, x);
+        Tensor::Mul::ikkj(o, u, h);
         o += b;
         return o;
     }

@@ -11,7 +11,7 @@ struct Sigmoid {
     inline static void f(Tensor &x)
     {
         for (std::size_t i = 0; i < x.totalSize; i++) {
-            x.val[i] = 1/(1 + exp(-x.val[i]));
+            x.val[i] = 1/(1 + std::exp(-x.val[i]));
         }
         return;
     }
@@ -27,7 +27,7 @@ struct Sigmoid {
     {
         Tensor y(x.shape);
         for (std::size_t i = 0; i < x.totalSize; i++) {
-            y.val[i] = 1/(1 + exp(-x.val[i]));
+            y.val[i] = 1/(1 + std::exp(-x.val[i]));
         }
         return y;
     }
@@ -43,12 +43,12 @@ struct Sigmoid {
 };
 
 struct Tanh {
-    inline static float f(float x) {return tanh(x);}
+    inline static float f(float x) {return std::tanh(x);}
     inline static float df(float y) {return 1 - y*y;}
     inline static void f(Tensor &x)
     {
         for (std::size_t i = 0; i < x.totalSize; i++) {
-            x.val[i] = tanh(x.val[i]);
+            x.val[i] = std::tanh(x.val[i]);
         }
         return;
     }

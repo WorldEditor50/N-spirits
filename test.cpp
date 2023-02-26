@@ -220,6 +220,8 @@ void test_static_matrix()
         auto x4 = MatsFunc::mul(v1, v2);
         x4.show();
     }
+    /* case 6 */
+    std::cout<<"-------case6:-------"<<std::endl;
     /* msvc config: /bigobj */
 #if 0 // compile cost too much time
     Mats<200, 200> x4(4);
@@ -409,7 +411,7 @@ void test_tensor_func()
     Tensor x({3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
     Tensor y = Tensor::func(x, [&](float xi)->float{ return xi*xi;});
     y.printValue();
-    y = Tensor::func(x, exp);
+    y = Tensor::func(x, std::exp);
     y.printValue();
     return;
 }
@@ -480,10 +482,12 @@ void test_permute()
 
 void test_bpnn()
 {
-    using BPNN = Net<FcLayer, LayerNorm, FcLayer>;
-    BPNN bp(FcLayer(2, 4, true, ACTIVE_LEAKRELU),
-            LayerNorm(4, 4, true, ACTIVE_LEAKRELU),
-            FcLayer(4, 1, true, ACTIVE_LEAKRELU));
+    using BPNN = Net<FcLayer, LayerNorm, FcLayer, LayerNorm, FcLayer>;
+    BPNN bp(FcLayer(2, 128, true, ACTIVE_TANH),
+            LayerNorm(128, 128, true, ACTIVE_SIGMOID),
+            FcLayer(128, 128, true, ACTIVE_TANH),
+            LayerNorm(128, 128, true, ACTIVE_SIGMOID),
+            FcLayer(128, 1, true, ACTIVE_SIGMOID));
     Optimizer<BPNN, Optimize::RMSProp> optimizer(bp, 1e-3);
     /* train xor */
     std::vector<Tensor> x = {Tensor({2, 1}, {1, 1}),
@@ -495,6 +499,7 @@ void test_bpnn()
                               Tensor({1, 1}, {1}),
                               Tensor({1, 1}, {0})};
     std::uniform_int_distribution<int> distribution(0, 3);
+    auto t1 = Clock::tiktok();
     for (int i = 0; i < 10000; i++) {
         for (int j = 0; j < 4; j++) {
             int k = distribution(Utils::engine);
@@ -508,6 +513,8 @@ void test_bpnn()
         /* update */
         optimizer.update();
     }
+    auto t2 = Clock::tiktok();
+    std::cout<<"train cost time:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
     /* predict */
     for (int i = 0; i < 4; i++) {
         Tensor& y = bp(x[i]);
@@ -536,10 +543,10 @@ void test_simd_matmul()
     std::cout<<"__m128d/double:"<<sizeof (__m128d)/sizeof (double)<<std::endl;
     std::cout<<"__m256/float:"<<sizeof (__m256)/sizeof (float)<<std::endl;
     std::cout<<"__m256d/double:"<<sizeof (__m256d)/sizeof (double)<<std::endl;
-    int s = 2048;
-    Tensor x(s, s);
-    Tensor x1(s, s);
-    Tensor x2(s, s);
+    int N = 2048;
+    Tensor x(N, N);
+    Tensor x1(N, N);
+    Tensor x2(N, N);
     Utils::uniform(x1, -9, 9);
     Utils::uniform(x2, -9, 9);
     /* simd matmul */
@@ -588,7 +595,7 @@ void test_simd_matmul()
     {
         x.zero();
         auto t1 = Clock::tiktok();
-        Tensor::Mat::ikkj(x, x1, x2);
+        Tensor::Mul::ikkj(x, x1, x2);
         auto t2 = Clock::tiktok();
         double cost = Clock::duration(t2, t1);
         std::cout<<"trivial matmul cost:"<<cost<<"s"<<std::endl;
@@ -655,19 +662,20 @@ void test_simd()
 
 void test_simd_transpose()
 {
-    /* not work */
+    int N = 4096;
     {
-        Tensor_<double> x(8, 8);
-        Tensor_<double> y(8, 8);
+        Tensor_<double> x(N, N);
+        Tensor_<double> y(N, N);
         Utils::uniform(x, 0, 9);
-        simd::AVX2::transpose(y.ptr(), 8, 8,
-                              x.ptr(), 8, 8);
-        Tensor_<double>::Mat::print(x);
-        std::cout<<"transpose:"<<std::endl;
+        auto t1 = Clock::tiktok();
+        simd::AVX2::transpose(y.ptr(), N, N,
+                              x.ptr(), N, N);
+        auto t2 = Clock::tiktok();
+        std::cout<<"avx2 transpose cost:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
+        t1 = Clock::tiktok();
         Tensor_<double> x1 = x.tr();
-        Tensor_<double>::Mat::print(x1);
-        std::cout<<"simd transpose:"<<std::endl;
-        Tensor_<double>::Mat::print(y);
+        t2 = Clock::tiktok();
+        std::cout<<"trivial transpose cost:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
     } 
     if (0)
     {
@@ -700,7 +708,21 @@ int main()
     //test_lenet5();
     //test_simd();
     //test_simd_matmul();
-    test_simd_transpose();
+    //test_simd_transpose();
+    test_bpnn();
+#if 0
+    Tensor x(4);
+    x.fill(1);
+    x.printValue();
+    Tensor x2(4);
+    x2.fill(2);
+    x += x2;
+    x.printValue();
+    Tensor x3(4);
+    x3.fill(3);
+    x *= x3;
+    x.printValue();
+#endif
     return 0;
 }
 
