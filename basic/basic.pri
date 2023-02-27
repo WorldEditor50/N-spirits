@@ -10,7 +10,7 @@ HEADERS += $$PWD/basic_def.h \
            $$PWD/kernel.h \
            $$PWD/linearalgebra.h \
            $$PWD/mat.h \
-           $$PWD/sse2func.hpp \
+           $$PWD/sse2wrapper.hpp \
            $$PWD/tensor.hpp \
            $$PWD/utils.h \
            $$PWD/vec.h \

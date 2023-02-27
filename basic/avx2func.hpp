@@ -3,25 +3,28 @@
 #include <immintrin.h>
 #include <vector>
 #include <cmath>
+#include "basic_def.h"
+
 namespace simd {
 
 struct AVX2 {
 
+
+
 #if defined(__AVX2__)
 
     template<typename T>
-    struct Step {
+    struct Selector {
         constexpr static std::size_t value = 0;
     };
     template<>
-    struct Step<double> {
+    struct Selector<double> {
         constexpr static std::size_t value = sizeof (__m256d)/sizeof (double);
     };
     template<>
-    struct Step<float> {
+    struct Selector<float> {
         constexpr static std::size_t value = sizeof (__m256)/sizeof (float);
     };
-
     inline static float reduce(__m256& ymm)
     {
         float result[8];
@@ -649,25 +652,23 @@ struct AVX2 {
         return;
     }
 
-    inline static __m256 exp256_ps(__m256& x)
+    inline static __m256 VECTORCALL exp256_ps(__m256& x)
     {
         /*
             origin:
                 http://software-lisc.fbk.eu/avx_mathfun/avx_mathfun.h
         */
-        __m256   exp_hi        = _mm256_set1_ps(88.3762626647949f);
-        __m256   exp_lo        = _mm256_set1_ps(-88.3762626647949f);
-
-        __m256   cephes_LOG2EF = _mm256_set1_ps(1.44269504088896341);
-        __m256   cephes_exp_C1 = _mm256_set1_ps(0.693359375);
-        __m256   cephes_exp_C2 = _mm256_set1_ps(-2.12194440e-4);
-
-        __m256   cephes_exp_p0 = _mm256_set1_ps(1.9875691500E-4);
-        __m256   cephes_exp_p1 = _mm256_set1_ps(1.3981999507E-3);
-        __m256   cephes_exp_p2 = _mm256_set1_ps(8.3334519073E-3);
-        __m256   cephes_exp_p3 = _mm256_set1_ps(4.1665795894E-2);
-        __m256   cephes_exp_p4 = _mm256_set1_ps(1.6666665459E-1);
-        __m256   cephes_exp_p5 = _mm256_set1_ps(5.0000001201E-1);
+        const static __m256   exp_hi        = _mm256_set1_ps(88.3762626647949f);
+        const static __m256   exp_lo        = _mm256_set1_ps(-88.3762626647949f);
+        const static __m256   cephes_LOG2EF = _mm256_set1_ps(1.44269504088896341);
+        const static __m256   cephes_exp_C1 = _mm256_set1_ps(0.693359375);
+        const static __m256   cephes_exp_C2 = _mm256_set1_ps(-2.12194440e-4);
+        const static __m256   cephes_exp_p0 = _mm256_set1_ps(1.9875691500E-4);
+        const static __m256   cephes_exp_p1 = _mm256_set1_ps(1.3981999507E-3);
+        const static __m256   cephes_exp_p2 = _mm256_set1_ps(8.3334519073E-3);
+        const static __m256   cephes_exp_p3 = _mm256_set1_ps(4.1665795894E-2);
+        const static __m256   cephes_exp_p4 = _mm256_set1_ps(1.6666665459E-1);
+        const static __m256   cephes_exp_p5 = _mm256_set1_ps(5.0000001201E-1);
         __m256   tmp           = _mm256_setzero_ps(), fx;
         __m256i  imm0;
         __m256   one           = _mm256_set1_ps(1.0f);
@@ -729,6 +730,192 @@ struct AVX2 {
             py[i] = std::exp(px[i]);
         }
         return;
+    }
+
+    inline static __m256d VECTORCALL log2_pd(__m256d& x)
+    {
+        /*
+            origin:
+                https://stackoverflow.com/questions/45770089/efficient-implementation-of-log2-m256d-in-avx2
+        */
+        const static __m256i gDoubleExpMask = _mm256_set1_epi64x(0x7ffULL << 52);
+        const static __m256i gDoubleExp0 = _mm256_set1_epi64x(1023ULL << 52);
+        const static __m256i gTo32bitExp = _mm256_set_epi32(0, 0, 0, 0, 6, 4, 2, 0);
+        const static __m128i gExpNormalizer = _mm_set1_epi32(1023);
+        //TODO: some 128-bit variable or two 64-bit variables here?
+        const static __m256d gCommMul = _mm256_set1_pd(2.0 / 0.693147180559945309417); // 2.0/ln(2)
+        const static __m256d gCoeff1 = _mm256_set1_pd(1.0 / 3);
+        const static __m256d gCoeff2 = _mm256_set1_pd(1.0 / 5);
+        const static __m256d gCoeff3 = _mm256_set1_pd(1.0 / 7);
+        const static __m256d gCoeff4 = _mm256_set1_pd(1.0 / 9);
+        const static __m256d gVect1 = _mm256_set1_pd(1.0);
+
+
+        const __m256i exps64 = _mm256_srli_epi64(_mm256_and_si256(gDoubleExpMask, _mm256_castpd_si256(x)), 52);
+        const __m256i exps32_avx = _mm256_permutevar8x32_epi32(exps64, gTo32bitExp);
+        const __m128i exps32_sse = _mm256_castsi256_si128(exps32_avx);
+        const __m128i normExps = _mm_sub_epi32(exps32_sse, gExpNormalizer);
+        const __m256d expsPD = _mm256_cvtepi32_pd(normExps);
+        const __m256d y = _mm256_or_pd(_mm256_castsi256_pd(gDoubleExp0),
+        _mm256_andnot_pd(_mm256_castsi256_pd(gDoubleExpMask), x));
+
+        // Calculate t=(y-1)/(y+1) and t**2
+        const __m256d tNum = _mm256_sub_pd(y, gVect1);
+        const __m256d tDen = _mm256_add_pd(y, gVect1);
+        const __m256d t = _mm256_div_pd(tNum, tDen);
+        const __m256d t2 = _mm256_mul_pd(t, t); // t**2
+
+        const __m256d t3 = _mm256_mul_pd(t, t2); // t**3
+        const __m256d terms01 = _mm256_fmadd_pd(gCoeff1, t3, t);
+        const __m256d t5 = _mm256_mul_pd(t3, t2); // t**5
+        const __m256d terms012 = _mm256_fmadd_pd(gCoeff2, t5, terms01);
+        const __m256d t7 = _mm256_mul_pd(t5, t2); // t**7
+        const __m256d terms0123 = _mm256_fmadd_pd(gCoeff3, t7, terms012);
+        const __m256d t9 = _mm256_mul_pd(t7, t2); // t**9
+        const __m256d terms01234 = _mm256_fmadd_pd(gCoeff4, t9, terms0123);
+
+        const __m256d log2_y = _mm256_mul_pd(terms01234, gCommMul);
+        const __m256d log2_x = _mm256_add_pd(log2_y, expsPD);
+
+        return log2_x;
+    }
+
+    inline static void softmax(float* dest, const float* source, size_t size)
+    {
+        float tmpfloat8[8];
+        int count = size / 8;
+
+        // step 1: get maxValue
+        float maxValue = source[0];
+        if (count > 0) {
+        auto maxVal = _mm256_loadu_ps(source);
+        for (int i = 1; i < count; i++) {
+          maxVal = _mm256_max_ps(maxVal, _mm256_loadu_ps(source + i * 8));
+        }
+        _mm256_storeu_ps(tmpfloat8, maxVal);
+        maxValue = tmpfloat8[0] > tmpfloat8[1] ? tmpfloat8[0] : tmpfloat8[1];
+        for (int i = 2; i < 8; i++) {
+          maxValue = maxValue > tmpfloat8[i] ? maxValue : tmpfloat8[i];
+        }
+        }
+
+        // step 2: get exp(x - maxValue) and sum(exp(x - maxValue))
+        float sumValue = 0.f;
+        if (count > 0) {
+            auto sumVal = _mm256_set1_ps(0.f);
+            auto p0 = _mm256_set1_ps(0.6931471805599453);
+            auto p1 = _mm256_set1_ps(1.4426950408889634);
+            auto p2 = _mm256_set1_ps(1.f);
+            auto p3 = _mm256_set1_ps(1.f);
+            auto p4 = _mm256_set1_ps(0.5);
+            auto p5 = _mm256_set1_ps(0.1666666666666666);
+            auto p6 = _mm256_set1_ps(0.041666666666666664);
+            auto p7 = _mm256_set1_ps(0.008333333333333333);
+            auto xMax = _mm256_set1_ps(87);
+            auto xMin = _mm256_set1_ps(-87);
+            auto basic = _mm256_set1_epi32(1 << 23);
+            auto temp127 = _mm256_set1_epi32(127);
+
+            for (int i = 0; i < count; ++i) {
+                  auto x = _mm256_sub_ps(_mm256_loadu_ps(source + i * 8),
+                                         _mm256_set1_ps(maxValue));
+                  x = _mm256_max_ps(x, xMin);
+                  x = _mm256_min_ps(x, xMax);
+                  auto div = _mm256_mul_ps(x, p1);
+                  auto divInt = _mm256_cvtps_epi32(div);
+                  div = _mm256_cvtepi32_ps(divInt);
+                  auto div2 = _mm256_add_epi32(divInt, temp127);
+                  div2 = _mm256_mullo_epi32(div2, basic);
+                  auto expBasic = _mm256_castsi256_ps(div2);
+                  auto xReamin = _mm256_sub_ps(x, _mm256_mul_ps(div, p0));
+                  auto t = xReamin;
+                  auto c0 = _mm256_mul_ps(p7, t);
+                  auto c1 = _mm256_add_ps(c0, p6);
+                  auto c2 = _mm256_mul_ps(c1, t);
+                  auto c3 = _mm256_add_ps(c2, p5);
+                  auto c4 = _mm256_mul_ps(c3, t);
+                  auto c5 = _mm256_add_ps(c4, p4);
+                  auto c6 = _mm256_mul_ps(c5, t);
+                  auto c7 = _mm256_add_ps(c6, p3);
+                  auto c8 = _mm256_mul_ps(c7, t);
+                  auto c9 = _mm256_add_ps(c8, p2);
+                  auto expRemain = c9;
+                  auto expRes = _mm256_mul_ps(expBasic, expRemain);
+                  sumVal = _mm256_add_ps(expRes, sumVal);
+                  _mm256_storeu_ps(dest + 8 * i, expRes);
+            }
+            _mm256_storeu_ps(tmpfloat8, sumVal);
+            for (int i = 0; i < 8; i++) {
+              sumValue += tmpfloat8[i];
+            }
+        }
+
+        auto param = 0.6931471805599453;
+        float xLimit = 87;
+
+        // step 3: get x / sum and store
+        for (int i = 0; i < count; ++i) {
+        // using  1 / ((1 / x) * sum) instead x * (1 / sum) or x / sum for some bugs
+        // in intel cpu
+        auto x = _mm256_rcp_ps(_mm256_loadu_ps(dest + 8 * i));
+        auto y = _mm256_set1_ps(sumValue);
+        auto z = _mm256_rcp_ps(_mm256_mul_ps(x, y));
+        _mm256_storeu_ps(dest + 8 * i, z);
+        }
+    }
+
+    inline static void gelu(float* dst, const float* src, size_t size)
+    {
+      auto var1 = _mm256_set1_ps(0.044715f);
+      auto var2 = _mm256_set1_ps(0.79788458f);
+      auto var3 = _mm256_set1_ps(378.f);
+      auto var4 = _mm256_set1_ps(17325.f);
+      auto var5 = _mm256_set1_ps(135135.f);
+      auto var6 = _mm256_set1_ps(28.f);
+      auto var7 = _mm256_set1_ps(3150.f);
+      auto var8 = _mm256_set1_ps(62370.f);
+      auto var9 = _mm256_set1_ps(135135.f);
+      auto var10 = _mm256_set1_ps(0.5);
+      auto varOne = _mm256_set1_ps(1.f);
+      auto varNegOne = _mm256_set1_ps(-1.f);
+
+      for (int i = 0; i < size; i++) {
+        // x^3
+        auto x = _mm256_loadu_ps(src + i * 8);
+        auto y = _mm256_mul_ps(x, x);
+        y = _mm256_mul_ps(y, x);
+        // 0.044715 * x^3
+        y = _mm256_mul_ps(y, var1);
+        // 0.044715 * x^3 + x
+        y = _mm256_add_ps(y, x);
+        // sqrt(2 / PI) * (0.044715 * x^3 + x)
+        y = _mm256_mul_ps(y, var2);
+
+        // y = tanh(y)
+        {
+          auto y2 = _mm256_mul_ps(y, y);
+          auto w = _mm256_add_ps(y2, var3);
+          w = _mm256_mul_ps(w, y2);
+          w = _mm256_add_ps(w, var4);
+          w = _mm256_mul_ps(w, y2);
+          w = _mm256_add_ps(w, var5);
+          w = _mm256_mul_ps(w, y);
+          auto z = _mm256_mul_ps(y2, var6);
+          z = _mm256_add_ps(z, var7);
+          z = _mm256_mul_ps(z, y2);
+          z = _mm256_add_ps(z, var8);
+          z = _mm256_mul_ps(z, y2);
+          z = _mm256_add_ps(z, var9);
+          z = _mm256_div_ps(w, z);
+          z = _mm256_max_ps(z, varNegOne);
+          y = _mm256_min_ps(z, varOne);
+        }
+
+        y = _mm256_add_ps(y, varOne);
+        y = _mm256_mul_ps(y, x);
+        y = _mm256_mul_ps(y, var10);
+        _mm256_storeu_ps(dst + i * 8, y);
+      }
     }
 
     inline static double dot(const double* __restrict x1, const double* __restrict x2, std::size_t N)

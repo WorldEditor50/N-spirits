@@ -460,10 +460,10 @@ public:
 public:
     AvgPooling2d(){}
     explicit AvgPooling2d(int inChannels_,
-                              int h,
-                              int w,
-                              int kernelSize_=2,
-                              int stride_=2):
+                          int h,
+                          int w,
+                          int kernelSize_=2,
+                          int stride_=2):
         Conv2dParam(inChannels_, inChannels_, kernelSize_, stride_, 0, false)
     {
         hi = h;

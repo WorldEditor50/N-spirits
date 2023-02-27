@@ -543,6 +543,13 @@ void test_simd_matmul()
     std::cout<<"__m128d/double:"<<sizeof (__m128d)/sizeof (double)<<std::endl;
     std::cout<<"__m256/float:"<<sizeof (__m256)/sizeof (float)<<std::endl;
     std::cout<<"__m256d/double:"<<sizeof (__m256d)/sizeof (double)<<std::endl;
+
+    /*
+
+        N:       128         256         512        1024        2048
+        cost:    0.000206s   0.002147s   0.014766s  0.211389s   2.58015s
+
+    */
     int N = 2048;
     Tensor x(N, N);
     Tensor x1(N, N);
@@ -582,16 +589,16 @@ void test_simd_matmul()
     {
         x.zero();
         auto t1 = Clock::tiktok();
-        wrap::AVX2<float>::matMul(xPtr, x.shape[0], x.shape[1],
-                                  x1Ptr, x1.shape[0], x1.shape[1],
-                                  x2Ptr, x2.shape[0], x2.shape[1]);
+        simd::wrap<float, simd::AVX>::matMul(xPtr, x.shape[0], x.shape[1],
+                                             x1Ptr, x1.shape[0], x1.shape[1],
+                                             x2Ptr, x2.shape[0], x2.shape[1]);
         auto t2 = Clock::tiktok();
         double cost = Clock::duration(t2, t1);
         std::cout<<"avx2 wrapper matmul cost:"<<cost<<"s"<<std::endl;
         //x.printValue();
     }
     /* trivial matmul */
-    if (false)
+    if (true)
     {
         x.zero();
         auto t1 = Clock::tiktok();
@@ -703,26 +710,12 @@ int main()
     test_conv();
     test_permute();
     test_bpnn();
+    test_lenet5();
+    test_simd();
     test_simd_matmul();
 #endif
-    //test_lenet5();
-    //test_simd();
     //test_simd_matmul();
-    //test_simd_transpose();
     test_bpnn();
-#if 0
-    Tensor x(4);
-    x.fill(1);
-    x.printValue();
-    Tensor x2(4);
-    x2.fill(2);
-    x += x2;
-    x.printValue();
-    Tensor x3(4);
-    x3.fill(3);
-    x *= x3;
-    x.printValue();
-#endif
     return 0;
 }
 

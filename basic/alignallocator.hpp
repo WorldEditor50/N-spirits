@@ -3,7 +3,7 @@
 #include <memory>
 
 template <typename T, std::size_t N>
-class AlignAllocator {
+class AlignedAllocator {
 public:
     using value_type = T;
     using size_type = std::size_t;
@@ -13,10 +13,10 @@ public:
     using reference = T&;
     using const_reference = const T&;
 public:
-    inline AlignAllocator() throw() {}
+    inline AlignedAllocator() throw() {}
     template <typename T2>
-    inline AlignAllocator(const AlignAllocator<T2, N> &) throw() {}
-    inline ~AlignAllocator() throw() {}
+    inline AlignedAllocator(const AlignedAllocator<T2, N> &) throw() {}
+    inline ~AlignedAllocator() throw() {}
     inline pointer adress(reference r) { return &r; }
     inline const_pointer adress(const_reference r) const { return &r; }
     inline pointer allocate(size_type n);
@@ -26,14 +26,14 @@ public:
     inline size_type max_size() const throw() { return size_type(-1) / sizeof(value_type); }
     template <typename T2>
     struct rebind {
-        using other = AlignAllocator<T2, N>;
+        using other = AlignedAllocator<T2, N>;
     };
-    bool operator!=(const AlignAllocator<T, N> & other) const { return !(*this == other); }
-    bool operator==(const AlignAllocator<T, N> & other) const { return true; }
+    bool operator!=(const AlignedAllocator<T, N> & other) const { return !(*this == other); }
+    bool operator==(const AlignedAllocator<T, N> & other) const { return true; }
 };
 
 template <typename T, std::size_t N>
-inline typename AlignAllocator<T, N>::pointer AlignAllocator<T, N>::allocate(size_type n)
+inline typename AlignedAllocator<T, N>::pointer AlignedAllocator<T, N>::allocate(size_type n)
 {
 #ifdef _MSC_VER
     auto p = (pointer)_aligned_malloc(n * sizeof(value_type), N);
@@ -47,7 +47,7 @@ inline typename AlignAllocator<T, N>::pointer AlignAllocator<T, N>::allocate(siz
 }
 
 template <typename T, std::size_t N>
-inline void AlignAllocator<T, N>::deallocate(pointer p, size_type)
+inline void AlignedAllocator<T, N>::deallocate(pointer p, size_type)
 {
 #ifdef _MSC_VER
     _aligned_free(p);
@@ -58,12 +58,12 @@ inline void AlignAllocator<T, N>::deallocate(pointer p, size_type)
 }
 
 template <typename T>
-using AlignAllocator16 = AlignAllocator<T, 16>;
+using AlignAllocator16 = AlignedAllocator<T, 16>;
 
 template <typename T>
-using AlignAllocator32 = AlignAllocator<T, 32>;
+using AlignAllocator32 = AlignedAllocator<T, 32>;
 
 template <typename T>
-using AlignAllocator64 = AlignAllocator<T, 64>;
+using AlignAllocator64 = AlignedAllocator<T, 64>;
 
 #endif // ALIGNALLOCATOR_HPP

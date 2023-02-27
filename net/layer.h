@@ -113,8 +113,8 @@ public:
     Tensor o;
 public:
     FcLayer(){}
-    explicit FcLayer(int inDim_, int outDim_, bool bias_, int activeType_)
-        : FcParam(inDim_, outDim_, bias_, activeType_)
+    explicit FcLayer(int inputDim_, int outputDim_, bool bias_, int activeType_)
+        : FcParam(inputDim_, outputDim_, bias_, activeType_)
     {
         w = Tensor(outputDim, inputDim);
         if (bias == true) {
