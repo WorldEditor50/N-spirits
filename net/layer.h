@@ -97,12 +97,16 @@ public:
         OptimizeBlock(const FcLayer &layer)
         {
             optW = Optimizer(layer.w.shape);
-            optB = Optimizer(layer.b.shape);
+            if (layer.bias == true) {
+                optB = Optimizer(layer.b.shape);
+            }
         }
         inline void operator()(FcLayer& layer, Grad& grad, float learningRate)
         {
             optW(layer.w, grad.dw, learningRate);
-            optB(layer.b, grad.db, learningRate);
+            if (layer.bias == true) {
+                optB(layer.b, grad.db, learningRate);
+            }
             return;
         }
     };
@@ -118,7 +122,7 @@ public:
     {
         w = Tensor(outputDim, inputDim);
         if (bias == true) {
-            b = Tensor(outputDim);
+            b = Tensor(outputDim, 1);
         }
         o = Tensor(outputDim, 1);
         /* init */

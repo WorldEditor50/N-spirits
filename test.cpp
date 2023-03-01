@@ -12,13 +12,12 @@
 #include "kmeans.h"
 #include "svm.h"
 #include "gmm.h"
-#include "simd.hpp"
-#include "avx2wrapper.hpp"
+#include "./basic/simd.hpp"
 #include "net/net.h"
-#include "../net/optimizer.h"
-#include "../net/layer.h"
-#include "../net/loss.h"
-#include "../net/conv.h"
+#include "./net/optimizer.h"
+#include "./net/layer.h"
+#include "./net/loss.h"
+#include "./net/conv.h"
 
 void test_lu()
 {
@@ -525,15 +524,64 @@ void test_bpnn()
 
 void test_lenet5()
 {
+    /*
+        (3,32,32)
+        (6,28,28)
+        (6,14,14)
+        (16,10,10)
+        (16,5,5)
+        (120,1)
+        (84,1)
+        (10,1)
+    */
     using LeNet5 = Net<Conv2d, MaxPooling2d, Conv2d, MaxPooling2d, FcLayer, FcLayer, SoftmaxLayer>;
 
     LeNet5 lenet5(Conv2d(3, 32, 32, 6, 5, 1, 0),
                   MaxPooling2d(6, 28, 28, 2, 2),
                   Conv2d(6, 14, 14, 16, 5, 1, 0),
-                  MaxPooling2d(2, 10, 10, 2, 2),
-                  FcLayer(16*5*5, 120, true, ACTIVE_LEAKRELU),
-                  FcLayer(120, 84, true, ACTIVE_LEAKRELU),
+                  MaxPooling2d(16, 10, 10, 2, 2),
+                  FcLayer(16*5*5, 120, true, ACTIVE_SIGMOID),
+                  FcLayer(120, 84, true, ACTIVE_SIGMOID),
                   SoftmaxLayer(84, 10));
+    Optimizer<LeNet5, Optimize::RMSProp> optimizer(lenet5, 1e-3);
+    Tensor x(3, 32, 32);
+    Tensor yt(10, 1);
+    for (std::size_t i = 0; i < 1000; i++) {
+        Utils::uniform(x, 0, 1);
+        /* forward */
+        Tensor& y = lenet5(x);
+        y.printValue();
+        /* loss */
+        Utils::uniform(yt, 0, 1);
+        Tensor loss = Loss::CROSS_EMTROPY(y, yt);
+        /* backward */
+        optimizer.backward(loss, x, yt);
+    }
+    return;
+#if 0
+    Conv2d& conv1 = std::get<0>(lenet5.layers);
+    MaxPooling2d& pool1 = std::get<1>(lenet5.layers);
+    Conv2d& conv2 = std::get<2>(lenet5.layers);
+    MaxPooling2d& pool2 = std::get<3>(lenet5.layers);
+    FcLayer& fc1 = std::get<4>(lenet5.layers);
+    FcLayer& fc2 = std::get<5>(lenet5.layers);
+    SoftmaxLayer& softmax = std::get<6>(lenet5.layers);
+
+    Tensor& c1 = conv1.forward(x);
+    c1.printShape();
+    Tensor& p1 = pool1.forward(c1);
+    p1.printShape();
+    Tensor& c2 = conv2.forward(p1);
+    c2.printShape();
+    Tensor& p2 = pool2.forward(c2);
+    p2.printShape();
+    Tensor& f1 = fc1.forward(Tensor({int(p2.totalSize), 1}, p2.val));
+    f1.printShape();
+    Tensor& f2 = fc2.forward(f1);
+    f2.printShape();
+    Tensor& f3 = softmax.forward(f2);
+    f3.printShape();
+#endif
     return;
 }
 
@@ -721,7 +769,8 @@ int main()
     test_simd_matmul();
 #endif
     //test_simd_matmul();
-    test_bpnn();
+    //test_bpnn();
+    test_lenet5();
     return 0;
 }
 

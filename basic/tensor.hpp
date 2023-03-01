@@ -235,6 +235,21 @@ public:
         return;
     }
 
+    static void reshape(Tensor_ &x, const std::vector<int> &newShape)
+    {
+        /* size */
+        int s = 1;
+        for (std::size_t i = 0; i < x.shape.size(); i++) {
+            s *= newShape[i];
+        }
+        if (s != x.totalSize) {
+            return;
+        }
+        initParams(newShape, x.sizes, x.totalSize);
+        x.shape = newShape;
+        return;
+    }
+
     Tensor_ flatten() const
     {
         Tensor_ x(totalSize);

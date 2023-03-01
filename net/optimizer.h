@@ -20,22 +20,21 @@ public:
     /* generate grad */
     template<typename Layers, typename Grads, typename Optimizers, std::size_t N>
     struct Generate {
-        static void impl(Layers& layers, Grads &grads, Optimizers &optimizers)
+        inline static void impl(Layers& layers, Grads &grads, Optimizers &optimizers)
         {
+            //std::cout<<"N:"<<N<<std::endl;
             Generate<Layers, Grads, Optimizers, N - 1>::impl(layers, grads, optimizers);
+
             using Layer = std::tuple_element_t<N - 1, Layers>;
-            using GradType = typename Layer::Grad;
+            using Grad = typename Layer::Grad;
             Layer &layer = std::get<N - 1>(layers);
-
             /* grad */
-            GradType &grad = std::get<N - 1>(grads);
-
-            using ParamType = typename Layer::ParamType;
-
-            grad = GradType(static_cast<ParamType>(layer));
+            Grad &grad = std::get<N - 1>(grads);
+            using Param = typename Layer::ParamType;
+            grad = Grad(static_cast<Param>(layer));
             /* optimizer */
             using OptimizeBlock = typename Layer::template OptimizeBlock<OptimizeMethod>;
-            OptimizeBlock& opt = std::get<N - 1>(optimizers);
+            auto& opt = std::get<N - 1>(optimizers);
             opt = OptimizeBlock(layer);
             return;
         }
@@ -43,15 +42,15 @@ public:
 
     template<typename Layers, typename Grads, typename Optimizers>
     struct Generate<Layers, Grads, Optimizers, 1> {
-        static void impl(Layers& layers, Grads &grads, Optimizers &optimizers)
+        inline static void impl(Layers& layers, Grads &grads, Optimizers &optimizers)
         {
             auto &layer = std::get<0>(layers);
             auto &grad = std::get<0>(grads);
             /* grad */
             using Layer = std::tuple_element_t<0, Layers>;
-            using ParamType = typename Layer::ParamType;
-            using GradType = typename Layer::Grad;
-            grad = GradType(static_cast<ParamType>(layer));
+            using Param = typename Layer::ParamType;
+            using Grad = typename Layer::Grad;
+            grad = Grad(static_cast<Param>(layer));
             /* optimizer */
             using OptimizeBlock = typename Layer::template OptimizeBlock<OptimizeMethod>;
             auto& opt = std::get<0>(optimizers);
@@ -59,10 +58,10 @@ public:
             return;
         }
     };
-    /* backward */
-    template<typename Layers, typename Grads, std::size_t N, typename LayerN1>
+    /* backward: LayerN1 -> LayerN2 */
+    template<typename Layers, typename Grads, typename LayerN1, typename LayerN2, std::size_t N>
     struct Backward {
-        static void impl(Grads &grads, Layers& layers, const Tensor &x)
+        inline static void impl(Grads &grads, Layers& layers, const Tensor &x)
         {
             auto& layerN1 = std::get<N - 1>(layers);
             auto& gradN1 = std::get<N - 1>(grads);
@@ -73,28 +72,32 @@ public:
             Tensor &x1 = std::get<N - 2>(layers).o;
             gradN1.eval(x1, layerN1.o);
             /* next */
-            using LayerN2 = std::tuple_element_t<N - 2, Layers>;
-            Backward<Layers, Grads, N - 1, LayerN2>::impl(grads, layers, x);
+            using LayerN3 = std::tuple_element_t<N - 3, Layers>;
+            Backward<Layers, Grads, LayerN2, LayerN3, N - 1>::impl(grads, layers, x);
             return;
         }
     };
 
-    template<typename Layers, typename Grads, typename LayerN1>
-    struct Backward<Layers, Grads, 1, LayerN1> {
-        static void impl(Grads &grads, Layers& layers, const Tensor &x)
+    template<typename Layers, typename Grads, typename LayerN1, typename LayerN2>
+    struct Backward<Layers, Grads, LayerN1, LayerN2, 2> {
+        inline static void impl(Grads &grads, Layers& layers, const Tensor &x)
         {
             auto& layer0 = std::get<0>(layers);
             auto& grad0 = std::get<0>(grads);
-            /* no backward */
+            auto& layer1 = std::get<1>(layers);
+            auto& grad1 = std::get<1>(grads);
+            /* backward */
+            grad1.backward(layer1, grad0.delta);
             /* evaluate */
+            grad1.eval(layer0.o, layer1.o);
             grad0.eval(x, layer0.o);
             return;
         }
     };
-
+    /* backward: FcLayer -> LSTM */
     template<typename Layers, typename Grads>
-    struct Backward<Layers, Grads, 1, LSTM> {
-        static void impl(Grads &grads, Layers& layers, const Tensor &x)
+    struct Backward<Layers, Grads, FcLayer, LSTM, 2> {
+        inline static void impl(Grads &grads, Layers& layers, const Tensor &x)
         {
             auto& layer1 = std::get<1>(layers);
             auto& grad1 = std::get<1>(grads);
@@ -105,60 +108,35 @@ public:
         }
     };
 
-    template<typename Layers, typename Grads>
-    struct Backward<Layers, Grads, 1, BatchNorm1d> {
-        static void impl(Grads &grads, Layers& layers, const Tensor &x)
-        {
-            auto& layer1 = std::get<1>(layers);
-            auto& grad1 = std::get<1>(grads);
-            auto& batchNormGrad = std::get<0>(grads);
-            Tensor &delta = batchNormGrad.deltas[0];
-            /* backward delta to batchnorm */
-            grad1.backward(layer1, delta);
-            /* evaluate */
-            batchNormGrad.eval(x, layer1.o);
-            return;
-        }
-    };
+    /* backward: fc -> MaxPooling2d */
     template<typename Layers, typename Grads, std::size_t N>
-    struct Backward<Layers, Grads, N, MaxPooling2d> {
-        static void impl(Grads &grads, Layers& layers, const Tensor &x)
+    struct Backward<Layers, Grads, FcLayer, MaxPooling2d, N> {
+        inline static void impl(Grads &grads, Layers& layers, const Tensor &x)
         {
-            auto& layerN1 = std::get<N - 1>(layers);
-            auto& gradN1 = std::get<N - 1>(grads);
-            auto& gradN2 = std::get<N - 2>(grads);
+            auto& fcLayer = std::get<N - 1>(layers);
+            auto& fcGrad = std::get<N - 1>(grads);
+            auto& maxPooling2d = std::get<N - 2>(layers);
+            auto& maxPooling2dGrad = std::get<N - 2>(grads);
+            Tensor &o = maxPooling2d.o;
             /* backward */
-            gradN1.backward(layerN1, gradN2.delta);
-            /* no gradient */
+            Tensor delta(int(o.totalSize), 1);
+            fcGrad.backward(fcLayer, delta);
+            maxPooling2dGrad.delta.val = delta.val;
+            /* evaluate fcLayer */
+            fcGrad.eval(Tensor({int(o.totalSize), 1}, o.val), fcLayer.o);
             /* next */
-            using LayerN2 = std::tuple_element_t<N - 2, Layers>;
-            Backward<Layers, Grads, N - 1, LayerN2>::impl(grads, layers, x);
-            return;
-        }
-    };
-
-    template<typename Layers, typename Grads, std::size_t N>
-    struct Backward<Layers, Grads, N, AvgPooling2d> {
-        static void impl(Grads &grads, Layers& layers, const Tensor &x)
-        {
-            auto& layerN1 = std::get<N - 1>(layers);
-            auto& gradN1 = std::get<N - 1>(grads);
-            auto& gradN2 = std::get<N - 2>(grads);
-            /* backward */
-            gradN1.backward(layerN1, gradN2.delta);
-            /* no gradient */
-            using LayerN2 = std::tuple_element_t<N - 2, Layers>;
-            Backward<Layers, Grads, N - 1, LayerN2>::impl(grads, layers, x);
+            using LayerN3 = std::tuple_element_t<N - 3, Layers>;
+            Backward<Layers, Grads, MaxPooling2d, LayerN3, N - 1>::impl(grads, layers, x);
             return;
         }
     };
 
     /* update */
-    template<typename Layers, typename Grads, typename Optimizers, std::size_t N>
+    template< typename Optimizers, typename Layers, typename Grads, std::size_t N>
     struct Update {
-        static void impl(Optimizers &optimizers, Layers& layers, Grads &grads, float learningRate)
+        inline static void impl(Optimizers &optimizers, Layers& layers, Grads &grads, float learningRate)
         {
-            Update<Layers, Grads, Optimizers, N - 1>::impl(optimizers, layers, grads, learningRate);
+            Update<Optimizers, Layers, Grads, N - 1>::impl(optimizers, layers, grads, learningRate);
             auto &layer = std::get<N - 1>(layers);
             auto &grad = std::get<N - 1>(grads);
             auto &opt = std::get<N - 1>(optimizers);
@@ -167,9 +145,9 @@ public:
         }
     };
 
-    template<typename Layers, typename Grads, typename Optimizers>
-    struct Update<Layers, Grads, Optimizers, 1> {
-        static void impl(Optimizers &optimizers, Layers& layers, Grads &grads, float learningRate)
+    template< typename Optimizers, typename Layers, typename Grads>
+    struct Update<Optimizers, Layers, Grads, 1> {
+        inline static void impl(Optimizers &optimizers, Layers& layers, Grads &grads, float learningRate)
         {
             auto &layer = std::get<0>(layers);
             auto &grad = std::get<0>(grads);
@@ -190,7 +168,8 @@ public:
         auto &grad = std::get<Net::N - 1>(grads);
         grad.delta = loss;
         using LayerN1 = std::tuple_element_t<Net::N - 1, Layers>;
-        Backward<Layers, Grads, Net::N, LayerN1>::impl(grads, net.layers, x);
+        using LayerN2 = std::tuple_element_t<Net::N - 2, Layers>;
+        Backward<Layers, Grads, LayerN1, LayerN2, Net::N>::impl(grads, net.layers, x);
         return;
     }
 
@@ -202,7 +181,8 @@ public:
         Tensor &x_ = std::get<Net::N - 2>(net.layers).o;
         grad.eval(x_, layer.o, yt);
         using LayerN2 = std::tuple_element_t<Net::N - 2, Layers>;
-        Backward<Layers, Grads, Net::N - 1, LayerN2>::impl(grads, net.layers,  x);
+        using LayerN3 = std::tuple_element_t<Net::N - 3, Layers>;
+        Backward<Layers, Grads, LayerN2, LayerN3, Net::N - 1>::impl(grads, net.layers,  x);
         return;
     }
 
@@ -217,7 +197,7 @@ public:
     void update()
     {
         /* update */
-        Update<Layers, Grads, Optimizers, Net::N>::impl(optimizers, net.layers, grads, learningRate);
+        Update<Optimizers, Layers, Grads, Net::N>::impl(optimizers, net.layers, grads, learningRate);
         return;
     }
 };

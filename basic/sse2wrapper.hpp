@@ -198,9 +198,11 @@ FORCE_INLINE float VECTORCALL reduce(const float * const adr)
     _mm_store_ss(&s, hsum);
     return s;
 }
-#endif // SSE2
 
 };
+#endif // SSE2
+
+
 
 } // simd
 

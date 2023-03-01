@@ -17,7 +17,7 @@ struct Loss
     {
         Tensor loss(yp.shape);
         for (std::size_t i = 0; i < yp.totalSize; i++) {
-            loss[i] = -yt[i] * log(yp[i]);
+            loss[i] = -yt[i] * std::log(yp[i]);
         }
         return loss;
     }
@@ -25,7 +25,7 @@ struct Loss
     {
         Tensor loss(yt.shape);
         for (std::size_t i = 0; i < yp.totalSize; i++) {
-            loss[i] = -(yt[i] * log(yp[i]) + (1 - yt[i]) * log(1 - yp[i]));
+            loss[i] = -(yt[i] * std::log(yp[i]) + (1 - yt[i]) * std::log(1 - yp[i]));
         }
         return loss;
     }

@@ -282,6 +282,6 @@ struct M256 {
 };
 #endif // AVX2
 
-};
+}
 
 #endif // AVX2WRAPPER_HPP

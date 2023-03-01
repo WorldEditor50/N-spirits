@@ -25,12 +25,17 @@ public:
     int activeType;
     int layerType;
 public:
-    Conv2dParam():inChannels(0),outChannels(0),kernelSize(0),stride(0),padding(0){}
+    Conv2dParam()
+        :inChannels(0),outChannels(0),kernelSize(0),stride(0),padding(0),
+         hi(0),wi(0),ho(0),wo(0){}
     explicit Conv2dParam(const Conv2dParam &param)
         : inChannels(param.inChannels),outChannels(param.outChannels),kernelSize(param.kernelSize),
           stride(param.stride),padding(param.padding),bias(param.bias),
+          hi(param.hi),wi(param.wi),ho(param.ho),wo(param.wo),
           id(0),opType(OP_FORWARD),activeType(ACTIVE_LINEAR),layerType(LAYER_CONV2D){}
     explicit Conv2dParam(int inChannels_,
+                         int h,
+                         int w,
                          int outChannels_ ,
                          int kernelSize_=3,
                          int stride_=1,
@@ -39,6 +44,7 @@ public:
                          ActiveType activeType_=ACTIVE_LEAKRELU):
         inChannels(inChannels_),outChannels(outChannels_),kernelSize(kernelSize_),
     stride(stride_),padding(padding_),bias(bias_),
+    hi(h),wi(w),
     id(0),opType(OP_FORWARD),activeType(activeType_),layerType(LAYER_CONV2D){}
 };
 
@@ -137,15 +143,19 @@ public:
         Optimizer optB;
     public:
         OptimizeBlock(){}
-        OptimizeBlock(const Conv2d &layer)
+        explicit OptimizeBlock(const Conv2d &layer)
         {
             optKernels = Optimizer(layer.kernels.shape);
-            optB = Optimizer(layer.b.shape);
+            if (layer.bias == true) {
+                optB = Optimizer(layer.b.shape);
+            }
         }
         void operator()(Conv2d& layer, Grad& grad, float learningRate)
         {
             optKernels(layer.kernels, grad.dkernels, learningRate);
-            optB(layer.b, grad.db, learningRate);
+            if (layer.bias == true) {
+                optB(layer.b, grad.db, learningRate);
+            }
             return;
         }
     };
@@ -167,18 +177,18 @@ public:
                     int padding_=0,
                     bool bias_=false,
                     ActiveType activeType_=ACTIVE_LEAKRELU):
-        Conv2dParam(inChannels_, outChannels_, kernelSize_, stride_, padding_, bias_, activeType_)
+        Conv2dParam(inChannels_, h, w, outChannels_, kernelSize_, stride_, padding_, bias_, activeType_)
     {
         kernels = Tensor(outChannels, inChannels, kernelSize, kernelSize);
-        hi = h;
-        wi = w;
+        Utils::uniform(kernels, -1, 1);
         ho = std::floor((hi - kernelSize + 2*padding)/stride) + 1;
         wo = std::floor((wi - kernelSize + 2*padding)/stride) + 1;
         o = Tensor(outChannels, ho, wo);
         if (bias == true) {
             b = Tensor(outChannels, kernelSize, kernelSize);
+            Utils::uniform(b, -1, 1);
         }
-        layerType = LAYER_MAXPOOLING;
+        layerType = LAYER_CONV2D;
     }
 
     Tensor& forward(const Tensor &x)
@@ -339,6 +349,7 @@ public:
 
         void eval(const Tensor &x, const Tensor &o)
         {
+
             return;
         }
     };
@@ -348,7 +359,7 @@ public:
     {
     public:
         OptimizeBlock(){}
-        OptimizeBlock(const MaxPooling2d &){}
+        explicit OptimizeBlock(const MaxPooling2d &){}
         void operator()(MaxPooling2d&, Grad&, float){}
     };
 public:
@@ -361,17 +372,15 @@ public:
                           int w,
                           int kernelSize_=2,
                           int stride_=2):
-        Conv2dParam(inChannels_, inChannels_, kernelSize_, stride_, 0, false)
+        Conv2dParam(inChannels_, h, w, inChannels_, kernelSize_, stride_, 0, false)
     {
-        hi = h;
-        wi = w;
         ho = std::floor((hi - kernelSize)/stride) + 1;
         wo = std::floor((wi - kernelSize)/stride) + 1;
         o = Tensor(outChannels, ho, wo);
         mask = Tensor(outChannels, ho, wo);
         layerType = LAYER_MAXPOOLING;
     }
-    void forward(const Tensor &x)
+    Tensor& forward(const Tensor &x)
     {
         /* input shape is same as output shape */
         for (int n = 0; n < outChannels; n++) {
@@ -383,7 +392,7 @@ public:
                             float value = x(n, h + i*stride, k + j*stride);
                             if (value > maxValue) {
                                 maxValue = value;
-                                mask(n, h + i*stride, k + j*stride) = 1;
+                                mask(n, h, k) = 1;
                             }
                         }
                     }
@@ -391,7 +400,7 @@ public:
                 }
             }
         }
-        return;
+        return o;
     }
 };
 
@@ -452,7 +461,7 @@ public:
     {
     public:
         OptimizeBlock(){}
-        OptimizeBlock(const AvgPooling2d &){}
+        explicit OptimizeBlock(const AvgPooling2d &){}
         void operator()(AvgPooling2d&, Grad&, float){}
     };
 public:
@@ -464,16 +473,14 @@ public:
                           int w,
                           int kernelSize_=2,
                           int stride_=2):
-        Conv2dParam(inChannels_, inChannels_, kernelSize_, stride_, 0, false)
+        Conv2dParam(inChannels_, h, w, inChannels_, kernelSize_, stride_, 0, false)
     {
-        hi = h;
-        wi = w;
         ho = std::floor((hi - kernelSize)/stride) + 1;
         wo = std::floor((wi - kernelSize)/stride) + 1;
         o = Tensor(outChannels, ho, wo);
         layerType = LAYER_AVGPOOLING;
     }
-    void forward(const Tensor &x)
+    Tensor& forward(const Tensor &x)
     {
         /* conv */
         for (int n = 0; n < outChannels; n++) {
@@ -489,7 +496,7 @@ public:
                 }
             }
         }
-        return;
+        return o;
     }
 
 };
