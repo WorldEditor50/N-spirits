@@ -11,7 +11,7 @@ namespace simd {
 
 #if defined(__SSE2__)
 
-struct SSE2 {};
+struct SSE2 {
 
 struct M128d {
 
@@ -56,11 +56,11 @@ struct M128d {
     {
         return _mm_div_pd(__a, __b);
     }
-    FORCE_INLINE static __m128d VECTORCALL hadd(__m128d& __restrict __a, __m128& __restrict __b) noexcept
+    FORCE_INLINE static __m128d VECTORCALL hadd(__m128d& __restrict __a, __m128d& __restrict __b) noexcept
     {
         return _mm_hadd_pd(__a, __b);
     }
-    FORCE_INLINE static __m128 VECTORCALL hsub( __m128& __restrict __a, __m128d& __restrict __b) noexcept
+    FORCE_INLINE static __m128d VECTORCALL hsub( __m128d& __restrict __a, __m128d& __restrict __b) noexcept
     {
         return _mm_hsub_pd(__a, __b);
     }
@@ -199,6 +199,9 @@ FORCE_INLINE float VECTORCALL reduce(const float * const adr)
     return s;
 }
 #endif // SSE2
+
+};
+
 } // simd
 
 #endif // SSE2WRAPPER_HPP

@@ -187,28 +187,28 @@ template<typename Left>
 inline expt::BinaryOp<expt::Add, Left, expt::Scalar>
 operator + (const expt::Expr<Left> &left_, expt::T right_)
 {
-    return expt::BinaryOp<expt::Add, Left, expt::Scalar>(left_, Scalar(right_));
+    return expt::BinaryOp<expt::Add, Left, expt::Scalar>(left_, expt::Scalar(right_));
 }
 
 template<typename Left>
 inline expt::BinaryOp<expt::Sub, Left, expt::Scalar>
 operator - (const expt::Expr<Left> &left_, expt::T right_)
 {
-    return expt::BinaryOp<expt::Sub, Left, expt::Scalar>(left_, Scalar(right_));
+    return expt::BinaryOp<expt::Sub, Left, expt::Scalar>(left_, expt::Scalar(right_));
 }
 
 template<typename Left>
 inline expt::BinaryOp<expt::Mul, Left, expt::Scalar>
 operator * (const expt::Expr<Left> &left_, expt::T right_)
 {
-    return expt::BinaryOp<expt::Mul, Left, expt::Scalar>(left_, Scalar(right_));
+    return expt::BinaryOp<expt::Mul, Left, expt::Scalar>(left_, expt::Scalar(right_));
 }
 
 template<typename Left>
 inline expt::BinaryOp<expt::Div, Left, expt::Scalar>
 operator / (const expt::Expr<Left> &left_, expt::T right_)
 {
-    return expt::BinaryOp<expt::Div, Left, expt::Scalar>(left_, Scalar(right_));
+    return expt::BinaryOp<expt::Div, Left, expt::Scalar>(left_, expt::Scalar(right_));
 }
 
 /* scalar on the left hand side */
@@ -216,21 +216,21 @@ template<typename Right>
 inline expt::BinaryOp<expt::Add, expt::Scalar, Right>
 operator + (expt::T left_, const expt::Expr<Right> & right_)
 {
-    return expt::BinaryOp<expt::Add, expt::Scalar, Right>(Scalar(left_), right_);
+    return expt::BinaryOp<expt::Add, expt::Scalar, Right>(expt::Scalar(left_), right_);
 }
 
 template<typename Right>
 inline expt::BinaryOp<expt::Sub, expt::Scalar, Right>
 operator - (expt::T left_, const expt::Expr<Right> & right_)
 {
-    return expt::BinaryOp<expt::Sub, expt::Scalar, Right>(Scalar(left_), right_);
+    return expt::BinaryOp<expt::Sub, expt::Scalar, Right>(expt::Scalar(left_), right_);
 }
 
 template<typename Right>
 inline expt::BinaryOp<expt::Mul, expt::Scalar, Right>
 operator * (expt::T left_, const expt::Expr<Right> & right_)
 {
-    return expt::BinaryOp<expt::Mul, expt::Scalar, Right>(Scalar(left_), right_);
+    return expt::BinaryOp<expt::Mul, expt::Scalar, Right>(expt::Scalar(left_), right_);
 }
 
 #endif // EXPRFUNC_HPP

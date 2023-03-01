@@ -19,30 +19,30 @@ public:
     using Grads = std::tuple<typename TLayer::Grad...>;
     template<typename Optimizer>
     using OptimzeBlocks = std::tuple<typename TLayer::template OptimizeBlock<Optimizer>...>;
-    constexpr static int N = sizeof... (TLayer);
+    constexpr static std::size_t N = sizeof... (TLayer);
     Layers layers;
 public:
     /* forward */
-    template<int Ni, typename LayerN1>
+    template<typename Layers, std::size_t Ni, typename LayerN1>
     struct Forward {
         static Tensor& impl(Layers& layers, const Tensor& x)
         {
             using LayerN2 = std::tuple_element_t<Ni - 2, Layers>;
-            Tensor& o = Forward<Ni - 1, LayerN2>::impl(layers, x);
+            Tensor& o = Forward<Layers, Ni - 1, LayerN2>::impl(layers, x);
             return std::get<Ni - 1>(layers).forward(o);
         }
     };
 
-    template<typename LayerN1>
-    struct Forward<1, LayerN1> {
+    template<typename Layers, typename LayerN1>
+    struct Forward<Layers, 1, LayerN1> {
         static Tensor& impl(Layers& layers, const Tensor& x)
         {
             return std::get<0>(layers).forward(x);
         }
     };
 
-    template<>
-    struct Forward<1, BatchNorm1d> {
+    template<typename Layers>
+    struct Forward<Layers, 1, BatchNorm1d> {
         static Tensor& impl(Layers& layers, const Tensor& x)
         {
             return std::get<0>(layers).forward(x);
@@ -50,18 +50,18 @@ public:
     };
 
     /* save */
-    template<int Ni>
+    template<typename Layers, std::size_t Ni>
     struct Save {
         static void impl(Layers& layers, std::ofstream &file)
         {
-            Save<Ni - 1>::impl(layers, file);
+            Save<Layers, Ni - 1>::impl(layers, file);
             std::get<Ni - 1>(layers).save(file);
             return;
         }
     };
 
-    template<>
-    struct Save<1> {
+    template<typename Layers>
+    struct Save<Layers, 1> {
         static void impl(Layers& layers, std::ofstream &file)
         {
             std::get<0>(layers).save(file);
@@ -69,18 +69,18 @@ public:
         }
     };
     /* load */
-    template<int Ni>
+    template<typename Layers, int Ni>
     struct Load {
         static void impl(Layers& layers, std::ifstream &file)
         {
-            Save<Ni - 1>::impl(layers, file);
+            Load<Layers, Ni - 1>::impl(layers, file);
             std::get<Ni - 1>(layers).load(file);
             return;
         }
     };
 
-    template<>
-    struct Load<1> {
+    template<typename Layers>
+    struct Load<Layers, 1> {
         static void impl(Layers& layers, std::ifstream &file)
         {
             std::get<0>(layers).load(file);
@@ -94,7 +94,7 @@ public:
     inline Tensor& operator()(const Tensor &x)
     {  
         using LayerN1 = std::tuple_element_t<Net::N - 1, Layers>;
-        return Forward<N, LayerN1>::impl(layers, x);
+        return Forward<Layers, N, LayerN1>::impl(layers, x);
     }
 
     inline void operator()(const std::vector<Tensor> &x, std::vector<Tensor> &y)
@@ -102,7 +102,7 @@ public:
         using LayerN1 = std::tuple_element_t<Net::N - 1, Layers>;
         y = std::vector<Tensor>(x.size());
         for (std::size_t i = 0; i < x.size(); i++) {
-            y[i] = Forward<N, LayerN1>::impl(layers, x[i]);
+            y[i] = Forward<Layers, N, LayerN1>::impl(layers, x[i]);
         }
         return;
     }
@@ -111,7 +111,7 @@ public:
     {
         std::ifstream file;
         file.open(fileName);
-        Load<N>::impl(layers);
+        Load<Layers, N>::impl(layers);
         file.close();
         return;
     }
@@ -120,7 +120,7 @@ public:
     {
         std::ofstream file;
         file.open(fileName);
-        Save<N>::impl(layers);
+        Save<Layers, N>::impl(layers);
         file.close();
         return;
     }

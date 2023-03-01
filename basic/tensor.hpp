@@ -824,7 +824,7 @@ public:
         if (totalSize < unit) {
             return __Tensor::zero();
         }
-        instruct::fill(ptr(), 0, totalSize);
+        instruct::fill(__Tensor::ptr(), 0, totalSize);
         return;
     }
     void fill(T value)
@@ -832,7 +832,7 @@ public:
         if (totalSize < unit) {
             return __Tensor::fill(value);
         }
-        instruct::fill(ptr(), value, totalSize);
+        instruct::fill(__Tensor::ptr(), value, totalSize);
         return;
     }
 
@@ -855,7 +855,7 @@ public:
         if (totalSize < unit) {
             return __Tensor::fill(1);
         }
-        instruct::fill(ptr(), 1, totalSize);
+        instruct::fill(__Tensor::ptr(), 1, totalSize);
         return x;
     }
 
@@ -874,7 +874,7 @@ public:
         if (x.totalSize < unit) {
             return __Tensor::operator+(x);
         }
-        instruct::add(y.ptr(), ptr(), x.ptr(), totalSize);
+        instruct::add(y.ptr(), __Tensor::ptr(), x.ptr(), totalSize);
         return y;
     }
 
@@ -884,7 +884,7 @@ public:
         if (x.totalSize < unit) {
             return __Tensor::operator-(x);
         }
-        instruct::sub(y.ptr(), ptr(), x.ptr(), totalSize);
+        instruct::sub(y.ptr(), __Tensor::ptr(), x.ptr(), totalSize);
         return y;
     }
 
@@ -894,7 +894,7 @@ public:
         if (x.totalSize < unit) {
             return __Tensor::operator*(x);
         }
-        instruct::mul(y.ptr(), ptr(), x.ptr(), totalSize);
+        instruct::mul(y.ptr(), __Tensor::ptr(), x.ptr(), totalSize);
         return y;
     }
 
@@ -904,7 +904,7 @@ public:
         if (totalSize < unit) {
             return __Tensor::operator/(x);
         }
-        instruct::div(y.ptr(), ptr(), x.ptr(), totalSize);
+        instruct::div(y.ptr(), __Tensor::ptr(), x.ptr(), totalSize);
         return y;
     }
 
@@ -914,7 +914,7 @@ public:
         if (totalSize < unit) {
             return __Tensor::operator+(x);
         }
-        instruct::add(y.ptr(), ptr(), x, totalSize);
+        instruct::add(y.ptr(), __Tensor::ptr(), x, totalSize);
         return y;
     }
 
@@ -924,7 +924,7 @@ public:
         if (totalSize < unit) {
             return __Tensor::operator-(x);
         }
-        instruct::sub(y.ptr(), ptr(), x, totalSize);
+        instruct::sub(y.ptr(), __Tensor::ptr(), x, totalSize);
         return y;
     }
 
@@ -934,7 +934,7 @@ public:
         if (totalSize < unit) {
             return __Tensor::operator*(x);
         }
-        instruct::mul(y.ptr(), ptr(), x, totalSize);
+        instruct::mul(y.ptr(), __Tensor::ptr(), x, totalSize);
         return y;
     }
 
@@ -944,7 +944,7 @@ public:
         if (totalSize < unit) {
             return __Tensor::operator/(x);
         }
-        instruct::div(y.ptr(), ptr(), x, totalSize);
+        instruct::div(y.ptr(), __Tensor::ptr(), x, totalSize);
         return y;
     }
 
@@ -954,7 +954,7 @@ public:
             __Tensor::operator+=(x);
             return *this;
         }
-        instruct::add(ptr(), ptr(), x.ptr(), totalSize);
+        instruct::add(__Tensor::ptr(), __Tensor::ptr(), x.ptr(), totalSize);
         return *this;
     }
 
@@ -964,7 +964,7 @@ public:
             __Tensor::operator-=(x);
             return *this;
         }
-        instruct::sub(ptr(), ptr(), x.ptr(), totalSize);
+        instruct::sub(__Tensor::ptr(), __Tensor::ptr(), x.ptr(), totalSize);
         return *this;
     }
 
@@ -974,7 +974,7 @@ public:
             __Tensor::operator*=(x);
             return *this;
         }
-        instruct::mul(ptr(), ptr(), x.ptr(), totalSize);
+        instruct::mul(__Tensor::ptr(), __Tensor::ptr(), x.ptr(), totalSize);
         return *this;
     }
 
@@ -984,7 +984,7 @@ public:
             __Tensor::operator/=(x);
             return *this;
         }
-        instruct::div(ptr(), ptr(), x.ptr(), totalSize);
+        instruct::div(__Tensor::ptr(), __Tensor::ptr(), x.ptr(), totalSize);
         return *this;
     }
 
@@ -994,7 +994,7 @@ public:
             __Tensor::operator+=(x);
             return *this;
         }
-        instruct::add(ptr(), ptr(), x, totalSize);
+        instruct::add(__Tensor::ptr(), __Tensor::ptr(), x, totalSize);
         return *this;
     }
 
@@ -1004,7 +1004,7 @@ public:
             __Tensor::operator-=(x);
             return *this;
         }
-        instruct::sub(ptr(), ptr(), x, totalSize);
+        instruct::sub(__Tensor::ptr(), __Tensor::ptr(), x, totalSize);
         return *this;
     }
 
@@ -1014,7 +1014,7 @@ public:
             __Tensor::operator*=(x);
             return *this;
         }
-        instruct::mul(ptr(), ptr(), x, totalSize);
+        instruct::mul(__Tensor::ptr(), __Tensor::ptr(), x, totalSize);
         return *this;
     }
 
@@ -1024,7 +1024,7 @@ public:
             __Tensor::operator/=(x);
             return *this;
         }
-        instruct::div(ptr(), ptr(), x, totalSize);
+        instruct::div(__Tensor::ptr(), __Tensor::ptr(), x, totalSize);
         return *this;
     }
     /* statistics */
@@ -1033,7 +1033,7 @@ public:
         if (totalSize < unit) {
             return __Tensor::sum();
         }
-        return instruct::sum(ptr(), totalSize);
+        return instruct::sum(__Tensor::ptr(), totalSize);
     }
 
     T mean() const{ return sum()/T(totalSize);}
@@ -1043,7 +1043,7 @@ public:
         if (totalSize < unit) {
             return __Tensor::variance(u);
         }
-        return instruct::variance(ptr(), u, totalSize);
+        return instruct::variance(__Tensor::ptr(), u, totalSize);
     }
 
     T max() const
@@ -1051,7 +1051,7 @@ public:
         if (totalSize < unit) {
             return __Tensor::max();
         }
-        return instruct::max(ptr(), totalSize);
+        return instruct::max(__Tensor::ptr(), totalSize);
     }
 
     T min() const
@@ -1059,7 +1059,7 @@ public:
         if (totalSize < unit) {
             return __Tensor::min();
         }
-        return instruct::min(ptr(), totalSize);
+        return instruct::min(__Tensor::ptr(), totalSize);
     }
 
     /* matrix operation */
@@ -1115,7 +1115,10 @@ public:
 using Tensori = Tensor_<int>;
 using Tensorf = Tensor_<float>;
 using Tensord = Tensor_<double>;
+
+#if defined(__AVX2__)
 using Tensorsi = Tensorsi_<float, simd::AVX2, AlignAllocator32>;
+#endif
 
 #if 0
     using Tensor = Tensorsi;

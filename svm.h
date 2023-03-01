@@ -58,10 +58,10 @@ public:
                 float L = 0;
                 float H = 0;
                 if (y[i] != y[j]) {
-                    L = std::max(0, alpha[j] - alpha[i]);
+                    L = std::max(0.0f, alpha[j] - alpha[i]);
                     H = std::min(c, c + alpha[j] - alpha[i]);
                 } else {
-                    L = std::max(0, alpha[j] + alpha[i] - c);
+                    L = std::max(0.0f, alpha[j] + alpha[i] - c);
                     H = std::min(c, alpha[j] + alpha[i]);
                 }
                 if (L == H) {

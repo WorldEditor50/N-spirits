@@ -144,7 +144,7 @@ public:
         }
         void operator()(Conv2d& layer, Grad& grad, float learningRate)
         {
-            optW(layer.kernels, grad.dkernels, learningRate);
+            optKernels(layer.kernels, grad.dkernels, learningRate);
             optB(layer.b, grad.db, learningRate);
             return;
         }

@@ -539,6 +539,7 @@ void test_lenet5()
 
 void test_simd_matmul()
 {
+#if defined(__AVX2__)
     std::cout<<"__m128/float:"<<sizeof (__m128)/sizeof (float)<<std::endl;
     std::cout<<"__m128d/double:"<<sizeof (__m128d)/sizeof (double)<<std::endl;
     std::cout<<"__m256/float:"<<sizeof (__m256)/sizeof (float)<<std::endl;
@@ -608,10 +609,12 @@ void test_simd_matmul()
         std::cout<<"trivial matmul cost:"<<cost<<"s"<<std::endl;
         //x.printValue();
     }
+#endif
     return;
 }
 void test_simd()
 {
+#if defined(__AVX2__)
     /* horizontal sum */
     {
         __m256 x1 = _mm256_setr_ps(1, 1, 1, 1, 1, 1, 1, 1);
@@ -664,11 +667,13 @@ void test_simd()
         simd::AVX2::sqrt(x3.ptr(), x1.ptr(), x1.totalSize);
         x3.printValue();
     }
+#endif
     return;
 }
 
 void test_simd_transpose()
 {
+#if defined(__AVX2__)
     int N = 4096;
     {
         Tensor_<double> x(N, N);
@@ -696,6 +701,7 @@ void test_simd_transpose()
         Tensor::Mat::print(y);
     }
     return;
+#endif
 }
 
 int main()

@@ -16,39 +16,39 @@ struct wrap {
     template<typename Ti, typename Ii>
     struct Vector_ {};
 #if defined(__SSE2__)
-    template<>
-    struct Vector_<double, SSE2> {
-        using Type = M128d::Type;
-        using Func = M128d;
+    template<typename Ii>
+    struct Vector_<double, Ii> {
+        using Func = typename Ii::M128d;
+        using Type = typename Func::Type;
         constexpr static std::size_t N = sizeof (Type)/sizeof (double);
     };
-    template<>
-    struct Vector_<float, SSE2> {
-        using Type = M128::Type;
-        using Func = M128;
+    template<typename Ii>
+    struct Vector_<float, Ii> {
+        using Func = typename Ii::M128;
+        using Type = typename Func::Type;
         constexpr static std::size_t N = sizeof (Type)/sizeof (float);
     };
-    template<>
-    struct Vector_<int, SSE2> {
+    template<typename Ii>
+    struct Vector_<int, Ii> {
 
     };
 #endif
 
 #if defined(__AVX2__)
-    template<>
-    struct Vector_<double, AVX> {
-        using Type = M256d::Type;
-        using Func = M256d;
+    template<typename Ii>
+    struct Vector_<double, Ii> {
+        using Func = typename Ii::M256d;
+        using Type = typename Func::Type;
         constexpr static std::size_t N = sizeof (Type)/sizeof (double);
     };
-    template<>
-    struct Vector_<float, AVX> {
-        using Type = M256::Type;
-        using Func = M256;
+    template<typename Ii>
+    struct Vector_<float, Ii> {
+        using Func = typename Ii::M256;
+        using Type = typename Func::Type;
         constexpr static std::size_t N = sizeof (Type)/sizeof (float);
     };
-    template<>
-    struct Vector_<int, AVX> {
+    template<typename Ii>
+    struct Vector_<int, Ii> {
 
     };
 #endif

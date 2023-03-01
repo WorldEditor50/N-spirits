@@ -38,7 +38,7 @@ namespace simd {
 
 #if defined(__AVX2__)
 
-struct AVX {};
+struct AVX {
 
 struct M256d {
     using Type = __m256d;
@@ -279,6 +279,7 @@ struct M256 {
 
 };
 
+};
 #endif // AVX2
 
 };
