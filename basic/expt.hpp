@@ -33,11 +33,17 @@ public:
 
 /* trait */
 template<typename Exprt>
-struct ExprTraitRef {
-    using type = typename std::conditional<std::is_same<Scalar, Exprt>::value,
-                                           Scalar,
-                                           const Exprt&>::type;
+struct ExprTrait {
+    using constRef = const Exprt&;
+    using ref = Exprt&;
 };
+template<>
+struct ExprTrait<Scalar> {
+    using constRef = const Scalar&;
+    using ref = Scalar&;
+};
+
+
 
 /* binary operator template */
 template<typename Operator, typename Left, typename Right>
@@ -49,8 +55,8 @@ public:
     inline T operator[](std::size_t i) const {return Operator::apply(left[i], right[i]);}
     inline size_t size() const {return left.size();}
 protected:
-    typename ExprTraitRef<Left>::type left;
-    typename ExprTraitRef<Right>::type right;
+    typename ExprTrait<Left>::constRef left;
+    typename ExprTrait<Right>::constRef right;
 };
 /*  unary operator template */
 template<typename Operator, typename Right>
@@ -61,7 +67,7 @@ public:
     inline T operator[](std::size_t i) const {return Operator::apply(right[i]);}
     inline std::size_t size() const {return right.size();}
 protected:
-    typename ExprTraitRef<Right>::type right;
+    typename ExprTrait<Right>::constRef right;
 };
 
 /* sub expression */
@@ -75,8 +81,8 @@ public:
      inline decltype(auto) operator[](std::size_t i) const { return expr[indexes[i]]; }
      inline std::size_t size() const { return indexes.size(); }
 protected:
-     typename ExprTraitRef<Exprt>::type expr;
-     typename ExprTraitRef<IndexExpr>::type indexes;
+     typename ExprTrait<Exprt>::ref expr;
+     typename ExprTrait<IndexExpr>::constRef indexes;
 };
 
 }

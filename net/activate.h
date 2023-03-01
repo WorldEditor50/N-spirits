@@ -212,7 +212,7 @@ struct Softmax_ {
     }
     inline static void df(Tensor &dy, const Tensor &y, const Tensor &yt)
     {
-        Utils::minus(dy, y, yt);
+        Utils::sub(dy, y, yt);
         return;
     }
 };

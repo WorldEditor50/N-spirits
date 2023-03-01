@@ -546,7 +546,7 @@ void test_lenet5()
     Optimizer<LeNet5, Optimize::RMSProp> optimizer(lenet5, 1e-3);
     Tensor x(3, 32, 32);
     Tensor yt(10, 1);
-    for (std::size_t i = 0; i < 1000; i++) {
+    for (std::size_t i = 0; i < 100; i++) {
         Utils::uniform(x, 0, 1);
         /* forward */
         Tensor& y = lenet5(x);
@@ -582,6 +582,81 @@ void test_lenet5()
     Tensor& f3 = softmax.forward(f2);
     f3.printShape();
 #endif
+    return;
+}
+
+void test_mnist()
+{
+    using LeNet5 = Net<Conv2d, MaxPooling2d, Conv2d, MaxPooling2d, FcLayer, FcLayer, FcLayer>;
+    LeNet5 lenet5(Conv2d(1, 28, 28, 6, 5, 1, 0, false, ACTIVE_LEAKRELU),
+                  MaxPooling2d(6, 24, 24, 2, 2),
+                  Conv2d(6, 12, 12, 16, 5, 1, 0, false, ACTIVE_LEAKRELU),
+                  MaxPooling2d(16, 8, 8, 2, 2),
+                  FcLayer(16*4*4, 120, true, ACTIVE_TANH),
+                  LayerNorm(120, 84, true, ACTIVE_SIGMOID),
+                  FcLayer(84, 10, true, ACTIVE_SIGMOID));
+
+    /* load data */
+    std::unique_ptr<uint8_t> datas = BinaryLoader::load("./dataset/train-images.idx3-ubyte");
+    if (datas == nullptr) {
+        std::cout<<"load training data failed."<<std::endl;
+        return;
+    }
+    std::size_t N = BinaryLoader::byteswap(*(uint32_t*)(datas.get() + 4));
+    std::vector<Tensor> x(N, Tensor(1, 28, 28));
+    for (std::size_t n = 0; n < N; n++ ) {
+        uint8_t* img = datas.get() + 16 + n * (28*28);
+        for (int i = 0; i < 28; i++ ) {
+            for (int j = 0; j < 28; j++ ) {
+                x[n](0, i, j) = img[i + j*28] / 255.f;
+            }
+        }
+
+    }
+    /* load label */
+    std::unique_ptr<uint8_t> labels = BinaryLoader::load("./dataset/train-labels.idx1-ubyte");
+    if (labels == nullptr) {
+        std::cout<<"load training label failed."<<std::endl;
+        return;
+    }
+    std::vector<Tensor> yt(N, Tensor(10, 1));
+    for (std::size_t n = 0; n < N; n++ ) {
+        uint8_t* label = labels.get() + 8 + n;
+        for (int i = 0; i < 10; i++ ) {
+            if (*label == i) {
+                yt[n](i, 0) = 1.0f;
+            } else {
+                yt[n](i, 0) = 0.0f;
+            }
+        }
+        //yt[n].printValue();
+    }
+    /* train: max epoch = 1000, batch size = 100, learning rate = 1e-3 */
+    Optimizer<LeNet5, Optimize::RMSProp> optimizer(lenet5, 1e-3);
+
+    std::uniform_int_distribution<int> distribution(0, N - 1);
+    for (std::size_t epoch = 0; epoch < 1000; epoch++) {
+        for (std::size_t i = 0; i < 100; i++) {
+            /* forward */
+            int k = distribution(Utils::engine);
+            Tensor& y = lenet5(x[k]);
+            /* loss */
+            Tensor loss = Loss::MSE(y, yt[k]);
+            /* optimize */
+            optimizer.backward(loss, x[k]);
+        }
+        optimizer.update();
+    }
+
+    /* predict */
+    for (std::size_t i = 0; i < 10; i++) {
+        /* forward */
+        int k = distribution(Utils::engine);
+        Tensor& y = lenet5(x[k]);
+        int p = y.argmax();
+        int t = yt[k].argmax();
+        std::cout<<" target number:"<<t<<", predict number:"<<p<<std::endl;
+    }
     return;
 }
 
@@ -770,7 +845,8 @@ int main()
 #endif
     //test_simd_matmul();
     //test_bpnn();
-    test_lenet5();
+    //test_lenet5();
+    test_mnist();
     return 0;
 }
 

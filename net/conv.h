@@ -346,12 +346,8 @@ public:
             layer.mask.zero();
             return;
         }
-
-        void eval(const Tensor &x, const Tensor &o)
-        {
-
-            return;
-        }
+        /* no gradient */
+        void eval(const Tensor &, const Tensor &){}
     };
     /* optimizer */
     template<typename Optimizer>
@@ -448,11 +444,8 @@ public:
             }
             return;
         }
-
-        void eval(const Tensor &x, const Tensor &o)
-        {
-            return;
-        }
+        /* no gradient */
+        void eval(const Tensor &, const Tensor &){}
     };
 
     /* optimizer */

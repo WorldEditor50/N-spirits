@@ -6,6 +6,7 @@ fun with cpp
 - svm
 - lr
 - BPNET
+- LeNet5
 - expression template
 - matrix
 - tensor

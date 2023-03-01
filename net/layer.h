@@ -237,7 +237,7 @@ public:
         void eval(const Tensor &x, const Tensor &o, const Tensor &yt)
         {
             Tensor dy(outputDim, 1);
-            Utils::minus(dy, o, yt);
+            Utils::sub(dy, o, yt);
             Tensor::Mul::ikjk(dw, dy, x);
             delta.zero();
             return;
@@ -453,12 +453,12 @@ public:
         /* xh */
         xh = std::vector<Tensor>(batchsize, Tensor(u.shape));
         for (std::size_t i = 0; i < x.size(); i++) {
-            Utils::minus(xh[i], x[i], u);
+            Utils::sub(xh[i], x[i], u);
         }
         /* sigma */
         Tensor r(u.shape);
         for (std::size_t i = 0; i < xh.size(); i++) {
-            Utils::multi(r, xh[i], xh[i]);
+            Utils::mul(r, xh[i], xh[i]);
             sigma += r;
         }
         sigma /= batchsize;
@@ -470,7 +470,7 @@ public:
         }
         /* o = gamma*xh + b */
         for (std::size_t i = 0; i < xh.size(); i++) {
-            Utils::multi(o[i], gamma, xh[i]);
+            Utils::mul(o[i], gamma, xh[i]);
             o[i] += beta;
         }
         return;

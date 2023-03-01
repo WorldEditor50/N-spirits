@@ -2,6 +2,7 @@
 #define DATASET_H
 #include <vector>
 #include <set>
+#include <memory>
 #include "csv.h"
 #include "../basic/vec.h"
 #include "../basic/mat.h"
@@ -111,6 +112,36 @@ public:
         }
         return;
     }
+};
+
+class BinaryLoader
+{
+public:
+    static std::unique_ptr<uint8_t> load(const std::string &fileName)
+    {
+        if (fileName.empty()) {
+            return nullptr;
+        }
+        std::ifstream file(fileName, std::ios::binary|std::ios::ate);
+        std::streamsize totalSize = file.tellg();
+        file.seekg(0, std::ios::beg);
+        if (totalSize == -1) {
+            return nullptr;
+        }
+        std::unique_ptr<uint8_t> buffer(new uint8_t[totalSize]);
+        file.read((char*)buffer.get(), totalSize);
+        file.close();
+        return buffer;
+    }
+
+    inline static uint32_t byteswap(uint32_t a)
+    {
+        return ((((a >> 24) & 0xff) << 0) |
+            (((a >> 16) & 0xff) << 8) |
+            (((a >> 8) & 0xff) << 16) |
+            (((a >> 0) & 0xff) << 24));
+    }
+
 };
 
 #endif // DATASET_H

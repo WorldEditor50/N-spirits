@@ -53,16 +53,16 @@ inline void tanh(const T &x, T &y)
 template<typename T>
 inline void uniform(T &x)
 {
-    std::uniform_real_distribution<float> distibution(-1, 1);
+    std::uniform_real_distribution<typename T::ValueType> distibution(-1, 1);
     for (std::size_t i = 0; i < x.totalSize; i++) {
         x.val[i] = distibution(engine);
     }
     return;
 }
 template<typename T>
-inline void uniform(T &x, float x1, float x2)
+inline void uniform(T &x, typename T::ValueType x1, typename T::ValueType x2)
 {
-    std::uniform_real_distribution<float> distibution(x1, x2);
+    std::uniform_real_distribution<typename T::ValueType> distibution(x1, x2);
     for (std::size_t i = 0; i < x.totalSize; i++) {
         x.val[i] = distibution(engine);
     }
@@ -86,7 +86,7 @@ inline void add(T &y, const T &x1, const T &x2)
     return;
 }
 template<typename T>
-inline void minus(T &y, const T &x1, const T &x2)
+inline void sub(T &y, const T &x1, const T &x2)
 {
     for (std::size_t i = 0; i < y.totalSize; i++) {
         y.val[i] = x1.val[i] + x2.val[i];
@@ -94,7 +94,7 @@ inline void minus(T &y, const T &x1, const T &x2)
     return;
 }
 template<typename T>
-inline void multi(T &y, const T &x1, const T &x2)
+inline void mul(T &y, const T &x1, const T &x2)
 {
     for (std::size_t i = 0; i < y.totalSize; i++) {
         y.val[i] = x1.val[i] * x2.val[i];
@@ -102,7 +102,7 @@ inline void multi(T &y, const T &x1, const T &x2)
     return;
 }
 template<typename T>
-inline void divide(T &y, const T &x1, const T &x2)
+inline void div(T &y, const T &x1, const T &x2)
 {
     for (std::size_t i = 0; i < y.totalsize; i++) {
         y.val[i] = x1.val[i] / x2.val[i];
@@ -137,9 +137,9 @@ inline void EMA(T &xh, const T &x, float rho)
 namespace Norm {
 
 template <typename T>
-inline float l1(const T &x1, const T &x2)
+inline typename T::ValueType l1(const T &x1, const T &x2)
 {
-    float s = 0;
+    typename T::ValueType s = 0;
     for (std::size_t i = 0; i < x1.totalSize; i++) {
         s += x1.val[i] - x2.val[i];
     }
@@ -147,9 +147,9 @@ inline float l1(const T &x1, const T &x2)
 }
 
 template <typename T>
-inline float l2(const T &x1, const T &x2)
+inline typename T::ValueType l2(const T &x1, const T &x2)
 {
-    float s = 0;
+    typename T::ValueType s = 0;
     for (std::size_t i = 0; i < x1.totalSize; i++) {
         s += (x1.val[i] - x2.val[i])*(x1.val[i] - x2.val[i]);
     }
@@ -157,7 +157,7 @@ inline float l2(const T &x1, const T &x2)
 }
 
 template <typename T>
-inline float lp(const T &x1, const T &x2, float p)
+inline typename T::ValueType lp(const T &x1, const T &x2, float p)
 {
     float s = 0;
     for (std::size_t i = 0; i < x1.totalSize; i++) {
@@ -168,7 +168,7 @@ inline float lp(const T &x1, const T &x2, float p)
 }
 
 template <typename T>
-inline float l8(const T &x1, const T &x2)
+inline typename T::ValueType l8(const T &x1, const T &x2)
 {
     float s = x1.val[0] - x2.val[0];
     for (std::size_t i = 1; i < x1.totalSize; i++) {
@@ -192,7 +192,7 @@ inline void cov(Mat &y, const Mat &x)
             u += a(j, i);
         }
         u /= float(x.rows);
-        /* delta */
+        /* delta: x - u */
         for (std::size_t j = 0; j < x.rows; j++) {
             a(j, i) -= u;
         }

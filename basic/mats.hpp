@@ -9,6 +9,7 @@ template<std::size_t ROW, std::size_t COL>
 class Mats : public expt::Expr<Mats<ROW, COL>>
 {
 public:
+    using ValueType = expt::T;
     using T = expt::T;
     constexpr static std::size_t N = ROW*COL;
     constexpr static std::size_t rows = ROW;
