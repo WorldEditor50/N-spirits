@@ -106,6 +106,11 @@ public:
             Tensor &dy = o;
             Active::func[activeType].df(dy);
             dy *= delta;
+            /* db */
+            if (bias == true) {
+                db += dy;
+            }
+            /* dkernel */
             for (int n = 0; n < x.shape[0]; n++) {
                 for (int i = 0; i < x.shape[1]; i++) {
                     for (int j = 0; j < x.shape[2]; j++) {

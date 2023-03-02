@@ -128,7 +128,7 @@ public:
             fcGrad.backward(fcLayer, delta);
             maxPooling2dGrad.delta.val = delta.val;
             /* evaluate fcLayer */
-            fcGrad.eval(Tensor({int(o.totalSize), 1}, o.val), fcLayer.o);
+            fcGrad.eval(Tensor(std::vector<int>{int(o.totalSize), 1}, o.val), fcLayer.o);
             /* next */
             using LayerN3 = std::tuple_element_t<N - 3, Layers>;
             Backward<Layers, Grads, MaxPooling2d, LayerN3, N - 1>::impl(grads, layers, x);

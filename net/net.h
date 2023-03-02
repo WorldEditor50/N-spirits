@@ -53,7 +53,7 @@ public:
             /* MaxPooling2d */
             Tensor& o = Forward<Layers, MaxPooling2d, Conv2d, Ni - 1>::impl(layers, x);
             /* FcLayer forward */
-            return fcLayer.forward(Tensor({int(o.totalSize), 1}, o.val));
+            return fcLayer.forward(Tensor(std::vector<int>{int(o.totalSize), 1}, o.val));
         }
     };
 
@@ -66,7 +66,7 @@ public:
             /* AvgPooling2d */
             Tensor& o = Forward<Layers, AvgPooling2d, Conv2d, Ni - 1>::impl(layers, x);
             /* FcLayer forward */
-            return fcLayer.forward(Tensor({int(o.totalSize), 1}, o.val));
+            return fcLayer.forward(Tensor(std::vector<int>{int(o.totalSize), 1}, o.val));
         }
     };
 
@@ -80,7 +80,7 @@ public:
             using LayerN3 = std::tuple_element_t<Ni - 3, Layers>;
             Tensor& o = Forward<Layers, Conv2d, LayerN3, Ni - 1>::impl(layers, x);
             /* FcLayer forward */
-            return fcLayer.forward(Tensor({int(o.totalSize), 1}, o.val));
+            return fcLayer.forward(Tensor(std::vector<int>{int(o.totalSize), 1}, o.val));
         }
     };
 
@@ -93,7 +93,7 @@ public:
             /* MaxPooling2d */
             Tensor& o = Forward<Layers, MaxPooling2d, Conv2d, Ni - 1>::impl(layers, x);
             /* lstm forward */
-            return lstm.forward(Tensor({int(o.totalSize), 1}, o.val));
+            return lstm.forward(Tensor(std::vector<int>{int(o.totalSize), 1}, o.val));
         }
     };
 

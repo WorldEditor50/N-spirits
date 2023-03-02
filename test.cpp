@@ -699,6 +699,85 @@ void test_lstm()
     return;
 }
 
+void test_alexnet()
+{
+    using AlexNet = Net<Conv2d, MaxPooling2d,
+                        Conv2d, MaxPooling2d,
+                        Conv2d, Conv2d, Conv2d, MaxPooling2d,
+                        FcLayer, FcLayer, FcLayer>;
+    AlexNet alexnet(Conv2d(3, 227, 227, 48, 11, 4, 2, false, ACTIVE_LEAKRELU),
+                    MaxPooling2d(48, 56, 56, 3, 2),
+
+                    Conv2d(48, 27, 27, 128, 5, 1, 2, false, ACTIVE_LEAKRELU),
+                    MaxPooling2d(128, 27, 27, 3, 2),
+
+                    Conv2d(128, 13, 13, 192, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                    Conv2d(192, 13, 13, 192, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                    Conv2d(192, 13, 13, 128, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                    MaxPooling2d(128, 13, 13, 3, 2),
+
+                    FcLayer(128*6*6, 2048, true, ACTIVE_TANH),
+                    FcLayer(2048, 2048, true, ACTIVE_SIGMOID),
+                    FcLayer(2048, 1000, true, ACTIVE_SIGMOID));
+
+    Tensor x(3, 227, 227);
+    /* alexnet forward cost:3.24633s */
+    auto t1 = Clock::tiktok();
+    alexnet(x);
+    auto t2 = Clock::tiktok();
+    std::cout<<"alexnet forward cost:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
+    Optimizer<AlexNet, Optimize::RMSProp> optimizer(alexnet, 1e-4);
+    return;
+}
+
+void test_vgg16()
+{
+    using VGG16 = Net<Conv2d, Conv2d, MaxPooling2d,
+                      Conv2d, Conv2d, MaxPooling2d,
+                      Conv2d, Conv2d, Conv2d, MaxPooling2d,
+                      Conv2d, Conv2d, Conv2d, MaxPooling2d,
+                      Conv2d, Conv2d, Conv2d, MaxPooling2d,
+                      FcLayer, FcLayer, FcLayer>;
+    /* 16 conv2d */
+    VGG16 vgg16(Conv2d(3,  224, 224, 64, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                Conv2d(64, 224, 224, 64, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                MaxPooling2d(64, 224, 224, 2, 2),
+
+                Conv2d(64,  112, 112, 128, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                Conv2d(128, 112, 112, 128, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                MaxPooling2d(128, 112, 112, 2, 2),
+
+                Conv2d(128, 56, 56, 256, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                Conv2d(256, 56, 56, 256, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                Conv2d(256, 56, 56, 256, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                MaxPooling2d(256, 56, 56, 2, 2),
+
+                Conv2d(256, 28, 28, 512, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                Conv2d(512, 28, 28, 512, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                Conv2d(512, 28, 28, 512, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                MaxPooling2d(512, 28, 28, 2, 2),
+
+                Conv2d(512, 14, 14, 512, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                Conv2d(512, 14, 14, 512, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                Conv2d(512, 14, 14, 512, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                MaxPooling2d(512, 7, 7, 2, 2),
+                FcLayer(512*7*7, 4096, true, ACTIVE_TANH),
+                FcLayer(4096, 4096, true, ACTIVE_SIGMOID),
+                FcLayer(4096, 1000, true, ACTIVE_SIGMOID));
+
+    Optimizer<VGG16, Optimize::RMSProp> optimizer(vgg16, 1e-3);
+
+    Tensor x(3, 224, 224);
+    /*
+          vgg16 is too big to run,
+          it will cost 600MB (1700MB with RMSProp) memory and 194.117s for once forward
+    */
+    auto t1 = Clock::tiktok();
+    vgg16(x);
+    auto t2 = Clock::tiktok();
+    std::cout<<"vgg16 forward cost:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
+    return;
+}
 
 void test_simd_matmul()
 {
@@ -887,7 +966,9 @@ int main()
     //test_bpnn();
     //test_lenet5();
     //test_mnist();
-    test_lstm();
+    //test_lstm();
+    test_alexnet();
+    //test_vgg16();
     return 0;
 }
 
