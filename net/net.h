@@ -57,6 +57,47 @@ public:
         }
     };
 
+    /* forward: FcLayer <- AvgPooling2d */
+    template<typename Layers, std::size_t Ni>
+    struct Forward<Layers, FcLayer, AvgPooling2d, Ni> {
+        inline static Tensor& impl(Layers& layers, const Tensor& x)
+        {
+            auto& fcLayer = std::get<Ni - 1>(layers);
+            /* AvgPooling2d */
+            Tensor& o = Forward<Layers, AvgPooling2d, Conv2d, Ni - 1>::impl(layers, x);
+            /* FcLayer forward */
+            return fcLayer.forward(Tensor({int(o.totalSize), 1}, o.val));
+        }
+    };
+
+    /* forward: FcLayer <- Conv2d */
+    template<typename Layers, std::size_t Ni>
+    struct Forward<Layers, FcLayer, Conv2d, Ni> {
+        inline static Tensor& impl(Layers& layers, const Tensor& x)
+        {
+            auto& fcLayer = std::get<Ni - 1>(layers);
+            /* conv2d */
+            using LayerN3 = std::tuple_element_t<Ni - 3, Layers>;
+            Tensor& o = Forward<Layers, Conv2d, LayerN3, Ni - 1>::impl(layers, x);
+            /* FcLayer forward */
+            return fcLayer.forward(Tensor({int(o.totalSize), 1}, o.val));
+        }
+    };
+
+    /* forward: LSTM <- MaxPooling2d */
+    template<typename Layers, std::size_t Ni>
+    struct Forward<Layers, LSTM, MaxPooling2d, Ni> {
+        inline static Tensor& impl(Layers& layers, const Tensor& x)
+        {
+            auto& lstm = std::get<Ni - 1>(layers);
+            /* MaxPooling2d */
+            Tensor& o = Forward<Layers, MaxPooling2d, Conv2d, Ni - 1>::impl(layers, x);
+            /* lstm forward */
+            return lstm.forward(Tensor({int(o.totalSize), 1}, o.val));
+        }
+    };
+
+
     /* save */
     template<typename Layers, std::size_t Ni>
     struct Save {

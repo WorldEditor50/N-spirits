@@ -106,7 +106,7 @@ public:
             /* backward */
             Tensor loss(lstm.y.shape);
             grad1.backward(layer1, loss);
-            lstmGrad.backward(loss, x);
+            lstmGrad.cache(loss, x);
             /* evaluate */
             grad1.eval(lstm.y, layer1.o);
             return;

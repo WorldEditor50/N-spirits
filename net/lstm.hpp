@@ -158,7 +158,7 @@ public:
         explicit Grad(const LSTMParam& param)
             :LSTMParam(param), d(param){}
 
-        void backward(const Tensor &loss_, const Tensor &x_)
+        void cache(const Tensor &loss_, const Tensor &x_)
         {
             /* cache loss and input */
             loss.push_back(loss_);
