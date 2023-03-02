@@ -56,19 +56,6 @@ public:
             return fcLayer.forward(Tensor({int(o.totalSize), 1}, o.val));
         }
     };
-    /* forward: FcLayer <- LSTM  */
-    template<typename Layers>
-    struct Forward<Layers, FcLayer, LSTM, 2> {
-        inline static void impl(Layers& layers, const std::vector<Tensor>& x)
-        {
-            auto& lstm = std::get<0>(layers);
-            lstm.forward(x);
-            for (auto& state : lstm.states) {
-                std::get<1>(layers).forward(state.y);
-            }
-            return;
-        }
-    };
 
     /* save */
     template<typename Layers, std::size_t Ni>

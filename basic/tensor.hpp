@@ -57,7 +57,7 @@ public:
 
     /* construct with shape */
     template<typename ...Dim>
-    explicit Tensor_(Dim ...dim):totalSize(1),shape({dim...})
+    explicit Tensor_(Dim ...dim):totalSize(1),shape({int(dim)...})
     {
         initParams(shape, sizes, totalSize);
         val = std::vector<T, Alloc<T> >(totalSize, 0);

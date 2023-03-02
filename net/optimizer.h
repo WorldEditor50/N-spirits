@@ -99,11 +99,16 @@ public:
     struct Backward<Layers, Grads, FcLayer, LSTM, 2> {
         inline static void impl(Grads &grads, Layers& layers, const Tensor &x)
         {
+            auto& lstm = std::get<0>(layers);
+            auto& lstmGrad = std::get<0>(grads);
             auto& layer1 = std::get<1>(layers);
             auto& grad1 = std::get<1>(grads);
-            auto& grad0 = std::get<0>(grads);
-            /* backward through time */
-            grad1.backwardAtTime(layer1, grad1.delta, x);
+            /* backward */
+            Tensor loss(lstm.y.shape);
+            grad1.backward(layer1, loss);
+            lstmGrad.backward(loss, x);
+            /* evaluate */
+            grad1.eval(lstm.y, layer1.o);
             return;
         }
     };
@@ -175,14 +180,19 @@ public:
 
     void backward(const Tensor &loss, const Tensor &x, const Tensor &yt)
     {
-        auto &grad = std::get<Net::N - 1>(grads);
-        grad.delta = loss;
-        auto &layer = std::get<Net::N - 1>(net.layers);
-        Tensor &x_ = std::get<Net::N - 2>(net.layers).o;
-        grad.eval(x_, layer.o, yt);
+        auto &grad1 = std::get<Net::N - 1>(grads);
+        auto &grad2 = std::get<Net::N - 2>(grads);
+        auto &layer1 = std::get<Net::N - 1>(net.layers);
+        auto &layer2 = std::get<Net::N - 2>(net.layers);
+        /* backward */
+        grad1.delta = loss;
+        grad1.backward(layer1, grad2.delta);
+        /* evaluate gradient */
+        grad1.eval(layer2.o, layer1.o, yt);
+        /* next layer */
         using LayerN2 = std::tuple_element_t<Net::N - 2, Layers>;
         using LayerN3 = std::tuple_element_t<Net::N - 3, Layers>;
-        Backward<Layers, Grads, LayerN2, LayerN3, Net::N - 1>::impl(grads, net.layers,  x);
+        Backward<Layers, Grads, LayerN2, LayerN3, Net::N - 1>::impl(grads, net.layers, x);
         return;
     }
 

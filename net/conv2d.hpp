@@ -1,5 +1,5 @@
-#ifndef CONV_H
-#define CONV_H
+#ifndef CONV2D_HPP
+#define CONV2D_HPP
 #include "../basic/tensor.hpp"
 #include "activate.h"
 #include "layerdef.h"
@@ -494,4 +494,4 @@ public:
 
 };
 
-#endif // CONV_H
+#endif // CONV2D_HPP

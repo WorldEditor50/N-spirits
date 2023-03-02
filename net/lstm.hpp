@@ -130,9 +130,9 @@ public:
 public:
     State(){}
     State(std::size_t hiddenDim, std::size_t outputDim):
-        i(hiddenDim, 1),f(hiddenDim, 1),g(hiddenDim, 1),
-        o(hiddenDim, 1),c(hiddenDim, 1),h(hiddenDim, 1),
-        y(outputDim, 1){}
+        i(Tensor(hiddenDim, 1)),f(Tensor(hiddenDim, 1)),g(Tensor(hiddenDim, 1)),
+        o(Tensor(hiddenDim, 1)),c(Tensor(hiddenDim, 1)),h(Tensor(hiddenDim, 1)),
+        y(Tensor(outputDim, 1)){}
     void zero()
     {
         i.zero(); f.zero(); g.zero(); o.zero();
@@ -148,99 +148,100 @@ public:
     class Grad : public LSTMParam
     {
     public:
-        int t;
         LSTMCells d;
-        State sdelta;
-        //Tensor delta;
+        /* buffer loss */
+        std::vector<Tensor> loss;
+        /* buffer input */
+        std::vector<Tensor> x;
     public:
         Grad(){}
         explicit Grad(const LSTMParam& param)
-            :LSTMParam(param), t(0), d(param)
-        {
-            sdelta = State(hiddenDim, outputDim);
-        }
-        void backwardAtTime(LSTM &lstm, const Tensor &loss, const Tensor &x)
-        {
-            State delta(hiddenDim, outputDim);
-            /* delta = W^T * E */
-            Tensor::Mul::kikj(delta.h, lstm.W, loss);
-            /* delta = U * delta_ */
-            Tensor::Mul::ikkj(delta.h, lstm.Uf, sdelta.i);
-            Tensor::Mul::ikkj(delta.h, lstm.Ui, sdelta.f);
-            Tensor::Mul::ikkj(delta.h, lstm.Ug, sdelta.g);
-            Tensor::Mul::ikkj(delta.h, lstm.Uo, sdelta.o);
-            /*
-                δht = E + δht+1
-                δct = δht ⊙ ot ⊙ dtanh(ct) + δct+1 ⊙ ft+1
-                δot = δht ⊙ tanh(ct) ⊙ dsigmoid(ot)
-                δgt = δct ⊙ it ⊙ dtanh(gt)
-                δit = δct ⊙ gt ⊙ dsigmoid(it)
-                δft = δct ⊙ ct-1 ⊙ dsigmoid(ft)
-            */
-            auto& states = lstm.states;
-            Tensor f_ = t < states.size() - 1 ? states[t + 1].f : Tensor(hiddenDim, 1);
-            Tensor _c = t > 0 ? states[t - 1].c : Tensor(hiddenDim, 1);
-            for (std::size_t i = 0; i < delta.o.totalSize; i++) {
-                delta.c[i] = delta.h[i] * states[t].o[i] * Tanh::df(states[t].c[i]) + sdelta.c[i] * f_[i];
-                delta.o[i] = delta.h[i] * Tanh::f(states[t].c[i]) * Sigmoid::df(states[t].o[i]);
-                delta.g[i] = delta.c[i] * states[t].i[i] * Tanh::df(states[t].g[i]);
-                delta.i[i] = delta.c[i] * states[t].g[i] * Sigmoid::df(states[t].i[i]);
-                delta.f[i] = delta.c[i] * _c[i] * Sigmoid::df(states[t].f[i]);
-            }
-            /* gradient */
-            /*
-                dw:(outputDim, hiddenDim)
-                E: (outputDim, 1)
-                h: (hiddenDim, 1)
-                dw = E * h^T
-            */
-            Tensor::Mul::ikjk(d.W, loss, states[t].h);
-            Tensor::Mul::ikjk(d.B, loss, states[t].y);
-            /*
-                dw:    (hiddenDim, inputDim)
-                delta: (hiddenDim, 1)
-                x:     (inputDim, 1)
-                dw = delta * x^T
-            */
-            Tensor::Mul::ikjk(d.Wi, delta.i, x);
-            Tensor::Mul::ikjk(d.Wf, delta.f, x);
-            Tensor::Mul::ikjk(d.Wg, delta.g, x);
-            Tensor::Mul::ikjk(d.Wo, delta.o, x);
+            :LSTMParam(param), d(param){}
 
-            /*
-                du:    (hiddenDim, hiddenDim)
-                delta: (hiddenDim, 1)
-                _h:    (hiddenDim, 1)
-                du = delta * _h^T
-            */
-            Tensor _h = t > 0 ? states[t - 1].h : Tensor(hiddenDim, 1);
-            Tensor::Mul::ikjk(d.Ui, delta.i, _h);
-            Tensor::Mul::ikjk(d.Uf, delta.f, _h);
-            Tensor::Mul::ikjk(d.Ug, delta.g, _h);
-            Tensor::Mul::ikjk(d.Uo, delta.o, _h);
-
-            d.Bi += delta.i;
-            d.Bf += delta.f;
-            d.Bg += delta.g;
-            d.Bo += delta.o;
-            /* next */
-            sdelta = delta;
-            t--;
+        void backward(const Tensor &loss_, const Tensor &x_)
+        {
+            /* cache loss and input */
+            loss.push_back(loss_);
+            x.push_back(x_);
             return;
         }
 
-        void backward(LSTM &lstm, const std::vector<Tensor> &loss, const std::vector<Tensor> &x)
+        void backwardThroughTime(LSTM &lstm)
         {
-            sdelta.zero();
-            t = lstm.states.size() - 1;
-            /* backward through time */
-            for (std::size_t i = 0; i < x.size(); i++) {
-                backwardAtTime(lstm, loss[t], x[t]);
+            State delta_(hiddenDim, outputDim);
+            for (int t = lstm.states.size() - 1; t >= 0; t--) {
+                State delta(hiddenDim, outputDim);
+                /* delta = W^T * E */
+                Tensor::Mul::kikj(delta.h, lstm.W, loss[t]);
+                /* delta = U * delta_ */
+                Tensor::Mul::ikkj(delta.h, lstm.Uf, delta_.i);
+                Tensor::Mul::ikkj(delta.h, lstm.Ui, delta_.f);
+                Tensor::Mul::ikkj(delta.h, lstm.Ug, delta_.g);
+                Tensor::Mul::ikkj(delta.h, lstm.Uo, delta_.o);
+                /*
+                    δht = E + δht+1
+                    δct = δht ⊙ ot ⊙ dtanh(ct) + δct+1 ⊙ ft+1
+                    δot = δht ⊙ tanh(ct) ⊙ dsigmoid(ot)
+                    δgt = δct ⊙ it ⊙ dtanh(gt)
+                    δit = δct ⊙ gt ⊙ dsigmoid(it)
+                    δft = δct ⊙ ct-1 ⊙ dsigmoid(ft)
+                */
+                auto& states = lstm.states;
+                Tensor f_ = t < states.size() - 1 ? states[t + 1].f : Tensor(hiddenDim, 1);
+                Tensor _c = t > 0 ? states[t - 1].c : Tensor(hiddenDim, 1);
+                for (std::size_t i = 0; i < delta.o.totalSize; i++) {
+                    delta.c[i] = delta.h[i] * states[t].o[i] * Tanh::df(states[t].c[i]) + delta_.c[i] * f_[i];
+                    delta.o[i] = delta.h[i] * Tanh::f(states[t].c[i]) * Sigmoid::df(states[t].o[i]);
+                    delta.g[i] = delta.c[i] * states[t].i[i] * Tanh::df(states[t].g[i]);
+                    delta.i[i] = delta.c[i] * states[t].g[i] * Sigmoid::df(states[t].i[i]);
+                    delta.f[i] = delta.c[i] * _c[i] * Sigmoid::df(states[t].f[i]);
+                }
+                /* gradient */
+                /*
+                    dw:(outputDim, hiddenDim)
+                    E: (outputDim, 1)
+                    h: (hiddenDim, 1)
+                    dw = E * h^T
+                */
+                Tensor::Mul::ikjk(d.W, loss[t], states[t].h);
+                Tensor::Mul::ikjk(d.B, loss[t], states[t].y);
+                /*
+                    dw:    (hiddenDim, inputDim)
+                    delta: (hiddenDim, 1)
+                    x:     (inputDim, 1)
+                    dw = delta * x^T
+                */
+                Tensor::Mul::ikjk(d.Wi, delta.i, x[t]);
+                Tensor::Mul::ikjk(d.Wf, delta.f, x[t]);
+                Tensor::Mul::ikjk(d.Wg, delta.g, x[t]);
+                Tensor::Mul::ikjk(d.Wo, delta.o, x[t]);
+
+                /*
+                    du:    (hiddenDim, hiddenDim)
+                    delta: (hiddenDim, 1)
+                    _h:    (hiddenDim, 1)
+                    du = delta * _h^T
+                */
+                Tensor _h = t > 0 ? states[t - 1].h : Tensor(hiddenDim, 1);
+                Tensor::Mul::ikjk(d.Ui, delta.i, _h);
+                Tensor::Mul::ikjk(d.Uf, delta.f, _h);
+                Tensor::Mul::ikjk(d.Ug, delta.g, _h);
+                Tensor::Mul::ikjk(d.Uo, delta.o, _h);
+
+                d.Bi += delta.i;
+                d.Bf += delta.f;
+                d.Bg += delta.g;
+                d.Bo += delta.o;
+                /* next */
+                delta_ = delta;
             }
+
+            /* clear */
+            loss.clear();
+            x.clear();
             lstm.states.clear();
             return;
         }
-
     };
 
     /* optimizer */
@@ -264,7 +265,7 @@ public:
         Optimizer B;
     public:
         OptimizeBlock(){}
-        OptimizeBlock(const LSTM &layer)
+        explicit OptimizeBlock(const LSTM &layer)
         {
             Wi = Optimizer(layer.Wi.shape);
             Ui = Optimizer(layer.Ui.shape);
@@ -281,22 +282,25 @@ public:
             W  = Optimizer(layer.W.shape);
             B  = Optimizer(layer.B.shape);
         }
-        void operator()(LSTM& layer, Grad& grad, float learningRate)
+        void operator()(LSTM& lstm, Grad& grad, float learningRate)
         {
-            Wi(layer.Wi, grad.d.Wi, learningRate);
-            Ui(layer.Ui, grad.d.Ui, learningRate);
-            Bi(layer.Bi, grad.d.Bi, learningRate);
-            Wg(layer.Wg, grad.d.Wg, learningRate);
-            Ug(layer.Ug, grad.d.Ug, learningRate);
-            Bg(layer.Bg, grad.d.Bg, learningRate);
-            Wf(layer.Wf, grad.d.Wf, learningRate);
-            Uf(layer.Uf, grad.d.Uf, learningRate);
-            Bf(layer.Bf, grad.d.Bf, learningRate);
-            Wo(layer.Wo, grad.d.Wo, learningRate);
-            Uo(layer.Uo, grad.d.Uo, learningRate);
-            Bo(layer.Bo, grad.d.Bo, learningRate);
-            W(layer.W, grad.d.W, learningRate);
-            B(layer.B, grad.d.B, learningRate);
+            /* backward and eval */
+            grad.backwardThroughTime(lstm);
+            /* update */
+            Wi(lstm.Wi, grad.d.Wi, learningRate);
+            Ui(lstm.Ui, grad.d.Ui, learningRate);
+            Bi(lstm.Bi, grad.d.Bi, learningRate);
+            Wg(lstm.Wg, grad.d.Wg, learningRate);
+            Ug(lstm.Ug, grad.d.Ug, learningRate);
+            Bg(lstm.Bg, grad.d.Bg, learningRate);
+            Wf(lstm.Wf, grad.d.Wf, learningRate);
+            Uf(lstm.Uf, grad.d.Uf, learningRate);
+            Bf(lstm.Bf, grad.d.Bf, learningRate);
+            Wo(lstm.Wo, grad.d.Wo, learningRate);
+            Uo(lstm.Uo, grad.d.Uo, learningRate);
+            Bo(lstm.Bo, grad.d.Bo, learningRate);
+            W(lstm.W, grad.d.W, learningRate);
+            B(lstm.B, grad.d.B, learningRate);
             return;
         }
     };
@@ -401,6 +405,7 @@ public:
         states.push_back(state);
         return y;
     }
+
 
 };
 

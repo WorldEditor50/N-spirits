@@ -7,6 +7,7 @@ fun with cpp
 - lr
 - BPNET
 - LeNet5
+- LSTM
 - expression template
 - matrix
 - tensor
@@ -16,4 +17,5 @@ fun with cpp
 
 ## dataset
 - https://www.kaggle.com/datasets/harrywang/wine-dataset-for-clustering
+- https://www.kaggle.com/datasets/hojjatk/mnist-dataset
 

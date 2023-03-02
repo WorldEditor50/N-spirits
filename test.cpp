@@ -17,7 +17,8 @@
 #include "./net/optimizer.h"
 #include "./net/layer.h"
 #include "./net/loss.h"
-#include "./net/conv.h"
+#include "./net/conv2d.hpp"
+#include "./net/lstm.hpp"
 
 void test_lu()
 {
@@ -542,7 +543,7 @@ void test_lenet5()
                   MaxPooling2d(16, 10, 10, 2, 2),
                   FcLayer(16*5*5, 120, true, ACTIVE_SIGMOID),
                   FcLayer(120, 84, true, ACTIVE_SIGMOID),
-                  SoftmaxLayer(84, 10));
+                  SoftmaxLayer(84, 10, true));
     Optimizer<LeNet5, Optimize::RMSProp> optimizer(lenet5, 1e-3);
     Tensor x(3, 32, 32);
     Tensor yt(10, 1);
@@ -605,13 +606,10 @@ void test_mnist()
     std::size_t N = BinaryLoader::byteswap(*(uint32_t*)(datas.get() + 4));
     std::vector<Tensor> x(N, Tensor(1, 28, 28));
     for (std::size_t n = 0; n < N; n++ ) {
-        uint8_t* img = datas.get() + 16 + n * (28*28);
-        for (int i = 0; i < 28; i++ ) {
-            for (int j = 0; j < 28; j++ ) {
-                x[n](0, i, j) = img[i + j*28] / 255.f;
-            }
+        uint8_t* img = datas.get() + 16 + n*(28*28);
+        for (std::size_t i = 0; i < x[n].totalSize; i++ ) {
+            x[n][i] = img[i]/255.0f;
         }
-
     }
     /* load label */
     std::unique_ptr<uint8_t> labels = BinaryLoader::load("./dataset/train-labels.idx1-ubyte");
@@ -622,13 +620,7 @@ void test_mnist()
     std::vector<Tensor> yt(N, Tensor(10, 1));
     for (std::size_t n = 0; n < N; n++ ) {
         uint8_t* label = labels.get() + 8 + n;
-        for (int i = 0; i < 10; i++ ) {
-            if (*label == i) {
-                yt[n](i, 0) = 1.0f;
-            } else {
-                yt[n](i, 0) = 0.0f;
-            }
-        }
+        yt[n](*label, 0) = 1.0f;
         //yt[n].printValue();
     }
     /* train: max epoch = 1000, batch size = 100, learning rate = 1e-3 */
@@ -645,6 +637,7 @@ void test_mnist()
             /* optimize */
             optimizer.backward(loss, x[k]);
         }
+        /* update */
         optimizer.update();
     }
 
@@ -659,6 +652,53 @@ void test_mnist()
     }
     return;
 }
+
+
+void test_lstm()
+{
+    using LSTMNET = Net<LSTM, FcLayer, LayerNorm, FcLayer>;
+
+    LSTMNET lstm(LSTM(4, 32, 32),
+                 FcLayer(32, 32, true, ACTIVE_TANH),
+                 LayerNorm(32, 32, true, ACTIVE_SIGMOID),
+                 FcLayer(32, 1, true, ACTIVE_LINEAR));
+
+    Optimizer<LSTMNET, Optimize::RMSProp> optimizer(lstm, 1e-3);
+    /* data */
+    std::size_t N = 10000;
+    std::vector<Tensor> x(N, Tensor(4, 1));
+    std::vector<Tensor> yt(N, Tensor(1, 1));
+    for (std::size_t i = 0; i < N; i++) {
+        Utils::uniform(x[i], -1, 1);
+        /* f(x1, x2, x3, x4) = exp(x1+x2+x3+x4) * sin(x1+x2+x3+x4) */
+        float s = x[i].sum();
+        yt[i][0] = std::exp(s)*std::sin(s);
+    }
+    /* train */
+    std::uniform_int_distribution<int> distribution(0, N - 1);
+    for (std::size_t epoch = 0; epoch < 5000; epoch++) {
+        for (std::size_t i = 0; i < 32; i++) {
+            /* forward */
+            int k = distribution(Utils::engine);
+            Tensor& y = lstm(x[k]);
+            /* loss */
+            Tensor loss = Loss::MSE(y, yt[k]);
+            /* optimize */
+            optimizer.backward(loss, x[k]);
+        }
+        /* update */
+        optimizer.update();
+    }
+    /* predict */
+    for (std::size_t i = 0; i < 16; i++) {
+        int k = distribution(Utils::engine);
+        Tensor& y = lstm(x[k]);
+        float error = Utils::Norm::l2(y, yt[k]);
+        std::cout<<"target="<<yt[k][0]<<", predict="<<y[0]<<", error="<<error<<std::endl;
+    }
+    return;
+}
+
 
 void test_simd_matmul()
 {
@@ -846,7 +886,8 @@ int main()
     //test_simd_matmul();
     //test_bpnn();
     //test_lenet5();
-    test_mnist();
+    //test_mnist();
+    test_lstm();
     return 0;
 }
 

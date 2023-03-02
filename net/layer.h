@@ -49,10 +49,7 @@ public:
             }
             delta = Tensor(outputDim, 1);
         }
-        inline Tensor& deltaRef()
-        {
-            return delta;
-        }
+
         void backward(const FcLayer &layer, Tensor &delta_)
         {
             /*
@@ -79,7 +76,9 @@ public:
                 dw = dy * x^T
             */
             Tensor::Mul::ikjk(dw, dy, x);
-            db += dy;
+            if (bias == true) {
+                db += dy;
+            }
             delta.zero();
             return;
         }
@@ -170,61 +169,6 @@ public:
     }
 };
 
-class Concat
-{
-public:
-    struct Offset {
-        std::size_t from;
-        std::size_t to;
-    };
-public:
-    Tensor o;
-    std::vector<Tensor> inputs;
-    std::vector<Offset> offset;
-public:
-    template<typename ...Input>
-    explicit Concat(Input&& ...input):
-        inputs(input...)
-    {
-        int size = 0;
-        offset = std::vector<Offset>(inputs.size());
-        for (std::size_t i = 0; i < inputs.size(); i++) {
-            size += inputs[i].totalSize;
-            if (i == 0) {
-                offset[i].from = 0;
-            } else {
-                offset[i].from = offset[i - 1].to;
-            }
-            offset[i].to = offset[i].from + size;
-        }
-        o = Tensor(size, 1);
-    }
-
-    Tensor& forward()
-    {
-        std::size_t k = 0;
-        for (std::size_t i = 0; i < inputs.size(); i++) {
-            for (std::size_t j = 0; j < inputs[i].totalSize; j++) {
-                o[k] = inputs[i][j];
-                k++;
-            }
-        }
-        return o;
-    }
-
-    void backward(const Tensor &delta)
-    {
-        std::size_t k = 0;
-        for (std::size_t i = 0; i < inputs.size(); i++) {
-            for (std::size_t j = offset[i].from; j < offset[i].to; j++) {
-                inputs[i][j] = delta[k];
-                k++;
-            }
-        }
-        return;
-    }
-};
-
 class SoftmaxLayer : public FcLayer
 {
 public:
@@ -236,9 +180,12 @@ public:
             :FcLayer::Grad(param){}
         void eval(const Tensor &x, const Tensor &o, const Tensor &yt)
         {
-            Tensor dy(outputDim, 1);
-            Utils::sub(dy, o, yt);
+            Tensor dy = o - yt;
+            /* dw = dy*x^T */
             Tensor::Mul::ikjk(dw, dy, x);
+            if (bias == true) {
+                db += dy;
+            }
             delta.zero();
             return;
         }
@@ -246,17 +193,21 @@ public:
 public:
     SoftmaxLayer(){}
     ~SoftmaxLayer(){}
-    explicit SoftmaxLayer(int inDim_, int outDim_)
-        :FcLayer(inDim_, outDim_, false, ACTIVE_LINEAR)
+    explicit SoftmaxLayer(int inputDim_, int outputDim_, bool bias_)
+        :FcLayer(inputDim_, outputDim_, bias_, ACTIVE_LINEAR)
     {
         layerType = LAYER_SOFTMAX;
     }
 
     Tensor& forward(const Tensor &x) override
     {
+        /* o = w*x + b */
         FcLayer::forward(x);
+        float max_ = o.max();
+        o -= max_;
+        /* softmax(x) = exp(xi)/Σexp(xj)  */
         Utils::exp(o, o);
-        float s = o.sum();
+        float s = o.sum();     
         o /= s;
         return o;
     }
@@ -290,8 +241,8 @@ public:
 public:
     Dropout(){}
     ~Dropout(){}
-    explicit Dropout(int inDim_, int outDim_, bool bias_, int activeType_, float p_)
-        :FcLayer(inDim_, outDim_, bias_, activeType_),p(p_), mask(outDim_, 1)
+    explicit Dropout(int inputDim_, int outputDim_, bool bias_, int activeType_, float p_)
+        :FcLayer(inputDim_, outputDim_, bias_, activeType_),p(p_), mask(outputDim_, 1)
     {
         layerType = LAYER_DROPOUT;
     }
@@ -330,8 +281,8 @@ public:
     float gamma;
 public:
     LayerNorm(){}
-    explicit LayerNorm(int inDim_, int outDim_, bool bias_, int activeType_)
-        :FcLayer(inDim_, outDim_, bias_, activeType_), gamma(1)
+    explicit LayerNorm(int inputDim_, int outputDim_, bool bias_, int activeType_)
+        :FcLayer(inputDim_, outputDim_, bias_, activeType_), gamma(1)
     {
         layerType = LAYER_NORM;
     }
@@ -380,16 +331,13 @@ public:
     public:
         Grad(){}
         Grad(const BatchNorm1dParam &param)
-            :BatchNorm1dParam((param))
+            :BatchNorm1dParam(param)
         {
             dGamma = Tensor(outputDim, 1);
             dBeta  = Tensor(outputDim, 1);
             deltas = std::vector<Tensor>(batchSize, Tensor(outputDim, 1));
         }
-        inline Tensor& deltaRef()
-        {
-            return deltas[0];
-        }
+
         void backward(const BatchNorm1d &layer, Tensor &delta/* output */)
         {
             return;
@@ -533,32 +481,6 @@ public:
     {
         Tensor h(b.shape);
         return sampleVisible(h);
-    }
-};
-
-
-class Gate
-{
-public:
-    Tensor w;
-    Tensor u;
-    Tensor b;
-    Tensor o;
-public:
-    Gate(){}
-    Gate(int inputDim, int hiddenDim, int outputDim)
-    {
-        w = Tensor(outputDim, inputDim);
-        u = Tensor(hiddenDim, hiddenDim);
-        b = Tensor(outputDim, 1);
-        o = Tensor(outputDim, 1);
-    }
-    Tensor& forward(const Tensor &x, const Tensor &h)
-    {
-        Tensor::Mul::ikkj(o, w, x);
-        Tensor::Mul::ikkj(o, u, h);
-        o += b;
-        return o;
     }
 };
 
