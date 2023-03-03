@@ -109,7 +109,7 @@ public:
     }
 
     template<typename ...Dim>
-    Tensor_ sub(Dim ...di)
+    Tensor_ sub(Dim ...di) const
     {
         Tensor_ y;
         std::vector<int> dims = std::vector<int>{di...};
@@ -124,6 +124,35 @@ public:
         }
         return y;
     }
+
+    template<typename ...Dim>
+    void slice(Tensor_ &y, Dim ...dim) const
+    {
+        std::vector<int> dims = std::vector<int>{dim...};
+        std::size_t pos = 0;
+        for (std::size_t i = 0; i < dims.size(); i++) {
+            pos += sizes[i]*dims[i];
+        }
+        for (std::size_t i = 0; i < y.totalSize; i++) {
+            y.val[i] = val[i + pos];
+        }
+        return;
+    }
+
+    template<typename ...Dim>
+    void setSub(Dim ...dim, const Tensor_ &x)
+    {
+        std::vector<int> dims = std::vector<int>{dim...};
+        std::size_t pos = 0;
+        for (std::size_t i = 0; i < dims.size(); i++) {
+            pos += sizes[i]*dims[i];
+        }
+        for (std::size_t i = 0; i < x.totalSize; i++) {
+            val[i + pos] = x.val[i];
+        }
+        return;
+    }
+
     inline T* ptr() { return val.data(); }
     inline const T* ptr() const { return val.data(); }
     inline bool empty() const {return totalSize == 0;}

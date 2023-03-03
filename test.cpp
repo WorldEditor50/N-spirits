@@ -483,11 +483,11 @@ void test_permute()
 void test_bpnn()
 {
     using BPNN = Net<FcLayer, LayerNorm, FcLayer, LayerNorm, FcLayer>;
-    BPNN bp(FcLayer(2, 128, true, ACTIVE_TANH),
-            LayerNorm(128, 128, true, ACTIVE_SIGMOID),
-            FcLayer(128, 128, true, ACTIVE_TANH),
-            LayerNorm(128, 128, true, ACTIVE_SIGMOID),
-            FcLayer(128, 1, true, ACTIVE_SIGMOID));
+    BPNN bp(FcLayer(2, 32, true, ACTIVE_TANH),
+            LayerNorm(32, 32, true, ACTIVE_SIGMOID),
+            FcLayer(32, 32, true, ACTIVE_TANH),
+            LayerNorm(32, 32, true, ACTIVE_SIGMOID),
+            FcLayer(32, 1, true, ACTIVE_SIGMOID));
     Optimizer<BPNN, Optimize::RMSProp> optimizer(bp, 1e-3);
     /* train xor */
     std::vector<Tensor> x = {Tensor({2, 1}, {1, 1}),
@@ -547,6 +547,7 @@ void test_lenet5()
     Optimizer<LeNet5, Optimize::RMSProp> optimizer(lenet5, 1e-3);
     Tensor x(3, 32, 32);
     Tensor yt(10, 1);
+    auto t1 = Clock::tiktok();
     for (std::size_t i = 0; i < 100; i++) {
         Utils::uniform(x, 0, 1);
         /* forward */
@@ -558,6 +559,8 @@ void test_lenet5()
         /* backward */
         optimizer.backward(loss, x, yt);
     }
+    auto t2 = Clock::tiktok();
+    std::cout<<"lenet5 train const:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
     return;
 #if 0
     Conv2d& conv1 = std::get<0>(lenet5.layers);
@@ -621,16 +624,19 @@ void test_mnist()
     for (std::size_t n = 0; n < N; n++ ) {
         uint8_t* label = labels.get() + 8 + n;
         yt[n](*label, 0) = 1.0f;
-        //yt[n].printValue();
     }
     /* train: max epoch = 1000, batch size = 100, learning rate = 1e-3 */
     Optimizer<LeNet5, Optimize::RMSProp> optimizer(lenet5, 1e-3);
-
+    std::random_device device;
+    std::default_random_engine engine(device());
     std::uniform_int_distribution<int> distribution(0, N - 1);
-    for (std::size_t epoch = 0; epoch < 1000; epoch++) {
+
+    auto t1 = Clock::tiktok();
+
+    for (std::size_t epoch = 0; epoch < 500; epoch++) {
         for (std::size_t i = 0; i < 100; i++) {
             /* forward */
-            int k = distribution(Utils::engine);
+            int k = distribution(engine);
             Tensor& y = lenet5(x[k]);
             /* loss */
             Tensor loss = Loss::MSE(y, yt[k]);
@@ -640,16 +646,19 @@ void test_mnist()
         /* update */
         optimizer.update();
     }
-
+    auto t2 = Clock::tiktok();
+    std::cout<<"lenet5 training cost:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
     /* predict */
     for (std::size_t i = 0; i < 10; i++) {
         /* forward */
-        int k = distribution(Utils::engine);
+        int k = distribution(engine);
         Tensor& y = lenet5(x[k]);
         int p = y.argmax();
         int t = yt[k].argmax();
         std::cout<<" target number:"<<t<<", predict number:"<<p<<std::endl;
     }
+    /* save */
+    //lenet5.save("lenet5_mnist.model");
     return;
 }
 
@@ -769,8 +778,9 @@ void test_vgg16()
 
     Tensor x(3, 224, 224);
     /*
-          vgg16 is too big to run,
-          it will cost 600MB (1700MB with RMSProp) memory and 194.117s for once forward
+          vgg16 forward cost:
+                          @ conv     : 194.117s
+                          @ fast conv: 75.4293s
     */
     auto t1 = Clock::tiktok();
     vgg16(x);
@@ -946,6 +956,7 @@ void test_simd_transpose()
 #endif
 }
 
+
 int main()
 {
 #if 0
@@ -967,8 +978,8 @@ int main()
     //test_lenet5();
     //test_mnist();
     //test_lstm();
-    test_alexnet();
-    //test_vgg16();
+    //test_alexnet();
+    test_vgg16();
     return 0;
 }
 

@@ -22,10 +22,11 @@ enum LayerType {
 
 class FcLayer;
 class SoftmatLayer;
+class ResidualLayer;
 class BatchNorm1d;
 class LSTM;
 class Conv2d;
 class MaxPooling2d;
 class AvgPooling2d;
-
+class ResidualConv2d;
 #endif // LAYERDEF_H

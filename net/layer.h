@@ -49,7 +49,7 @@ public:
             }
             delta = Tensor(outputDim, 1);
         }
-
+        inline Tensor& loss() {return delta;}
         void backward(const FcLayer &layer, Tensor &delta_)
         {
             /*
@@ -128,6 +128,8 @@ public:
         Utils::uniform(w, -1, 1);
         Utils::uniform(b, -1, 1);
     }
+
+    inline Tensor& output() {return o;}
 
     virtual Tensor& forward(const Tensor &x)
     {
@@ -304,6 +306,92 @@ public:
         return o;
     }
 };
+
+
+
+class ResidualLayer : public FcParam
+{
+public:
+    using ParamType = FcParam;
+    class Grad: public FcParam
+    {
+    public:
+        FcLayer::Grad fcGrad1;
+        FcLayer::Grad fcGrad2;
+    public:
+        Grad(){}
+        explicit Grad(const FcParam &param)
+            :FcParam(param)
+        {
+            fcGrad1 = FcLayer::Grad(param);
+            fcGrad2 = FcLayer::Grad(param);
+        }
+        inline Tensor& loss() {return fcGrad1.delta;}
+        void backward(const ResidualLayer &layer, Tensor &delta_)
+        {
+            fcGrad2.backward(layer.fc2, fcGrad1.delta);
+            fcGrad1.backward(layer.fc1, delta_);
+            return;
+        }
+        void eval(ResidualLayer& layer, const Tensor &x)
+        {
+             fcGrad1.eval(x, layer.fc1.o);
+             fcGrad2.eval(layer.fc1.o, layer.fc2.o);
+             /* residual part differentiate */
+             fcGrad2.dw += 1;
+             if (fcGrad2.bias == true) {
+                 fcGrad2.db += 1;
+             }
+             return;
+        }
+    };
+
+    template<typename Optimizer>
+    class OptimizeBlock
+    {
+    public:
+        FcLayer::OptimizeBlock<Optimizer> opt1;
+        FcLayer::OptimizeBlock<Optimizer> opt2;
+    public:
+        OptimizeBlock(){}
+        explicit OptimizeBlock(const ResidualLayer &layer)
+        {
+            opt1 = FcLayer::OptimizeBlock<Optimizer>(layer.fc1);
+            opt2 = FcLayer::OptimizeBlock<Optimizer>(layer.fc2);
+        }
+        void operator()(ResidualLayer& layer, Grad& grad, float learningRate)
+        {
+            opt1(layer.fc1, grad.fcGrad1, learningRate);
+            opt2(layer.fc2, grad.fcGrad2, learningRate);
+            return;
+        }
+    };
+
+public:
+    FcLayer fc1;
+    FcLayer fc2;
+public:
+    ResidualLayer(){}
+    explicit ResidualLayer(int inputDim_,  bool bias_, int activeType_)
+        : FcParam(inputDim_, inputDim_, bias_, activeType_)
+    {
+        fc1 = FcLayer(inputDim_, inputDim_, bias_, activeType_);
+        fc2 = FcLayer(inputDim_, inputDim_, bias_, activeType_);
+    }
+
+    inline Tensor& output() {return fc2.o;}
+    Tensor& forward(const Tensor &x)
+    {
+        Tensor& o1 = fc1.forward(x);
+        /*
+            o2 = f2(w2*f1(w1*x + b1) + b2) + x
+        */
+        Tensor& o2 = fc2.forward(o1);
+        o2 += x;
+        return o2;
+    }
+};
+
 
 class BatchNorm1dParam
 {

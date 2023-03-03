@@ -41,7 +41,7 @@ public:
                          int stride_=1,
                          int padding_=0,
                          bool bias_=false,
-                         ActiveType activeType_=ACTIVE_LEAKRELU):
+                         int activeType_=ACTIVE_LEAKRELU):
         inChannels(inChannels_),outChannels(outChannels_),kernelSize(kernelSize_),
     stride(stride_),padding(padding_),bias(bias_),
     hi(h),wi(w),
@@ -71,6 +71,9 @@ public:
             delta = Tensor(outChannels, ho, wo);
             layerType = LAYER_CONV2D;
         }
+
+        inline Tensor& loss() {return delta;}
+
         void backward(const Conv2d &layer, Tensor &delta_)
         {
             /* delta_: previous delta, the shape is same as delta and output */
@@ -181,7 +184,7 @@ public:
                     int stride_=1,
                     int padding_=0,
                     bool bias_=false,
-                    ActiveType activeType_=ACTIVE_LEAKRELU):
+                    int activeType_=ACTIVE_LEAKRELU):
         Conv2dParam(inChannels_, h, w, outChannels_, kernelSize_, stride_, padding_, bias_, activeType_)
     {
         kernels = Tensor(outChannels, inChannels, kernelSize, kernelSize);
@@ -196,11 +199,13 @@ public:
         layerType = LAYER_CONV2D;
     }
 
+    inline Tensor& output() {return o;}
+
     Tensor& forward(const Tensor &x)
     {           
         /* conv */
         o.zero();
-        conv(o, kernels, x, stride, padding);
+        fastConv(o, kernels, x, stride, padding);
         /* bias */
         if (bias == true) {
             o += b;
@@ -284,9 +289,9 @@ public:
             for (int i = 0; i < y.shape[1]; i++) {
                 for (int j = 0; j < y.shape[2]; j++) {
                     /* kernels */
-                    for (int h = 0; h < kernels.shape[2]; h++) {
-                        for (int k = 0; k < kernels.shape[3]; k++) {
-                            for (int c = 0; c < kernels.shape[1]; c++) {
+                    for (int c = 0; c < kernels.shape[1]; c++) {
+                        for (int h = 0; h < kernels.shape[2]; h++) {
+                            for (int k = 0; k < kernels.shape[3]; k++) {
                                 /* map to input  */
                                 int row = h + i*stride - padding;
                                 int col = k + j*stride - padding;
@@ -298,6 +303,49 @@ public:
                                 y(n, i, j) += kernels(n, c, h, k)*x(c, row, col);
                             }
                         }
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    static void im2col(Tensor &slice, const Tensor &img,
+                      int kernelSize, int stride, int padding,
+                      int c, int i, int j)
+    {
+        for (int h = 0; h < kernelSize; h++) {
+            for (int k = 0; k < kernelSize; k++) {
+                /* map to input  */
+                int row = h + i*stride - padding;
+                int col = k + j*stride - padding;
+                if (row < 0 || row >= img.shape[1] ||
+                        col < 0 || col >= img.shape[2]) {
+                    continue;
+                }
+                slice.val[h*kernelSize + k] = img(c, row, col);
+            }
+        }
+        return;
+    }
+
+    static void fastConv(Tensor &y, const Tensor &kernels, const Tensor &x, int stride=1, int padding=0)
+    {
+        /* avoid visiting tensor's element with operator() */
+        int kernelSize = kernels.shape[2];
+        Tensor yn(y.shape[1], y.shape[2]);
+        Tensor kernel(kernelSize, kernelSize);
+        Tensor img(kernelSize, kernelSize);
+        for (int n = 0; n < y.shape[0]; n++) {
+            for (int c = 0; c < kernels.shape[1]; c++) {
+                kernels.slice(kernel, n, c);
+                for (int i = 0; i < y.shape[1]; i++) {
+                    for (int j = 0; j < y.shape[2]; j++) {
+                        /* image subset to vector */
+                        im2col(img, x, kernelSize, stride, padding, c, i, j);
+                        /* convolution */
+                        float s = Utils::dot(kernel, img);
+                        y(n, i, j) += s;
                     }
                 }
             }
@@ -323,6 +371,7 @@ public:
         {
             delta = Tensor(outChannels, ho, wo);
         }
+        inline Tensor& loss() {return delta;}
         void backward(MaxPooling2d &layer, Tensor &delta_)
         {
             /* delta_: previous delta, the shape is same as delta and output */
@@ -381,6 +430,7 @@ public:
         mask = Tensor(outChannels, ho, wo);
         layerType = LAYER_MAXPOOLING;
     }
+    inline Tensor& output() {return o;}
     Tensor& forward(const Tensor &x)
     {
         /* input shape is same as output shape */
@@ -421,7 +471,7 @@ public:
         {
             delta = Tensor(outChannels, ho, wo);
         }
-
+        inline Tensor& loss() {return delta;}
         void backward(AvgPooling2d &layer, Tensor &delta_)
         {
             /* delta_: previous delta, the shape is same as delta and output */
@@ -478,6 +528,7 @@ public:
         o = Tensor(outChannels, ho, wo);
         layerType = LAYER_AVGPOOLING;
     }
+    inline Tensor& output() {return o;}
     Tensor& forward(const Tensor &x)
     {
         /* conv */
@@ -497,6 +548,93 @@ public:
         return o;
     }
 
+};
+
+
+class ResidualConv2d : public Conv2dParam
+{
+public:
+    using ParamType = Conv2dParam;
+    class Grad: public Conv2dParam
+    {
+    public:
+        Conv2d::Grad convGrad1;
+        Conv2d::Grad convGrad2;
+    public:
+        explicit Grad(const Conv2dParam &param)
+            :Conv2dParam(param)
+        {
+            convGrad1 = Conv2d::Grad(param);
+            convGrad2 = Conv2d::Grad(param);
+        }
+        inline Tensor& loss() {return convGrad2.delta;}
+        void backward(const ResidualConv2d &layer, Tensor &delta_)
+        {
+            convGrad2.backward(layer.conv2, convGrad1.delta);
+            convGrad1.backward(layer.conv1, delta_);
+            return;
+        }
+        void eval(ResidualConv2d& layer, const Tensor &x)
+        {
+             convGrad1.eval(x, layer.conv1.o);
+             convGrad2.eval(layer.conv1.o, layer.conv2.o);
+             /* residual part differentiate */
+             convGrad2.dkernels += 1;
+             if (convGrad2.bias == true) {
+                 convGrad2.db += 1;
+             }
+             return;
+        }
+    };
+
+    template<typename Optimizer>
+    class OptimizeBlock
+    {
+    public:
+        Conv2d::OptimizeBlock<Optimizer> opt1;
+        Conv2d::OptimizeBlock<Optimizer> opt2;
+    public:
+        OptimizeBlock(){}
+        explicit OptimizeBlock(const ResidualConv2d &layer)
+        {
+            opt1 = Conv2d::OptimizeBlock<Optimizer>(layer.conv1);
+            opt2 = Conv2d::OptimizeBlock<Optimizer>(layer.conv2);
+        }
+        void operator()(ResidualConv2d& layer, Grad& grad, float learningRate)
+        {
+            opt1(layer.conv1, grad.convGrad1, learningRate);
+            opt2(layer.conv2, grad.convGrad2, learningRate);
+            return;
+        }
+    };
+
+public:
+    Conv2d conv1;
+    Conv2d conv2;
+public:
+    ResidualConv2d(){}
+    explicit ResidualConv2d(int inChannels_,
+                    int h,
+                    int w,
+                    int kernelSize_=3,
+                    int stride_=1,
+                    int padding_=0,
+                    bool bias_=false,
+                    int activeType_=ACTIVE_LEAKRELU):
+        Conv2dParam(inChannels_, h, w, inChannels_, kernelSize_, stride_, padding_, bias_, activeType_)
+    {
+        conv1 = Conv2d(inChannels, h, w, inChannels, kernelSize, stride, padding, bias, activeType);
+        conv2 = Conv2d(inChannels, h, w, inChannels, kernelSize, stride, padding, bias, activeType);
+    }
+    inline Tensor& output() {return conv2.o;}
+    Tensor& forward(const Tensor &x)
+    {
+        Tensor& c1 = conv1.forward(x);
+        /* c2 = conv(c1) + x */
+        Tensor& c2 = conv2.forward(c1);
+        c2 += x;
+        return c2;
+    }
 };
 
 #endif // CONV2D_HPP
