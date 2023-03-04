@@ -139,16 +139,11 @@ public:
         return;
     }
 
-    template<typename ...Dim>
-    void setSub(Dim ...dim, const Tensor_ &x)
+    void subset(const std::vector<int> &indexes, std::vector<T&> ref)
     {
-        std::vector<int> dims = std::vector<int>{dim...};
-        std::size_t pos = 0;
-        for (std::size_t i = 0; i < dims.size(); i++) {
-            pos += sizes[i]*dims[i];
-        }
-        for (std::size_t i = 0; i < x.totalSize; i++) {
-            val[i + pos] = x.val[i];
+        for (std::size_t i = 0; i < indexes.size(); i++) {
+            int k = indexes[i];
+            ref.push_back(val[k]);
         }
         return;
     }

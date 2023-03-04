@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "utils/csv.h"
+#include "../utils/csv.h"
 #include "metautil.h"
 
 struct Person {

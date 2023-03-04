@@ -3,6 +3,7 @@
 #include "../basic/tensor.hpp"
 #include "activate.h"
 #include "layerdef.h"
+#include "conv.hpp"
 
 class Conv2dParam
 {
@@ -76,7 +77,9 @@ public:
 
         void backward(const Conv2d &layer, Tensor &delta_)
         {
-            /* delta_: previous delta, the shape is same as delta and output */
+            /* delta_: previous delta, the shape is same as input */
+
+#if 1
             for (int n = 0; n < delta_.shape[0]; n++) {
                 for (int i = 0; i < delta_.shape[1]; i++) {
                     for (int j = 0; j < delta_.shape[2]; j++) {
@@ -101,6 +104,31 @@ public:
                     }
                 }
             }
+#else
+
+            /* kernels shape */
+            for (int c = 0; c < dkernels.shape[1]; c++) {
+                for (int h = 0; h < dkernels.shape[2]; h++) {
+                    for (int k = 0; k < dkernels.shape[3]; k++) {
+                        /* output shape */
+                        for (int n = 0; n < delta.shape[0]; n++) {
+                            for (int i = 0; i < delta.shape[1]; i++) {
+                                for (int j = 0; j < delta.shape[2]; j++) {
+                                    /* input shape */
+                                    int row = h + i*stride - padding;
+                                    int col = k + j*stride - padding;
+                                    if (row < 0 || row >= delta_.shape[1] ||
+                                            col < 0 || col >= delta_.shape[2]) {
+                                        continue;
+                                    }
+                                    delta_(c, row, col) += layer.kernels(n, c, h, k)*delta(n, i, j);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+#endif
             return;
         }
 
@@ -114,6 +142,7 @@ public:
                 db += dy;
             }
             /* dkernel */
+#if 1
             for (int n = 0; n < x.shape[0]; n++) {
                 for (int i = 0; i < x.shape[1]; i++) {
                     for (int j = 0; j < x.shape[2]; j++) {
@@ -138,6 +167,31 @@ public:
                     }
                 }
             }
+
+#else
+            /* kernels shape */
+            for (int n = 0; n < dkernels.shape[0]; n++) {
+                for (int c = 0; c < dkernels.shape[1]; c++) {
+                    for (int h = 0; h < dkernels.shape[2]; h++) {
+                        for (int k = 0; k < dkernels.shape[3]; k++) {
+                            /* output shape */
+                            for (int i = 0; i < dy.shape[1]; i++) {
+                                for (int j = 0; j < dy.shape[2]; j++) {
+                                    /* input shape */
+                                    int row = h + i*stride - padding;
+                                    int col = k + j*stride - padding;
+                                    if (row < 0 || row >= x.shape[1] ||
+                                            col < 0 || col >= x.shape[2]) {
+                                        continue;
+                                    }
+                                    dkernels(n, c, h, k) += x(c, row, col)*dy(n, i, j);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+#endif
             return;
         }
 
@@ -205,153 +259,19 @@ public:
     {           
         /* conv */
         o.zero();
-        fastConv(o, kernels, x, stride, padding);
+        conv::eval2(o, kernels, x, stride, padding);
         /* bias */
         if (bias == true) {
             o += b;
         }
         /* activate */
         Active::func[activeType].f(o);
+        /* NMS */
+        float _max = std::abs(o.max());
+        o /= _max;
         return o;
     }
 
-    static void conv(Tensor &y, const Tensor &kernels, const Tensor &x, int stride=1, int padding=0)
-    { 
-        /*
-            on = bn + Kncij*Xcij
-            example:
-                    in_chanels = 1
-                    out_channels = 1
-                    hi = 3
-                    wi = 3
-                    kernel_size = 3
-                    stride = 1
-                    padding = 1
-                    ho = (hi - kernel_size + 2*padding)/stride + 1 = 3
-                    wo = (wi - kernel_size + 2*padding)/stride + 1 = 3
-
-                                    kernel_11:
-
-            0   0   0   0   0
-
-            0   1   2   3   0        0    -1     0          -4    -2    -5
-
-            0   4   5   6   0   *   -1     1    -1      =   -9    -15   -11
-
-            0   7   8   9   0        0    -1     0          -5    -13   -5
-
-            0   0   0   0   0
-
-                                    kernel_12:                     +
-
-            0   0   0   0   0
-
-            0   1   2   3   0        0    -1     0           2     3     8
-
-            0   4   5   6   0   *    1     0    -1      =    1     4     11
-
-            0   7   8   9   0        0     1     0          -12   -7     2
-
-            0   0   0   0   0
-
-                                    kernel_13:                     +
-            0   0   0   0   0
-
-            0   1   2   3   0        1     0     1           4     8     2
-
-            0   4   5   6   0   *    0    -1     0      =    6     15    4
-
-            0   7   8   9   0        1     0     1          -2     2    -4
-
-            0   0   0   0   0
-
-                                                                   +
-
-                                                             bias_1:
-
-                                                             0     0     0
-
-                                                             0     0     0
-
-                                                             0     0     0
-
-                                                                   ||
-
-
-                                                             2     9     5
-
-                                                            -2     4     4
-
-                                                            -19   -18   -7
-        */
-        /* output */
-        for (int n = 0; n < y.shape[0]; n++) {
-            for (int i = 0; i < y.shape[1]; i++) {
-                for (int j = 0; j < y.shape[2]; j++) {
-                    /* kernels */
-                    for (int c = 0; c < kernels.shape[1]; c++) {
-                        for (int h = 0; h < kernels.shape[2]; h++) {
-                            for (int k = 0; k < kernels.shape[3]; k++) {
-                                /* map to input  */
-                                int row = h + i*stride - padding;
-                                int col = k + j*stride - padding;
-                                if (row < 0 || row >= x.shape[1] ||
-                                        col < 0 || col >= x.shape[2]) {
-                                    continue;
-                                }
-                                /* sum up all convolution result */
-                                y(n, i, j) += kernels(n, c, h, k)*x(c, row, col);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return;
-    }
-
-    static void im2col(Tensor &slice, const Tensor &img,
-                      int kernelSize, int stride, int padding,
-                      int c, int i, int j)
-    {
-        for (int h = 0; h < kernelSize; h++) {
-            for (int k = 0; k < kernelSize; k++) {
-                /* map to input  */
-                int row = h + i*stride - padding;
-                int col = k + j*stride - padding;
-                if (row < 0 || row >= img.shape[1] ||
-                        col < 0 || col >= img.shape[2]) {
-                    continue;
-                }
-                slice.val[h*kernelSize + k] = img(c, row, col);
-            }
-        }
-        return;
-    }
-
-    static void fastConv(Tensor &y, const Tensor &kernels, const Tensor &x, int stride=1, int padding=0)
-    {
-        /* avoid visiting tensor's element with operator() */
-        int kernelSize = kernels.shape[2];
-        Tensor yn(y.shape[1], y.shape[2]);
-        Tensor kernel(kernelSize, kernelSize);
-        Tensor img(kernelSize, kernelSize);
-        for (int n = 0; n < y.shape[0]; n++) {
-            for (int c = 0; c < kernels.shape[1]; c++) {
-                kernels.slice(kernel, n, c);
-                for (int i = 0; i < y.shape[1]; i++) {
-                    for (int j = 0; j < y.shape[2]; j++) {
-                        /* image subset to vector */
-                        im2col(img, x, kernelSize, stride, padding, c, i, j);
-                        /* convolution */
-                        float s = Utils::dot(kernel, img);
-                        y(n, i, j) += s;
-                    }
-                }
-            }
-        }
-        return;
-    }
 
 };
 
@@ -453,6 +373,7 @@ public:
         }
         return o;
     }
+
 };
 
 class AvgPooling2d: public Conv2dParam

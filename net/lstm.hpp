@@ -1,7 +1,7 @@
 #ifndef LSTM_H
 #define LSTM_H
 #include <vector>
-#include "tensor.hpp"
+#include "../basic/tensor.hpp"
 #include "activate.h"
 
 class LSTMParam

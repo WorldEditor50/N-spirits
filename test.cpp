@@ -14,11 +14,11 @@
 #include "gmm.h"
 #include "./basic/simd.hpp"
 #include "net/net.h"
-#include "./net/optimizer.h"
-#include "./net/layer.h"
-#include "./net/loss.h"
-#include "./net/conv2d.hpp"
-#include "./net/lstm.hpp"
+#include "net/optimizer.h"
+#include "net/layer.h"
+#include "net/loss.h"
+#include "net/conv2d.hpp"
+#include "net/lstm.hpp"
 
 void test_lu()
 {
@@ -290,7 +290,7 @@ void test_tensor()
 }
 
 
-void conv(Tensori &o, const Tensori &kernels, const Tensori &x, int stride=1, int padding=1)
+void convi(Tensori &o, const Tensori &kernels, const Tensori &x, int stride=1, int padding=1)
 {
     for (int n = 0; n < o.shape[0]; n++) {
         for (int i = 0; i < o.shape[1]; i++) {
@@ -375,7 +375,7 @@ void test_conv()
     Tensori kernels({1, 1, 3, 3}, {1, 0, 1, 0, -1, 0, 1, 0, 1});
     Tensori x({1, 3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
     /* case 1: */
-    conv(o, kernels, x);
+    convi(o, kernels, x);
     o.printValue();
     /* case 2: */
     o.zero();
@@ -385,23 +385,23 @@ void test_conv()
     kernels.assign(1, 1, 1, 1, 1, 1, 1, 1, 1);
     x.assign(1, 1, 1, 1, 1, 1, 1, 1, 1);
 
-    conv(o, kernels, x);
+    convi(o, kernels, x);
     o.printValue();
     /* case 3: */
     Tensori y1(1, 2, 2);
     Tensori x1({1, 3, 3}, {1, 1, 1, 1, 1, 1, 1, 1, 1});
     Tensori k1({1, 1, 2, 2}, {1, 1, 1, 1});
-    conv(y1, k1, x1, 1, 0);
+    convi(y1, k1, x1, 1, 0);
     y1.printValue();
     /* case 4: */
     Tensori y2(1, 5, 5);
     Tensori x2({1, 3, 3}, {1, 1, 1, 1, 1, 1, 1, 1, 1});
     Tensori k2({1, 1, 3, 3}, {1, 1, 1, 1, 1, 1, 1, 1, 1});
-    conv(y2, k2, x2, 1, 2);
+    convi(y2, k2, x2, 1, 2);
     y2.printValue();
     /* case 5: */
     Tensori y3(1, 3, 3);
-    conv(y3, k2, x2, 2, 2);
+    convi(y3, k2, x2, 2, 2);
     y3.printValue();
     return;
 }
@@ -548,7 +548,7 @@ void test_lenet5()
     Tensor x(3, 32, 32);
     Tensor yt(10, 1);
     auto t1 = Clock::tiktok();
-    for (std::size_t i = 0; i < 100; i++) {
+    for (std::size_t i = 0; i < 1; i++) {
         Utils::uniform(x, 0, 1);
         /* forward */
         Tensor& y = lenet5(x);
@@ -591,7 +591,7 @@ void test_lenet5()
 
 void test_mnist()
 {
-    using LeNet5 = Net<Conv2d, MaxPooling2d, Conv2d, MaxPooling2d, FcLayer, FcLayer, FcLayer>;
+    using LeNet5 = Net<Conv2d, MaxPooling2d, Conv2d, MaxPooling2d, FcLayer, LayerNorm, FcLayer>;
     LeNet5 lenet5(Conv2d(1, 28, 28, 6, 5, 1, 0, false, ACTIVE_LEAKRELU),
                   MaxPooling2d(6, 24, 24, 2, 2),
                   Conv2d(6, 12, 12, 16, 5, 1, 0, false, ACTIVE_LEAKRELU),
@@ -625,7 +625,7 @@ void test_mnist()
         uint8_t* label = labels.get() + 8 + n;
         yt[n](*label, 0) = 1.0f;
     }
-    /* train: max epoch = 1000, batch size = 100, learning rate = 1e-3 */
+    /* train: max epoch = 2000, batch size = 32, learning rate = 1e-3 */
     Optimizer<LeNet5, Optimize::RMSProp> optimizer(lenet5, 1e-3);
     std::random_device device;
     std::default_random_engine engine(device());
@@ -633,7 +633,7 @@ void test_mnist()
 
     auto t1 = Clock::tiktok();
 
-    for (std::size_t epoch = 0; epoch < 500; epoch++) {
+    for (std::size_t epoch = 0; epoch < 1000; epoch++) {
         for (std::size_t i = 0; i < 100; i++) {
             /* forward */
             int k = distribution(engine);
@@ -649,14 +649,20 @@ void test_mnist()
     auto t2 = Clock::tiktok();
     std::cout<<"lenet5 training cost:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
     /* predict */
-    for (std::size_t i = 0; i < 10; i++) {
+    float count = 0;
+    std::size_t Nt = 100;
+    for (std::size_t i = 0; i < Nt; i++) {
         /* forward */
         int k = distribution(engine);
         Tensor& y = lenet5(x[k]);
         int p = y.argmax();
         int t = yt[k].argmax();
         std::cout<<" target number:"<<t<<", predict number:"<<p<<std::endl;
+        if (p == t) {
+            count++;
+        }
     }
+    std::cout<<"correct/total:"<<count/float(Nt)<<std::endl;
     /* save */
     //lenet5.save("lenet5_mnist.model");
     return;
@@ -779,8 +785,8 @@ void test_vgg16()
     Tensor x(3, 224, 224);
     /*
           vgg16 forward cost:
-                          @ conv     : 194.117s
-                          @ fast conv: 75.4293s
+                          @ naive conv: 194.117s
+                          @ fast conv:  75.4293s
     */
     auto t1 = Clock::tiktok();
     vgg16(x);
@@ -978,8 +984,8 @@ int main()
     //test_lenet5();
     //test_mnist();
     //test_lstm();
-    //test_alexnet();
-    test_vgg16();
+    test_alexnet();
+    //test_vgg16();
     return 0;
 }
 

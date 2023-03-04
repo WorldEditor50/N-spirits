@@ -9,13 +9,13 @@ if (MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
-	add_compile_options("$<$<C_COMPILER_ID:MSVC>:/bigobj>")
+    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/bigobj>")
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/bigobj>")
-	add_compile_options("$<$<C_COMPILER_ID:MSVC>:/arch:AVX2>")
-	add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>")
+    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/arch:AVX2>")
+    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>")
 endif()
 # test simd
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -DNDEBUG")
 
 # basic
 add_subdirectory(${PROJECT_SOURCE_DIR}/basic)
@@ -23,9 +23,22 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/basic)
 include_directories(${PROJECT_SOURCE_DIR}/net)
 # utils
 include_directories(${PROJECT_SOURCE_DIR}/utils)
+# improcess
+set(JPEG_ROOT "D:/home/3rdparty/libjpeg")
+find_package(JPEG REQUIRED)
+if (JPEG_FOUND)
+    include_directories(${JPEG_INCLUDE_DIR})
+    message(STATUS "JPEG_INCLUDE_DIR=${JPEG_INCLUDE_DIR}")
+    message(STATUS "JPEG_LIBRARIES=${JPEG_LIBRARIES}")
+endif()
+add_subdirectory(${PROJECT_SOURCE_DIR}/improcess)
+
 # test
-add_executable(test test.cpp)
-target_link_libraries(test BASIC)
+add_executable(test_basic test.cpp)
+target_link_libraries(test_basic BASIC)
+# test improcess
+add_executable(test_improcess test/test_improcess.cpp)
+target_link_libraries(test_improcess IMPROCESS BASIC ${JPEG_LIBRARIES})
 # test cpp
-add_executable(testcpp testcpp.cpp)
-target_link_libraries(testcpp BASIC)
+add_executable(test_cpp test/testcpp.cpp)
+target_link_libraries(test_cpp BASIC)
