@@ -37,14 +37,45 @@ void test_jpeg_to_tensor()
         return;
     }
     /* take red channel */
+    Tensor red(img);
     for (int i = 0; i < img.shape[0]; i++) {
         for (int j = 0; j < img.shape[1]; j++) {
-            img(i, j, 1) = 0;
-            img(i, j, 2) = 0;
+            red(i, j, 1) = 0;
+            red(i, j, 2) = 0;
         }
     }
     /* save img */
-    ret = improcess::save("data2_red.jpg", img);
+    ret = improcess::save("data2_red.jpg", red);
+    if (ret < 0) {
+        std::cout<<"save jpeg failed., ret = "<<ret<<std::endl;
+        return;
+    }
+
+    /* take green channel */
+    Tensor green(img);
+    for (int i = 0; i < img.shape[0]; i++) {
+        for (int j = 0; j < img.shape[1]; j++) {
+            green(i, j, 0) = 0;
+            green(i, j, 2) = 0;
+        }
+    }
+    /* save img */
+    ret = improcess::save("data2_green.jpg", green);
+    if (ret < 0) {
+        std::cout<<"save jpeg failed., ret = "<<ret<<std::endl;
+        return;
+    }
+
+    /* take blue channel */
+    Tensor blue(img);
+    for (int i = 0; i < img.shape[0]; i++) {
+        for (int j = 0; j < img.shape[1]; j++) {
+            blue(i, j, 0) = 0;
+            blue(i, j, 1) = 0;
+        }
+    }
+    /* save img */
+    ret = improcess::save("data2_blue.jpg", blue);
     if (ret < 0) {
         std::cout<<"save jpeg failed., ret = "<<ret<<std::endl;
         return;
@@ -77,6 +108,6 @@ void test_convert2gray()
 
 int main()
 {
-    test_convert2gray();
+    test_jpeg_to_tensor();
 	return 0;
 }

@@ -171,9 +171,9 @@ public:
             State delta_(hiddenDim, outputDim);
             for (int t = lstm.states.size() - 1; t >= 0; t--) {
                 State delta(hiddenDim, outputDim);
-                /* delta = W^T * E */
+                /* δh = W^T * E */
                 Tensor::Mul::kikj(delta.h, lstm.W, loss[t]);
-                /* delta = U * delta_ */
+                /* δh += U * delta_ */
                 Tensor::Mul::ikkj(delta.h, lstm.Uf, delta_.i);
                 Tensor::Mul::ikkj(delta.h, lstm.Ui, delta_.f);
                 Tensor::Mul::ikkj(delta.h, lstm.Ug, delta_.g);
@@ -185,6 +185,10 @@ public:
                     δgt = δct ⊙ it ⊙ dtanh(gt)
                     δit = δct ⊙ gt ⊙ dsigmoid(it)
                     δft = δct ⊙ ct-1 ⊙ dsigmoid(ft)
+
+                    notaion:
+                                A_ -> At+1
+                                _A -> At-1
                 */
                 auto& states = lstm.states;
                 Tensor f_ = t < states.size() - 1 ? states[t + 1].f : Tensor(hiddenDim, 1);

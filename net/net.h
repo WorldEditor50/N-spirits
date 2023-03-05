@@ -22,6 +22,8 @@ public:
     constexpr static std::size_t N = sizeof... (TLayer);
     Layers layers;
 public:
+    /* use template specialization to control forwarding between the layers */
+
     /* forward: LayerN1 <- LayerN2 */
     template<typename Layers, typename LayerN1, typename LayerN2, std::size_t Ni>
     struct Forward {

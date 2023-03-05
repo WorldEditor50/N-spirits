@@ -673,14 +673,14 @@ void test_lstm()
 {
     using LSTMNET = Net<LSTM, FcLayer, LayerNorm, FcLayer>;
 
-    LSTMNET lstm(LSTM(4, 32, 32),
-                 FcLayer(32, 32, true, ACTIVE_TANH),
-                 LayerNorm(32, 32, true, ACTIVE_SIGMOID),
-                 FcLayer(32, 1, true, ACTIVE_LINEAR));
+    LSTMNET lstm(LSTM(4, 64, 64),
+                 FcLayer(64, 64, true, ACTIVE_TANH),
+                 LayerNorm(64, 64, true, ACTIVE_SIGMOID),
+                 FcLayer(64, 1, true, ACTIVE_LINEAR));
 
-    Optimizer<LSTMNET, Optimize::RMSProp> optimizer(lstm, 1e-3);
+    Optimizer<LSTMNET, Optimize::RMSProp> optimizer(lstm, 1e-4);
     /* data */
-    std::size_t N = 10000;
+    std::size_t N = 1000;
     std::vector<Tensor> x(N, Tensor(4, 1));
     std::vector<Tensor> yt(N, Tensor(1, 1));
     for (std::size_t i = 0; i < N; i++) {
@@ -688,11 +688,12 @@ void test_lstm()
         /* f(x1, x2, x3, x4) = exp(x1+x2+x3+x4) * sin(x1+x2+x3+x4) */
         float s = x[i].sum();
         yt[i][0] = std::exp(s)*std::sin(s);
+        //yt[i][0] = x[i][0]*x[i][0] + x[i][1]*x[i][1] + x[i][2]*x[i][2] + x[i][3]*x[i][3];
     }
     /* train */
     std::uniform_int_distribution<int> distribution(0, N - 1);
     for (std::size_t epoch = 0; epoch < 5000; epoch++) {
-        for (std::size_t i = 0; i < 32; i++) {
+        for (std::size_t i = 0; i < 16; i++) {
             /* forward */
             int k = distribution(Utils::engine);
             Tensor& y = lstm(x[k]);
@@ -786,7 +787,7 @@ void test_vgg16()
     /*
           vgg16 forward cost:
                           @ naive conv: 194.117s
-                          @ fast conv:  75.4293s
+                          @ conv with :  75.4293s
     */
     auto t1 = Clock::tiktok();
     vgg16(x);
@@ -983,8 +984,8 @@ int main()
     //test_bpnn();
     //test_lenet5();
     //test_mnist();
-    //test_lstm();
-    test_alexnet();
+    test_lstm();
+    //test_alexnet();
     //test_vgg16();
     return 0;
 }
