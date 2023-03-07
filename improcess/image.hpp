@@ -1,6 +1,7 @@
 #ifndef IMAGE_DEF_H
 #define IMAGE_DEF_H
 #include "../basic/tensor.hpp"
+#include "point.hpp"
 
 namespace improcess {
 
@@ -8,6 +9,12 @@ enum HWC {
     HWC_H = 0,
     HWC_W = 1,
     HWC_C = 2
+};
+
+enum CHW {
+    CHW_C = 0,
+    CHW_H = 1,
+    CHW_W = 2
 };
 
 enum Color {

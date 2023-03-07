@@ -591,7 +591,9 @@ void test_lenet5()
 
 void test_mnist()
 {
-    using LeNet5 = Net<Conv2d, MaxPooling2d, Conv2d, MaxPooling2d, FcLayer, LayerNorm, FcLayer>;
+    using LeNet5 = Net<Conv2d, MaxPooling2d,
+                       Conv2d, MaxPooling2d,
+                       FcLayer, LayerNorm, FcLayer>;
     LeNet5 lenet5(Conv2d(1, 28, 28, 6, 5, 1, 0, false, ACTIVE_LEAKRELU),
                   MaxPooling2d(6, 24, 24, 2, 2),
                   Conv2d(6, 12, 12, 16, 5, 1, 0, false, ACTIVE_LEAKRELU),
@@ -599,40 +601,22 @@ void test_mnist()
                   FcLayer(16*4*4, 120, true, ACTIVE_TANH),
                   LayerNorm(120, 84, true, ACTIVE_SIGMOID),
                   FcLayer(84, 10, true, ACTIVE_SIGMOID));
-
     /* load data */
-    std::unique_ptr<uint8_t> datas = BinaryLoader::load("./dataset/train-images.idx3-ubyte");
-    if (datas == nullptr) {
-        std::cout<<"load training data failed."<<std::endl;
+    MnistLoader mnist("./dataset/train-images.idx3-ubyte",
+                      "./dataset/train-labels.idx1-ubyte");
+    int ret = mnist.load();
+    if (ret < 0) {
         return;
     }
-    std::size_t N = BinaryLoader::byteswap(*(uint32_t*)(datas.get() + 4));
-    std::vector<Tensor> x(N, Tensor(1, 28, 28));
-    for (std::size_t n = 0; n < N; n++ ) {
-        uint8_t* img = datas.get() + 16 + n*(28*28);
-        for (std::size_t i = 0; i < x[n].totalSize; i++ ) {
-            x[n][i] = img[i]/255.0f;
-        }
-    }
-    /* load label */
-    std::unique_ptr<uint8_t> labels = BinaryLoader::load("./dataset/train-labels.idx1-ubyte");
-    if (labels == nullptr) {
-        std::cout<<"load training label failed."<<std::endl;
-        return;
-    }
-    std::vector<Tensor> yt(N, Tensor(10, 1));
-    for (std::size_t n = 0; n < N; n++ ) {
-        uint8_t* label = labels.get() + 8 + n;
-        yt[n](*label, 0) = 1.0f;
-    }
-    /* train: max epoch = 2000, batch size = 32, learning rate = 1e-3 */
+    std::vector<Tensor> &x = mnist.x;
+    std::vector<Tensor> &yt = mnist.yt;
+    std::size_t N = mnist.N;
+    /* train: max epoch = 1000, batch size = 100, learning rate = 1e-3 */
     Optimizer<LeNet5, Optimize::RMSProp> optimizer(lenet5, 1e-3);
     std::random_device device;
     std::default_random_engine engine(device());
     std::uniform_int_distribution<int> distribution(0, N - 1);
-
     auto t1 = Clock::tiktok();
-
     for (std::size_t epoch = 0; epoch < 1000; epoch++) {
         for (std::size_t i = 0; i < 100; i++) {
             /* forward */
@@ -663,8 +647,6 @@ void test_mnist()
         }
     }
     std::cout<<"correct/total:"<<count/float(Nt)<<std::endl;
-    /* save */
-    //lenet5.save("lenet5_mnist.model");
     return;
 }
 
@@ -817,15 +799,12 @@ void test_simd_matmul()
     Utils::uniform(x1, -9, 9);
     Utils::uniform(x2, -9, 9);
     /* simd matmul */
-    float* xPtr = x.ptr();
-    float* x1Ptr = x1.ptr();
-    float* x2Ptr = x2.ptr();
     /* 8-channel */
     {
         auto t1 = Clock::tiktok();
-        simd::AVX2::matMul(xPtr, x.shape[0], x.shape[1],
-                           x1Ptr, x1.shape[0], x1.shape[1],
-                           x2Ptr, x2.shape[0], x2.shape[1]);
+        simd::AVX2::matMul(x.ptr(), x.shape[0], x.shape[1],
+                           x1.ptr(), x1.shape[0], x1.shape[1],
+                           x2.ptr(), x2.shape[0], x2.shape[1]);
         auto t2 = Clock::tiktok();
         double cost = Clock::duration(t2, t1);
         std::cout<<"simd matmul8 cost:"<<cost<<"s"<<std::endl;
@@ -836,9 +815,9 @@ void test_simd_matmul()
     {
         x.zero();
         auto t1 = Clock::tiktok();
-        simd::AVX2::matMul64(xPtr, x.shape[0], x.shape[1],
-                             x1Ptr, x1.shape[0], x1.shape[1],
-                             x2Ptr, x2.shape[0], x2.shape[1]);
+        simd::AVX2::matMul64(x.ptr(), x.shape[0], x.shape[1],
+                             x1.ptr(), x1.shape[0], x1.shape[1],
+                             x2.ptr(), x2.shape[0], x2.shape[1]);
         auto t2 = Clock::tiktok();
         double cost = Clock::duration(t2, t1);
         std::cout<<"simd matmul64 cost:"<<cost<<"s"<<std::endl;
@@ -849,16 +828,15 @@ void test_simd_matmul()
     {
         x.zero();
         auto t1 = Clock::tiktok();
-        simd::wrap<float, simd::AVX>::matMul(xPtr, x.shape[0], x.shape[1],
-                                             x1Ptr, x1.shape[0], x1.shape[1],
-                                             x2Ptr, x2.shape[0], x2.shape[1]);
+        simd::wrap<float, simd::AVX>::matMul(x.ptr(), x.shape[0], x.shape[1],
+                                             x1.ptr(), x1.shape[0], x1.shape[1],
+                                             x2.ptr(), x2.shape[0], x2.shape[1]);
         auto t2 = Clock::tiktok();
         double cost = Clock::duration(t2, t1);
         std::cout<<"avx2 wrapper matmul cost:"<<cost<<"s"<<std::endl;
         //x.printValue();
     }
     /* trivial matmul */
-    if (true)
     {
         x.zero();
         auto t1 = Clock::tiktok();
@@ -983,8 +961,8 @@ int main()
     //test_simd_matmul();
     //test_bpnn();
     //test_lenet5();
-    //test_mnist();
-    test_lstm();
+    test_mnist();
+    //test_lstm();
     //test_alexnet();
     //test_vgg16();
     return 0;

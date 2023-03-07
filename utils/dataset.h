@@ -3,9 +3,11 @@
 #include <vector>
 #include <set>
 #include <memory>
+#include <string>
 #include "csv.h"
 #include "../basic/vec.h"
 #include "../basic/mat.h"
+#include "../basic/tensor.hpp"
 
 class NumericDB : public CSV<Vec>
 {
@@ -142,6 +144,50 @@ public:
             (((a >> 0) & 0xff) << 24));
     }
 
+};
+
+
+class MnistLoader
+{
+public:
+    std::size_t N;
+    std::string dataPath;
+    std::string labelPath;
+    std::vector<Tensor> x;
+    std::vector<Tensor> yt;
+public:
+    explicit MnistLoader(const std::string &dataPath_, const std::string &labelPath_)
+        :dataPath(dataPath_),labelPath(labelPath_){}
+
+    int load()
+    {
+        /* load data */
+        std::unique_ptr<uint8_t> datas = BinaryLoader::load(dataPath);
+        if (datas == nullptr) {
+            std::cout<<"load training data failed."<<std::endl;
+            return -1;
+        }
+        N = BinaryLoader::byteswap(*(uint32_t*)(datas.get() + 4));
+        x = std::vector<Tensor> (N, Tensor(1, 28, 28));
+        for (std::size_t n = 0; n < N; n++ ) {
+            uint8_t* img = datas.get() + 16 + n*(28*28);
+            for (std::size_t i = 0; i < x[n].totalSize; i++ ) {
+                x[n][i] = img[i]/255.0f;
+            }
+        }
+        /* load label */
+        std::unique_ptr<uint8_t> labels = BinaryLoader::load(labelPath);
+        if (labels == nullptr) {
+            std::cout<<"load training label failed."<<std::endl;
+            return -1;
+        }
+        yt = std::vector<Tensor>(N, Tensor(10, 1));
+        for (std::size_t n = 0; n < N; n++ ) {
+            uint8_t* label = labels.get() + 8 + n;
+            yt[n](*label, 0) = 1.0f;
+        }
+        return 0;
+    }
 };
 
 #endif // DATASET_H

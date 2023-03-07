@@ -95,7 +95,7 @@ void test_convert2gray()
     }
     /* convert to gray image */
     Tensor gray;
-    ret = improcess::convert2Gray(img, gray);
+    ret = improcess::rgb2gray(img, gray);
     /* save img */
     ret = improcess::save("data2_gray.jpg", gray);
     if (ret < 0) {

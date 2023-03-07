@@ -4,13 +4,13 @@
 
 namespace improcess {
 
-
 /* geometry */
-int move(const Tensor &src, Tensor &dst);
-int rotate(const Tensor &src, Tensor &dst);
-int flip(const Tensor &src, Tensor &dst);
-int resize(const Tensor &src, Tensor &dst);
-int interpolate(const Tensor &src, Tensor &dst);
+int move(const Tensor &x, const Point2i &offset, Tensor &y);
+int transpose(const Tensor &x, Tensor &y);
+int rotate(const Tensor &x, Tensor &y);
+int flip(const Tensor &x, Tensor &y);
+int resize(const Tensor &x, Tensor &y);
+int interpolate(const Tensor &x, Tensor &y);
 int affine();
 int project();
 

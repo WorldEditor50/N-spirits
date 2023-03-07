@@ -32,13 +32,18 @@ if (JPEG_FOUND)
     message(STATUS "JPEG_LIBRARIES=${JPEG_LIBRARIES}")
 endif()
 add_subdirectory(${PROJECT_SOURCE_DIR}/improcess)
-
+# LBM
+add_subdirectory(${PROJECT_SOURCE_DIR}/LBM)
 # test
 add_executable(test_basic test.cpp)
 target_link_libraries(test_basic BASIC)
 # test improcess
 add_executable(test_improcess test/test_improcess.cpp)
 target_link_libraries(test_improcess IMPROCESS BASIC ${JPEG_LIBRARIES})
+# test LBM
+add_executable(test_lbm test/test_lbm.cpp)
+#target_link_libraries(test_lbm LBM BASIC)
+target_link_libraries(test_lbm LBM IMPROCESS BASIC ${JPEG_LIBRARIES})
 # test cpp
 add_executable(test_cpp test/testcpp.cpp)
 target_link_libraries(test_cpp BASIC)

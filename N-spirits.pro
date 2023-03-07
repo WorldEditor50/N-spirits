@@ -26,4 +26,6 @@ msvc {
     QMAKE_CXXFLAGS_DEBUG += -O2
     QMAKE_CFLAGS_DEBUG += -O2
 }
-
+JPEG_ROOT = D:/home/3rdparty/libjpeg
+INCLUDEPATH += $$JPEG_ROOT/include
+LIBS += -L$$JPEG_ROOT/lib -llibjpeg

@@ -11,6 +11,8 @@ int improcess::histogram1(const Tensor &gray, Tensor &hist)
         int pixel = gray.val[i];
         hist[pixel]++;
     }
+    float s = area(gray);
+    hist /= s;
     return 0;
 }
 
@@ -22,11 +24,13 @@ int improcess::histogram3(const Tensor &rgb, Tensor &hist)
             int r = int(rgb(i, j, 0));
             hist(0, r)++;
             int g = int(rgb(i, j, 1));
-            hist(0, g)++;
+            hist(1, g)++;
             int b = int(rgb(i, j, 2));
-            hist(0, b)++;
+            hist(2, b)++;
         }
     }
+    float s = area(rgb);
+    hist /= s;
     return 0;
 }
 

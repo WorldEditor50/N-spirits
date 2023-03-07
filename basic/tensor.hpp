@@ -1150,7 +1150,7 @@ public:
     };
 
 };
-
+using Tensorc = Tensor_<char>;
 using Tensori = Tensor_<int>;
 using Tensorf = Tensor_<float>;
 using Tensord = Tensor_<double>;
