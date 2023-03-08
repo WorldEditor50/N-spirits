@@ -5,13 +5,17 @@
 
 int main()
 {
-    Cylinder cylinder(400/4, 400/2, 12);
-    LBM2d<Cylinder> lbm(400, 400, // shape
-                      cylinder,
-                      0.005, // niu
-                      Tensord({4}, {0, 0, 1, 0}),//boundary type
-                      Tensord({4, 2}, {0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}) // boundary value
-                      );
+    Cylinder cylinder(200/2, 400/4, 6);
+    LBM2d<Cylinder> lbm(200, 400, // shape
+                        cylinder,
+                        1e-3, // niu
+                        /* boundary type : in coming direction (top, right, bottom, left) */
+                        Tensord({4}, {0, 1, 0, 0}),
+                        /* boundary value : wave reflection (ny, nx) */
+                        Tensord({4, 2}, {0.0, 0.0,
+                                         0.0, 0.0,
+                                         0.0, 0.0,
+                                         0.0, 0.1}));
 
 
     std::shared_ptr<uint8_t[]> raw = nullptr;

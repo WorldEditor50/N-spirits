@@ -139,6 +139,21 @@ public:
         return;
     }
 
+    template<typename ...Dim>
+    void embed(const Tensor_ &s, Dim ...dim)
+    {
+        std::vector<int> dims = std::vector<int>{dim...};
+        std::size_t pos = 0;
+        for (std::size_t i = 0; i < dims.size(); i++) {
+            pos += sizes[i]*dims[i];
+        }
+        for (std::size_t i = 0; i < s.totalSize; i++) {
+            val[i + pos] = s.val[i];
+        }
+        return;
+    }
+
+
     void subset(const std::vector<int> &indexes, std::vector<T&> ref)
     {
         for (std::size_t i = 0; i < indexes.size(); i++) {

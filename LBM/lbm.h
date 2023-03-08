@@ -19,7 +19,7 @@ public:
     int radius;
 public:
     Cylinder():x(0),y(0),radius(0){}
-    explicit Cylinder(int ny, int nx, int r):x(nx/2),y(ny/4),radius(r){}
+    explicit Cylinder(int ny, int nx, int r):x(nx),y(ny),radius(r){}
     explicit Cylinder(const Cylinder &ref):x(ref.x),y(ref.y),radius(ref.radius){}
     bool isInside(int yi, int xi) const
     {
@@ -44,10 +44,10 @@ class LBM2d
 {
 public:
     enum Boundary {
-        BOUNDARY_LEFT = 0,
-        BOUNDARY_RIGHT,
-        BOUNDARY_TOP,
-        BOUNDARY_BUTTOM
+        BOUNDARY_TOP = 0,
+        BOUNDARY_RIGHT = 1,
+        BOUNDARY_BOTTOM = 2,
+        BOUNDARY_LEFT = 3
     };
     enum BoundaryValue {
         BOUNDARY_DIRICHLET = 0,
@@ -56,9 +56,12 @@ public:
 public:
     int nx;
     int ny;
+    double re;
+    double uLB;
     /* viscosity of fluid */
     double niu;
     double tau;
+    double sigma;
     /* density: (ny, nx) */
     Tensord rho;
     /* velocity: (ny, nx, 2) */
@@ -71,22 +74,25 @@ public:
     Tensord w;
     /* lattice vector: (9, 2) */
     Tensord e;
-    /* boundary type: (4) */
+    /* boundary type: (top, right, bottom, left) */
     Tensord boundaryType;
-    /* boundary value: (4, 2) */
+    /* boundary value: (4, 2): (ny, nx)  */
     Tensord boundaryValue;
     /* Object */
     Object object;
 public:
     LBM2d(){}
-    LBM2d(int nx_, int ny_,
+    LBM2d(int ny_, int nx_,
         const Object &obj,
         double niu_,
         const Tensord &boundaryType_,
         const Tensord &boundaryValue_)
-        :nx(nx_),ny(ny_),niu(niu_), boundaryType(boundaryType_), boundaryValue(boundaryValue_)
+        :nx(nx_),ny(ny_),niu(niu_),
+          boundaryType(boundaryType_), boundaryValue(boundaryValue_),
+          object(obj)
     {
         tau = 3*niu + 0.5;
+        sigma = 1.0 / tau;
         /* density: (ny, nx) */
         rho = Tensord(ny, nx);
         rho.fill(1.0);
@@ -97,23 +103,21 @@ public:
         fn = Tensord(ny, nx, 9);
         f  = Tensord(ny, nx, 9);
         /* weights for velocity.: (9) */
-        w = Tensord({9}, {4.0/9.0, 1.0/9.0, 1.0/ 9.0,
-                          1.0/9.0, 1.0/9.0, 1.0/36.0,
-                          1.0/36.0, 1.0/36.0, 1.0/36.0});
+        w = Tensord({9}, {4.0 / 9.0,  1.0 / 9.0,  1.0 / 9.0,
+                          1.0 / 9.0,  1.0 / 9.0,  1.0 / 36.0,
+                          1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0});
         /* lattice vector: (9, 2) */
-        e = Tensord({9, 2},{  0, 0,
+        e = Tensord({9, 2},{
+                              0, 0,
                               1, 0,
                               0, 1,
                              -1, 0,
-                              0,-1,
+                              0, -1,
                               1, 1,
                              -1, 1,
-                             -1,-1,
-                              1,-1
+                             -1, -1,
+                              1, -1
                     });
-        /* cylinder */
-        object = Cylinder(ny, nx, 12);
-
         /* init */
         for (int i = 0; i < fn.shape[0]; i++) {
             for (int j = 0; j < fn.shape[1]; j++) {
@@ -152,7 +156,87 @@ public:
                 for (int k = 0; k < e.shape[0]; k++) {
                     int ip = i - e(k, 0);
                     int jp = j - e(k, 1);
-                    fn(i, j, k) = (1 - 1.0/tau) * f(ip, jp, k) + feq(ip, jp, k) / tau;
+                    fn(i, j, k) = (1 - sigma) * f(ip, jp, k) + feq(ip, jp, k) * sigma;
+                }
+            }
+        }
+        return;
+    }
+
+
+    static Tensord toMoment(const Tensord& f)
+    {
+        static Tensord M({9, 9}, {
+                1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,
+                -4.0, -1.0, -1.0, -1.0, -1.0,  2.0,  2.0,  2.0,  2.0,
+                4.0, -2.0, -2.0, -2.0, -2.0,  1.0,  1.0,  1.0,  1.0,
+                0.0,  1.0,  0.0, -1.0,  0.0,  1.0, -1.0, -1.0,  1.0,
+                0.0, -2.0,  0.0,  2.0,  0.0,  1.0, -1.0, -1.0,  1.0,
+                0.0,  0.0,  1.0,  0.0, -1.0,  1.0,  1.0, -1.0, -1.0,
+                0.0,  0.0, -2.0,  0.0,  2.0,  1.0,  1.0, -1.0, -1.0,
+                0.0,  1.0, -1.0,  1.0, -1.0,  0.0,  0.0,  0.0,  0.0,
+                0.0,  0.0,  0.0,  0.0,  0.0,  1.0, -1.0,  1.0, -1.0});
+        Tensord r(9, 1);
+        Tensord::Mul::ikkj(r, M, f);
+        return r;
+    }
+
+    static Tensord fromMoment(const Tensord &m)
+    {
+        static Tensord d({9, 1}, {1./9, 1./36, 1./36, 1./6,
+                                  1./12, 1./6, 1./12, 1./4, 1./4});
+        static Tensord M({9, 9}, {
+                        1, -4,  4,  0,  0,  0,  0,  0,  0,
+                        1, -1, -2,  1, -2,  0,  0,  1,  0,
+                        1, -1, -2,  0,  0,  1, -2, -1,  0,
+                        1, -1, -2, -1,  2,  0,  0,  1,  0,
+                        1, -1, -2,  0,  0, -1,  2, -1,  0,
+                        1,  2,  1,  1,  1,  1,  1,  0,  1,
+                        1,  2,  1, -1, -1,  1,  1,  0, -1,
+                        1,  2,  1, -1, -1, -1, -1,  0,  1,
+                        1,  2,  1,  1,  1, -1, -1,  0, -1});
+        Tensord r(9, 1);
+        Tensord::Mul::ikkj(r, M, d*m);
+        return r;
+    }
+
+    void colliding()
+    {
+        Tensord feqs(9);
+        for (int i = 1; i < ny - 1; i++) {
+            for (int j = 1; j < nx - 1; j++) {
+                for (int k = 0; k < e.shape[0]; k++) {
+                    feqs[k] = feq(i, j, k);
+                }
+                Tensord fij = f.sub(i, j);
+                Tensord meq = toMoment(fij);
+                Tensord m = toMoment(feqs);
+                Tensord s({9, 1}, {1.0, 1.63, 1.14, 1.0, 1.92, 0.0, 1.92, sigma, sigma});
+                /* MRT */
+                m += (meq - m) * s;
+                /* BGK */
+                //m += (meq - m) * sigma;
+                f.embed(fromMoment(m), i, j);
+            }
+        }
+        return;
+    }
+
+
+    void streaming()
+    {
+        /* inverse index for halfway bounce back */
+        static int bi[9] = {0, 3, 4, 1, 2, 7, 8, 5, 6};
+        for (int i = 1; i < ny - 1; i++) {
+            for (int j = 1; j < nx - 1; j++) {
+                for (int k = 0; k < e.shape[0]; k++) {
+                    int ip = i - e(k, 0);
+                    int jp = j - e(k, 1);
+                    if (mask(ip, jp) == 0) {
+                        fn(i, j, k) = f(ip, jp, k);
+                    } else {
+                        fn(i, j, k) = f(i, j, bi[k]);
+                    }
                 }
             }
         }
@@ -183,13 +267,13 @@ public:
         }
         return;
     }
-    void applyBoundaryCondition(int outer, int dr, int ibc, int jbc, int inb, int jnb)
+    void applyBoundaryCondition(int outer, int direct, int ibc, int jbc, int inb, int jnb)
     {
         if (outer == 1) {
-            if (boundaryType[dr] == BOUNDARY_DIRICHLET) {
-                vel(ibc, jbc, 0) = boundaryValue(dr, 0);
-                vel(ibc, jbc, 1) = boundaryValue(dr, 1);
-            } else if (boundaryType[dr] == BOUNDARY_NEUMANN) {
+            if (boundaryType[direct] == BOUNDARY_DIRICHLET) {
+                vel(ibc, jbc, 0) = boundaryValue(direct, 0);
+                vel(ibc, jbc, 1) = boundaryValue(direct, 1);
+            } else if (boundaryType[direct] == BOUNDARY_NEUMANN) {
                 vel(ibc, jbc, 0) = vel(inb, jnb, 0);
                 vel(ibc, jbc, 1) = vel(inb, jnb, 1);
             }
@@ -204,17 +288,13 @@ public:
     void applyBoundaryCondition()
     {
         for (int j = 1; j < nx - 1; j++) {
-            /* left: dr = 0; ibc = 0; jbc = j; inb = 1; jnb = j */
-            applyBoundaryCondition(1, 0, 0, j, 1, j);
-            /* right: dr = 2; ibc = ny-1; jbc = j; inb = ny-2; jnb = j */
-            applyBoundaryCondition(1, 2, ny - 1, j, ny - 2, j);
+            applyBoundaryCondition(1, BOUNDARY_TOP, 0, j, 1, j);
+            applyBoundaryCondition(1, BOUNDARY_BOTTOM, ny - 1, j, ny - 2, j);
         }
 
         for (int i = 0; i < ny; i++) {
-            /* top: dr = 1; ibc = i; jbc = nx-1; inb = i; jnb = nx-2 */
-            applyBoundaryCondition(1, 1, i, nx - 1, i, nx - 2);
-            /* bottom: dr = 3; ibc = i; jbc = 0; inb = i; jnb = 1 */
-            applyBoundaryCondition(1, 3, i, 0, i, 1);
+            applyBoundaryCondition(1, BOUNDARY_RIGHT, i, nx - 1, i, nx - 2);
+            applyBoundaryCondition(1, BOUNDARY_LEFT, i, 0, i, 1);
         }
         /* cylinder boundary */
         for (int i = 1; i < ny - 1; i++) {
