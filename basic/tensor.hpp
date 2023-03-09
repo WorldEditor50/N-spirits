@@ -13,15 +13,64 @@ class Tensor_
 public:
     using ValueType = T;
     using Shape = std::vector<int>;
+    using Size = std::vector<int>;
+    class Sub
+    {
+    public:
+        Tensor_ *pointer;
+        std::vector<int> indexes;
+    public:
+        Sub():pointer(nullptr){}
+        template<typename ...Index>
+        explicit Sub(Tensor_ *p, Index ... index)
+            :pointer(p),indexes(int(index)...){}
+        explicit Sub(Tensor_ *p, const std::vector<int> &indexes_)
+            :pointer(p),indexes(indexes_){}
+        Sub(const Sub &r):pointer(r.pointer),indexes(r.indexes){}
+        Sub& operator=(const Sub &r)
+        {
+            if (this == &r) {
+                return *this;
+            }
+            pointer = r.pointer;
+            indexes = indexes;
+            return *this;
+        }
+        inline void operator=(const Tensor_ &x)
+        {
+            std::size_t pos = 0;
+            for (std::size_t i = 0; i < indexes.size(); i++) {
+                pos += pointer->sizes[i]*indexes[i];
+            }
+            for (std::size_t i = 0; i < x.totalSize; i++) {
+                pointer->val[i + pos] = x.val[i];
+            }
+            return;
+        }
+        inline void operator=(const std::vector<T> &x)
+        {
+            std::size_t pos = 0;
+            for (std::size_t i = 0; i < indexes.size(); i++) {
+                pos += pointer->sizes[i]*indexes[i];
+            }
+            for (std::size_t i = 0; i < x.size(); i++) {
+                pointer->val[i + pos] = x[i];
+            }
+            return;
+        }
+    };
+
 public:
-    std::vector<T, Alloc<T> > val;
-    std::vector<int> sizes;
-    std::vector<int> shape;
     std::size_t totalSize;
- public:
+    std::vector<T, Alloc<T> > val;
+    Size sizes;
+    Shape shape;
+private:
+    Sub subset;
+public:
     /* default construct */
     Tensor_():totalSize(0){}
-    static void initParams(const std::vector<int> &shape, std::vector<int> &sizes, std::size_t &totalsize)
+    static void initParams(const Shape &shape, Size &sizes, std::size_t &totalsize)
     {
         totalsize = 1;
         for (std::size_t i = 0; i < shape.size(); i++) {
@@ -36,13 +85,13 @@ public:
         return;
     }
     /* contruct with shape */
-    explicit Tensor_(const std::vector<int> &shape_):totalSize(1),shape(shape_)
+    explicit Tensor_(const Shape &shape_):totalSize(1),shape(shape_)
     {
         initParams(shape, sizes, totalSize);
         val = std::vector<T, Alloc<T>>(totalSize, 0);
     }
 
-    explicit Tensor_(const std::vector<int> &shape_, const std::vector<T, Alloc<T>> &val_):
+    explicit Tensor_(const Shape &shape_, const std::vector<T, Alloc<T>> &val_):
         totalSize(1),shape(shape_),val(val_)
     {
         initParams(shape, sizes, totalSize);
@@ -67,6 +116,57 @@ public:
     Tensor_(const Tensor_ &r)
         :totalSize(r.totalSize),shape(r.shape),sizes(r.sizes),val(r.val){}
 
+    /* move construct */
+    Tensor_(Tensor_ &&r):totalSize(r.totalSize)
+    {
+        totalSize = r.totalSize;
+        shape.swap(r.shape);
+        sizes.swap(r.sizes);
+        val.swap(r.val);
+        r.totalSize = 0;
+    }
+
+    inline T* ptr() { return val.data(); }
+    inline const T* ptr() const { return val.data(); }
+    inline bool empty() const {return totalSize == 0;}
+    inline std::size_t size() const {return totalSize;}
+    void zero(){val.assign(totalSize, 0);}
+    void fill(T value){val.assign(totalSize, value);}
+    inline T &operator[](std::size_t i) {return val[i];}
+    inline T operator[](std::size_t i) const {return val[i];}
+
+    bool isShapeEqual(const Tensor_ &x) const
+    {
+        if (shape.size() != x.shape.size()) {
+            return false;
+        }
+        for (int i = 0; i < shape.size(); i++) {
+            if (shape[i] != x.shape[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+    /* compare value */
+    inline bool operator == (const Tensor_ &x) const
+    {
+        for (std::size_t i = 0; i < totalSize; i++) {
+            if (val[i] != x.val[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+    inline bool operator != (const Tensor_ &x) const
+    {
+        for (std::size_t i = 0; i < totalSize; i++) {
+            if (val[i] != x.val[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /* assign operator */
     Tensor_ &operator=(const Tensor_ &r)
     {
@@ -79,17 +179,29 @@ public:
         val = r.val;
         return *this;
     }
-
+    /* move */
+    Tensor_ &operator=(Tensor_ &&r)
+    {
+        if (this == &r) {
+            return *this;
+        }
+        totalSize = r.totalSize;
+        shape.swap(r.shape);
+        sizes.swap(r.sizes);
+        val.swap(r.val);
+        r.totalSize = 0;
+        return *this;
+    }
     static Tensor_ zeros(Shape &shape)
     {
         Tensor_ x(shape);
         return x;
     }
 
-    template<typename ...Dim>
-    static Tensor_ zeros(Dim ...dim)
+    template<typename ...Index>
+    static Tensor_ zeros(Index ...index)
     {
-        Tensor_ x(dim...);
+        Tensor_ x(index...);
         return x;
     }
 
@@ -100,24 +212,24 @@ public:
         return x;
     }
 
-    template<typename ...Dim>
-    static Tensor_ ones(Dim ...dim)
+    template<typename ...Index>
+    static Tensor_ ones(Index ...index)
     {
-        Tensor_ x(dim...);
+        Tensor_ x(index...);
         x.fill(1);
         return x;
     }
-
-    template<typename ...Dim>
-    Tensor_ sub(Dim ...di) const
+    /* sub set */
+    template<typename ...Index>
+    Tensor_ sub(Index ...index) const
     {
         Tensor_ y;
-        std::vector<int> dims = std::vector<int>{di...};
-        std::vector<int> subDims(shape.begin() + dims.size(), shape.end());
-        y = Tensor_(subDims);
+        std::vector<int> indexes = std::vector<int>{index...};
+        std::vector<int> subIndex(shape.begin() + indexes.size(), shape.end());
+        y = Tensor_(subIndex);
         std::size_t pos = 0;
-        for (std::size_t i = 0; i < dims.size(); i++) {
-            pos += sizes[i]*dims[i];
+        for (std::size_t i = 0; i < indexes.size(); i++) {
+            pos += sizes[i]*indexes[i];
         }
         for (std::size_t i = 0; i < y.totalSize; i++) {
             y.val[i] = val[i + pos];
@@ -125,13 +237,13 @@ public:
         return y;
     }
 
-    template<typename ...Dim>
-    void slice(Tensor_ &y, Dim ...dim) const
+    template<typename ...Index>
+    void slice(Tensor_ &y, Index ...index) const
     {
-        std::vector<int> dims = std::vector<int>{dim...};
+        std::vector<int> indexes = std::vector<int>{index...};
         std::size_t pos = 0;
-        for (std::size_t i = 0; i < dims.size(); i++) {
-            pos += sizes[i]*dims[i];
+        for (std::size_t i = 0; i < indexes.size(); i++) {
+            pos += sizes[i]*indexes[i];
         }
         for (std::size_t i = 0; i < y.totalSize; i++) {
             y.val[i] = val[i + pos];
@@ -139,48 +251,26 @@ public:
         return;
     }
 
-    template<typename ...Dim>
-    void embed(const Tensor_ &s, Dim ...dim)
+    template<typename ...Index>
+    void embed(const Tensor_ &x, Index ...index)
     {
-        std::vector<int> dims = std::vector<int>{dim...};
+        std::vector<int> indexes = std::vector<int>{index...};
         std::size_t pos = 0;
-        for (std::size_t i = 0; i < dims.size(); i++) {
-            pos += sizes[i]*dims[i];
-        }
-        for (std::size_t i = 0; i < s.totalSize; i++) {
-            val[i + pos] = s.val[i];
-        }
-        return;
-    }
-
-
-    void subset(const std::vector<int> &indexes, std::vector<T&> ref)
-    {
         for (std::size_t i = 0; i < indexes.size(); i++) {
-            int k = indexes[i];
-            ref.push_back(val[k]);
+            pos += sizes[i]*indexes[i];
+        }
+        for (std::size_t i = 0; i < x.totalSize; i++) {
+            val[i + pos] = x.val[i];
         }
         return;
     }
 
-    inline T* ptr() { return val.data(); }
-    inline const T* ptr() const { return val.data(); }
-    inline bool empty() const {return totalSize == 0;}
-    void zero(){val.assign(totalSize, 0);}
-    void fill(T value){val.assign(totalSize, value);}
-    inline T &operator[](std::size_t i) {return val[i];}
-    inline T operator[](std::size_t i) const {return val[i];}
-    bool isShapeEqual(const Tensor_ &x) const
+    template<typename ...Index>
+    inline Sub& at(Index ...index)
     {
-        if (shape.size() != x.shape.size()) {
-            return false;
-        }
-        for (int i = 0; i < shape.size(); i++) {
-            if (shape[i] != x.shape[i]) {
-                return false;
-            }
-        }
-        return true;
+        subset.pointer = this;
+        subset.indexes = {index...};
+        return subset;
     }
 
     /* visit */
@@ -239,17 +329,14 @@ public:
     template<typename ...Index>
     inline T operator()(Index ...index) const { return val[posOf(index...)]; }
 
-    inline T &operator()(const std::vector<int> &indexs) { return val[posOf(indexs)]; }
+    inline T &operator()(const Shape &indexs) { return val[posOf(indexs)]; }
 
-    inline T operator()(const std::vector<int> &indexs) const { return val[posOf(indexs)]; }
+    inline T operator()(const Shape &indexs) const { return val[posOf(indexs)]; }
 
     template<typename ...Index>
-    inline T &at(Index ...index) { return val[posOf(index...)]; }
-
-    template<typename ...Dim>
-    Tensor_ reshape(Dim ...dim) const
+    Tensor_ reshape(Index ...index) const
     {
-        Tensor_ x(dim...);
+        Tensor_ x(index...);
         if (x.totalSize != totalSize) {
             return x;
         }
@@ -257,10 +344,10 @@ public:
         return x;
     }
 
-    template<typename ...Dim>
-    static void reshape(Tensor_ &x, Dim ...dim)
+    template<typename ...Index>
+    static void reshape(Tensor_ &x, Index ...index)
     {
-        std::vector<int> newShape = {dim...};
+        std::vector<int> newShape = {index...};
         /* size */
         int s = 1;
         for (std::size_t i = 0; i < x.shape.size(); i++) {
@@ -746,14 +833,6 @@ public:
         return;
     }
 
-    inline static void foreach(Tensor_ &y, const Tensor_ &x, std::function<T(T)> func_)
-    {
-        for (std::size_t i = 0; i < y.totalSize; i++) {
-            y.val[i] = func_(x.val[i]);
-        }
-        return;
-    }
-
     inline static Tensor_ func(const Tensor_ &x, std::function<T(T)> func_)
     {
         Tensor_ y(x.shape);
@@ -913,10 +992,10 @@ public:
         return x;
     }
 
-    template<typename ...Dim>
-    static Tensorsi_ ones(Dim ...dim)
+    template<typename ...Index>
+    static Tensorsi_ ones(Index ...index)
     {
-        Tensorsi_ x(dim...);
+        Tensorsi_ x(index...);
         instruct::fill(x.ptr(), 1, x.totalSize);
         return x;
     }

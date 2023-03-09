@@ -5,18 +5,13 @@ CONFIG -= qt
 
 
 include($$PWD/basic/basic.pri)
-include($$PWD/utils/utils.pri)
+include($$PWD/Statistics/Statistics.pri)
 include($$PWD/net/net.pri)
 
 SOURCES += \
         test.cpp
 
-HEADERS += \
-    bayes.h \
-    hmm.h \
-    kmeans.h \
-    linearregression.h \
-    svm.h
+include($$PWD/ml/ml.pri)
 
 msvc {
     QMAKE_CFLAGS += /bigobj

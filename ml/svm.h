@@ -2,8 +2,8 @@
 #define SVM_H
 #include <iostream>
 #include <cmath>
-#include "basic/vec.h"
-#include "basic/kernel.h"
+#include "../basic/vec.h"
+#include "../basic/kernel.h"
 
 template<typename KernelF>
 class SVM

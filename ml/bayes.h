@@ -3,8 +3,8 @@
 #include <map>
 #include <vector>
 #include <string>
-#include "basic/vec.h"
-#include "utils/dataset.h"
+#include "../basic/vec.h"
+#include "../Statistics/dataset.h"
 
 /*
     1. NaiveBayes

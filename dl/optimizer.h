@@ -1,9 +1,10 @@
 #ifndef OPTIMIZER_H
 #define OPTIMIZER_H
 #include <vector>
-#include "../basic/tensor.hpp"
 #include "optimize.h"
 #include "layerdef.h"
+#include "../basic/tensor.hpp"
+
 
 template<typename Net, typename OptimizeMethod>
 class Optimizer

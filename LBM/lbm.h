@@ -1,9 +1,10 @@
 #ifndef LBM_H
 #define LBM_H
 #include <functional>
+#include <cmath>
 #include <array>
 #include "../basic/tensor.hpp"
-#include "../basic/utils.h"
+#include "../basic/statistics.h"
 
 /*
         reference:
@@ -28,6 +29,94 @@ public:
             return true;
         }
         return false;
+    }
+};
+
+class Square
+{
+public:
+    int x;
+    int y;
+    int r;
+public:
+    Square():r(0){}
+    explicit Square(int ny, int nx, int r):x(nx),y(ny),r(r){}
+    explicit Square(const Square &ref):x(ref.x),y(ref.y),r(ref.r){}
+    bool isInside(int yi, int xi) const
+    {
+        int d = std::abs(xi - x) + std::abs(yi - y);
+        if (d < r) {
+            return true;
+        }
+        return false;
+    }
+};
+
+class Cross
+{
+public:
+    int x;
+    int y;
+    int r;
+public:
+    Cross():r(0){}
+    explicit Cross(int ny, int nx, int r):x(nx),y(ny),r(r){}
+    explicit Cross(const Cross &ref):x(ref.x),y(ref.y),r(ref.r){}
+    bool isInside(int yi, int xi) const
+    {
+        int xt = xi - x;
+        int yt = yi - y;
+        if (std::abs(xt) + std::abs(yt) >= r) {
+            return false;
+        }
+        int d  = 0;
+        if (xt > 0 && yt < 0 ) {
+            d = (xi - r)*(xi - r) + (yi - r)*(yi - r);
+        }
+        if (xt < 0 && yt < 0 ) {
+            d = (xi + r)*(xi + r) + (yi - r)*(yi - r);
+        }
+        if (xt > 0 && yt > 0 ) {
+            d = (xi + r)*(xi + r) + (yi + r)*(yi + r);
+        }
+        if (xt < 0 && yt > 0 ) {
+            d = (xi - r)*(xi - r) + (yi + r)*(yi + r);
+        }
+        return d < r*r;
+    }
+};
+
+class ICylinder
+{
+public:
+    int x;
+    int y;
+    int r;
+public:
+    ICylinder():r(0){}
+    explicit ICylinder(int ny, int nx, int r):x(nx),y(ny),r(r){}
+    explicit ICylinder(const ICylinder &ref):x(ref.x),y(ref.y),r(ref.r){}
+    bool isInside(int yi, int xi) const
+    {
+        int xt = xi - x;
+        int yt = yi - y;
+        if (std::abs(xt) + std::abs(yt) >= r) {
+            return false;
+        }
+        int d  = 0;
+        if (xt >= 0 && yt <= 0 ) {
+            d = (xt - r)*(xt - r) + (yt + r)*(yt + r);
+        }
+        if (xt <= 0 && yt <= 0 ) {
+            d = (xt + r)*(xt + r) + (yt + r)*(yt + r);
+        }
+        if (xt >= 0 && yt >= 0 ) {
+            d = (xt - r)*(xt - r) + (yt - r)*(yt - r);
+        }
+        if (xt <= 0 && yt >= 0 ) {
+            d = (xt + r)*(xt + r) + (yt - r)*(yt - r);
+        }
+        return d >= r*r;
     }
 };
 
@@ -126,6 +215,7 @@ public:
                     fn(i, j, k) = value;
                     f(i, j, k) = value;
                 }
+                //f(i, j, 3) = 3;
             }
         }
         /* locate cylinder */
@@ -196,6 +286,7 @@ public:
                         1,  2,  1, -1, -1, -1, -1,  0,  1,
                         1,  2,  1,  1,  1, -1, -1,  0, -1});
         Tensord r(9, 1);
+        /* r = Mx(d*m) */
         Tensord::Mul::ikkj(r, M, d*m);
         return r;
     }
@@ -203,6 +294,18 @@ public:
     void colliding()
     {
         Tensord feqs(9);
+#if 0
+        for (int i = 0; i < ny; i++) {
+            for (int j = nx - 1; j > 0; j++) {
+                f(i, j, 6) = f(i, j - 1, 6);
+                f(i, j, 7) = f(i, j - 1, 7);
+                f(i, j, 8) = f(i, j - 1, 8);
+            }
+            f(i, 0, 2) = f(i, 1, 2);
+            f(i, 0, 3) = f(i, 1, 3);
+            f(i, 0, 4) = f(i, 1, 4);
+        }
+#endif
         for (int i = 1; i < ny - 1; i++) {
             for (int j = 1; j < nx - 1; j++) {
                 for (int k = 0; k < e.shape[0]; k++) {
@@ -211,17 +314,20 @@ public:
                 Tensord fij = f.sub(i, j);
                 Tensord meq = toMoment(fij);
                 Tensord m = toMoment(feqs);
-                Tensord s({9, 1}, {1.0, 1.63, 1.14, 1.0, 1.92, 0.0, 1.92, sigma, sigma});
+                static Tensord s({9, 1}, {1.0, 1.63, 1.14, 1.0, 1.92, 0.0, 1.92, sigma, sigma});
+                s.val[7] = sigma;
+                s.val[8] = sigma;
                 /* MRT */
                 m += (meq - m) * s;
                 /* BGK */
-                //m += (meq - m) * sigma;
-                f.embed(fromMoment(m), i, j);
+#if 0
+                m += (meq - m) * sigma;
+#endif
+                f.at(i, j) = fromMoment(m);
             }
         }
         return;
     }
-
 
     void streaming()
     {
@@ -333,10 +439,10 @@ public:
                 for (int j = 0; j < nx; j++) {
                     double u = vel(i, j, 0);
                     double v = vel(i, j, 1);
-                    double p = std::sqrt(u*u + v*v);
-                    img(i, j, 0) = colorScaler[0] * 1000*p;
-                    img(i, j, 1) = colorScaler[1] * 1000*p;
-                    img(i, j, 2) = colorScaler[2] * 1000*p;
+                    double p = std::sqrt(u*u + v*v)*1e4;
+                    img(i, j, 0) = colorScaler[0]*p;
+                    img(i, j, 1) = colorScaler[1]*p;
+                    img(i, j, 2) = colorScaler[2]*p;
                 }
             }
             float c = img.max()/255.0;

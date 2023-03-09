@@ -5,20 +5,21 @@
 #include "basic/linearalgebra.h"
 #include "basic/tensor.hpp"
 #include "basic/complexnumber.h"
-#include "basic/utils.h"
+#include "basic/simd.hpp"
+#include "basic/statistics.h"
 #include "utils/csv.h"
 #include "utils/dataset.h"
-#include "clock.hpp"
-#include "kmeans.h"
-#include "svm.h"
-#include "gmm.h"
-#include "./basic/simd.hpp"
-#include "net/net.h"
-#include "net/optimizer.h"
-#include "net/layer.h"
-#include "net/loss.h"
-#include "net/conv2d.hpp"
-#include "net/lstm.hpp"
+#include "utils/clock.hpp"
+#include "ml/kmeans.h"
+#include "ml/svm.h"
+#include "ml/gmm.h"
+#include "ml/kdtree.hpp"
+#include "dl/net.h"
+#include "dl/optimizer.h"
+#include "dl/layer.h"
+#include "dl/loss.h"
+#include "dl/conv2d.hpp"
+#include "dl/lstm.hpp"
 
 void test_lu()
 {
@@ -167,8 +168,8 @@ void test_transpose_multiply()
     Mat x9(3, 4);
     Mat x10(3, 5);
     Mat x11(4, 5);
-    Utils::uniform(x9, 0, 9);
-    Utils::uniform(x10, 0, 9);
+    Statistics::uniform(x9, 0, 9);
+    Statistics::uniform(x10, 0, 9);
     Mat::Multiply::kikj(x11, x9, x10);
     std::cout<<"x9:"<<std::endl;
     x9.show();
@@ -257,35 +258,56 @@ void test_kmeans()
 
 void test_tensor()
 {
-    Tensori x(2, 3, 3);
-    for (std::size_t i = 0; i < x.sizes.size(); i++) {
-        std::cout<<x.sizes[i]<<",";
+    {
+        Tensori x(2, 3, 3);
+        for (std::size_t i = 0; i < x.sizes.size(); i++) {
+            std::cout<<x.sizes[i]<<",";
+        }
+        std::cout<<std::endl;
+        for (std::size_t i = 0; i < x.shape.size(); i++) {
+            std::cout<<x.shape[i]<<",";
+        }
+        std::cout<<std::endl;
+
+        x.val = std::vector<int>{
+                                    1, 2, 3,
+                                    4, 5, 6,
+                                    7, 8, 9,
+
+                                    11, 12, 13,
+                                    14, 15, 16,
+                                    17, 18, 19
+                                 };
+
+        std::cout<<x(1, 1, 2)<<std::endl;
+        x.printShape();
+
+        Tensori x1 = x.sub(0);
+        x1.printValue();
+
+        x.reshape(3, 3, 2);
+        Tensori x2 = x.sub(0, 1);
+        x2.printValue();
     }
-    std::cout<<std::endl;
-    for (std::size_t i = 0; i < x.shape.size(); i++) {
-        std::cout<<x.shape[i]<<",";
+    /* assign subset */
+    {
+        Tensor x({3, 3, 3}, {1, 2, 3,
+                             4, 5, 6,
+                             7, 8, 9,
+
+                             1, 1, 1,
+                             1, 1, 1,
+                             1, 1, 1,
+
+                             2, 2, 2,
+                             2, 2, 2,
+                             2, 2, 2
+                        });
+        x.at(1, 1) = Tensor({1, 3}, {0, 9, 0});
+        x.printValue();
+        x.embed(Tensor({1, 3}, {6, 0, 6}), 1, 1);
+        x.printValue();
     }
-    std::cout<<std::endl;
-
-    x.val = std::vector<int>{
-                                1, 2, 3,
-                                4, 5, 6,
-                                7, 8, 9,
-
-                                11, 12, 13,
-                                14, 15, 16,
-                                17, 18, 19
-                             };
-
-    std::cout<<x(1, 1, 2)<<std::endl;
-    x.printShape();
-
-    Tensori x1 = x.sub(0);
-    x1.printValue();
-
-    x.reshape(3, 3, 2);
-    Tensori x2 = x.sub(0, 1);
-    x2.printValue();
     return;
 }
 
@@ -502,7 +524,7 @@ void test_bpnn()
     auto t1 = Clock::tiktok();
     for (int i = 0; i < 10000; i++) {
         for (int j = 0; j < 4; j++) {
-            int k = distribution(Utils::engine);
+            int k = distribution(Statistics::engine);
             /* forward */
             Tensor& y = bp(x[k]);
             /* loss */
@@ -549,12 +571,12 @@ void test_lenet5()
     Tensor yt(10, 1);
     auto t1 = Clock::tiktok();
     for (std::size_t i = 0; i < 1; i++) {
-        Utils::uniform(x, 0, 1);
+        Statistics::uniform(x, 0, 1);
         /* forward */
         Tensor& y = lenet5(x);
         y.printValue();
         /* loss */
-        Utils::uniform(yt, 0, 1);
+        Statistics::uniform(yt, 0, 1);
         Tensor loss = Loss::CROSS_EMTROPY(y, yt);
         /* backward */
         optimizer.backward(loss, x, yt);
@@ -666,7 +688,7 @@ void test_lstm()
     std::vector<Tensor> x(N, Tensor(4, 1));
     std::vector<Tensor> yt(N, Tensor(1, 1));
     for (std::size_t i = 0; i < N; i++) {
-        Utils::uniform(x[i], -1, 1);
+        Statistics::uniform(x[i], -1, 1);
         /* f(x1, x2, x3, x4) = exp(x1+x2+x3+x4) * sin(x1+x2+x3+x4) */
         float s = x[i].sum();
         yt[i][0] = std::exp(s)*std::sin(s);
@@ -677,7 +699,7 @@ void test_lstm()
     for (std::size_t epoch = 0; epoch < 5000; epoch++) {
         for (std::size_t i = 0; i < 16; i++) {
             /* forward */
-            int k = distribution(Utils::engine);
+            int k = distribution(Statistics::engine);
             Tensor& y = lstm(x[k]);
             /* loss */
             Tensor loss = Loss::MSE(y, yt[k]);
@@ -689,9 +711,9 @@ void test_lstm()
     }
     /* predict */
     for (std::size_t i = 0; i < 16; i++) {
-        int k = distribution(Utils::engine);
+        int k = distribution(Statistics::engine);
         Tensor& y = lstm(x[k]);
-        float error = Utils::Norm::l2(y, yt[k]);
+        float error = Statistics::Norm::l2(y, yt[k]);
         std::cout<<"target="<<yt[k][0]<<", predict="<<y[0]<<", error="<<error<<std::endl;
     }
     return;
@@ -796,8 +818,8 @@ void test_simd_matmul()
     Tensor x(N, N);
     Tensor x1(N, N);
     Tensor x2(N, N);
-    Utils::uniform(x1, -9, 9);
-    Utils::uniform(x2, -9, 9);
+    Statistics::uniform(x1, -9, 9);
+    Statistics::uniform(x2, -9, 9);
     /* simd matmul */
     /* 8-channel */
     {
@@ -863,7 +885,7 @@ void test_simd()
     }
     /* max */
     Tensor x(100);
-    Utils::uniform(x, 0, 100);
+    Statistics::uniform(x, 0, 100);
     x[50] = 101;
     x.printValue();
     std::cout<<"max:"<<simd::AVX2::max(x.ptr(), x.totalSize)<<std::endl;
@@ -874,7 +896,7 @@ void test_simd()
     /* mean, variance */
     {
         Tensorsi_<float, simd::AVX2> x1(512, 512);
-        Utils::uniform(x1, -1, 1);
+        Statistics::uniform(x1, -1, 1);
         float u = x1.mean();
         auto t1 = Clock::tiktok();
         float sigma = x1.variance(u);
@@ -892,7 +914,7 @@ void test_simd()
         y1.printValue();
         std::cout<<"cmath exp:"<<std::endl;
         Tensor y2(100);
-        Utils::exp(x, y2);
+        Statistics::exp(x, y2);
         y2.printValue();
     }
     /* sqrt */
@@ -915,7 +937,7 @@ void test_simd_transpose()
     {
         Tensor_<double> x(N, N);
         Tensor_<double> y(N, N);
-        Utils::uniform(x, 0, 9);
+        Statistics::uniform(x, 0, 9);
         auto t1 = Clock::tiktok();
         simd::AVX2::transpose(y.ptr(), N, N,
                               x.ptr(), N, N);
@@ -930,7 +952,7 @@ void test_simd_transpose()
     {
         Tensor x(16, 16);
         Tensor y(16, 16);
-        Utils::uniform(x, 0, 9);
+        Statistics::uniform(x, 0, 9);
         simd::AVX2::transpose(y.ptr(), 16, 16,
                               x.ptr(), 16, 16);
         Tensor::Mat::print(x);
@@ -940,7 +962,6 @@ void test_simd_transpose()
     return;
 #endif
 }
-
 
 int main()
 {
@@ -957,12 +978,9 @@ int main()
     test_lenet5();
     test_simd();
     test_simd_matmul();
+    test_lstm();
 #endif
-    //test_simd_matmul();
-    //test_bpnn();
-    //test_lenet5();
-    test_mnist();
-    //test_lstm();
+    //test_mnist();
     //test_alexnet();
     //test_vgg16();
     return 0;

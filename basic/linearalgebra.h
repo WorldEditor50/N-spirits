@@ -2,7 +2,7 @@
 #define LINEARALGEBRA_H
 #include <vector>
 #include "mat.h"
-#include "utils.h"
+#include "statistics.h"
 
 namespace LinearAlgebra {
 

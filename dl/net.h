@@ -7,8 +7,9 @@
 #include <tuple>
 #include <map>
 #include <type_traits>
-#include "../basic/tensor.hpp"
 #include "layerdef.h"
+#include "../basic/tensor.hpp"
+
 
 
 template<typename ...TLayer>

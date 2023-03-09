@@ -16,7 +16,7 @@ fun with cpp
 - basic linear algerbra (LU, QR, SVD, PCA, det)
 - complex number
 - simd (support SSE2, AVX2)
-- LBM (von karman vortex street)
+- LBM (D2Q9)
 
 ## Requirements
 

@@ -242,13 +242,13 @@ public:
         Conv2dParam(inChannels_, h, w, outChannels_, kernelSize_, stride_, padding_, bias_, activeType_)
     {
         kernels = Tensor(outChannels, inChannels, kernelSize, kernelSize);
-        Utils::uniform(kernels, -1, 1);
+        Statistics::uniform(kernels, -1, 1);
         ho = std::floor((hi - kernelSize + 2*padding)/stride) + 1;
         wo = std::floor((wi - kernelSize + 2*padding)/stride) + 1;
         o = Tensor(outChannels, ho, wo);
         if (bias == true) {
             b = Tensor(outChannels, kernelSize, kernelSize);
-            Utils::uniform(b, -1, 1);
+            Statistics::uniform(b, -1, 1);
         }
         layerType = LAYER_CONV2D;
     }

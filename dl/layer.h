@@ -3,8 +3,9 @@
 #include <iostream>
 #include <fstream>
 #include "activate.h"
-#include "../basic/utils.h"
 #include "layerdef.h"
+#include "../basic/statistics.h"
+
 
 class FcParam
 {
@@ -125,8 +126,8 @@ public:
         }
         o = Tensor(outputDim, 1);
         /* init */
-        Utils::uniform(w, -1, 1);
-        Utils::uniform(b, -1, 1);
+        Statistics::uniform(w, -1, 1);
+        Statistics::uniform(b, -1, 1);
     }
 
     inline Tensor& output() {return o;}
@@ -208,7 +209,7 @@ public:
         float max_ = o.max();
         o -= max_;
         /* softmax(x) = exp(xi)/Σexp(xj)  */
-        Utils::exp(o, o);
+        Statistics::exp(o, o);
         float s = o.sum();     
         o /= s;
         return o;
@@ -253,7 +254,7 @@ public:
     {
         FcLayer::forward(x);
         if (Grad::enable == true) {
-            Utils::bernoulli(mask, p);
+            Statistics::bernoulli(mask, p);
             mask /= (1 - p);
             FcLayer::o *= mask;
         }
@@ -489,24 +490,24 @@ public:
         /* xh */
         xh = std::vector<Tensor>(batchsize, Tensor(u.shape));
         for (std::size_t i = 0; i < x.size(); i++) {
-            Utils::sub(xh[i], x[i], u);
+            Statistics::sub(xh[i], x[i], u);
         }
         /* sigma */
         Tensor r(u.shape);
         for (std::size_t i = 0; i < xh.size(); i++) {
-            Utils::mul(r, xh[i], xh[i]);
+            Statistics::mul(r, xh[i], xh[i]);
             sigma += r;
         }
         sigma /= batchsize;
         sigma += 1e-9;
-        Utils::sqrt(sigma, sigma);
+        Statistics::sqrt(sigma, sigma);
         /* xh = (xi - u)/sqrt(sigma + 1e-9) */
         for (std::size_t i = 0; i < x.size(); i++) {
             xh[i] /= sigma;
         }
         /* o = gamma*xh + b */
         for (std::size_t i = 0; i < xh.size(); i++) {
-            Utils::mul(o[i], gamma, xh[i]);
+            Statistics::mul(o[i], gamma, xh[i]);
             o[i] += beta;
         }
         return;
@@ -532,7 +533,7 @@ public:
         Tensor values(p.shape);
         for (std::size_t i = 0; i < p.totalSize; i++) {
             std::bernoulli_distribution distribution(p.val[i]);
-            values.val[i] = distribution(Utils::engine);
+            values.val[i] = distribution(Statistics::engine);
         }
         return values;
     }

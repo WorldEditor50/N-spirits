@@ -1,9 +1,9 @@
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef STATISTICS_H
+#define STATISTICS_H
 #include <random>
 #include "mat.h"
 
-namespace Utils {
+namespace Statistics {
 static std::default_random_engine engine;
 
 template<typename T>
@@ -121,9 +121,35 @@ inline typename T::ValueType dot(const T &x1, const T &x2)
 }
 
 template<typename T>
+inline T sum(const std::vector<T> &x)
+{
+    T s = x[0];
+    for (std::size_t i = 1; i < x.size(); i++) {
+        s += x[i];
+    }
+    return s;
+}
+
+template<typename T>
+inline T variance(const std::vector<T> &x, T u)
+{
+    std::vector<T> delta(x.size());
+    for (std::size_t i = 0; i < x.size(); i++) {
+        delta[i] = x[i] - u;
+    }
+    T s = delta[0]*delta[0];
+    for (std::size_t i = 1; i < x.size(); i++) {
+        s += delta[i]*delta[i];
+    }
+    s /= x.size();
+    return s;
+}
+
+
+template<typename T>
 inline void normalize(T &x)
 {
-    x /= std::sqrt(Utils::dot(x, x));
+    x /= std::sqrt(Statistics::dot(x, x));
     return;
 }
 template<typename T>
@@ -204,4 +230,4 @@ inline void cov(Mat &y, const Mat &x)
 }
 
 }
-#endif // UTILS_H
+#endif // STATISTICS_H

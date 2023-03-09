@@ -2,7 +2,7 @@
 #define ACTIVATE_H
 #include <cmath>
 #include <map>
-#include "../basic/utils.h"
+#include "../basic/statistics.h"
 #include "../basic/tensor.hpp"
 
 struct Sigmoid {
@@ -205,14 +205,14 @@ struct Softmax_ {
 
     inline static void f(Tensor& y, const Tensor &x)
     {
-        Utils::exp(x, y);
+        Statistics::exp(x, y);
         float s = y.sum();
         y /= s;
         return;
     }
     inline static void df(Tensor &dy, const Tensor &y, const Tensor &yt)
     {
-        Utils::sub(dy, y, yt);
+        Statistics::sub(dy, y, yt);
         return;
     }
 };

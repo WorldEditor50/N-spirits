@@ -1,8 +1,9 @@
 #ifndef LSTM_H
 #define LSTM_H
 #include <vector>
-#include "../basic/tensor.hpp"
 #include "activate.h"
+#include "../basic/tensor.hpp"
+
 
 class LSTMParam
 {
@@ -96,23 +97,23 @@ public:
     }
     void random()
     {
-        Utils::uniform(Wi, -1, 1);
-        Utils::uniform(Wg, -1, 1);
-        Utils::uniform(Wf, -1, 1);
-        Utils::uniform(Wo, -1, 1);
+        Statistics::uniform(Wi, -1, 1);
+        Statistics::uniform(Wg, -1, 1);
+        Statistics::uniform(Wf, -1, 1);
+        Statistics::uniform(Wo, -1, 1);
 
-        Utils::uniform(Ui, -1, 1);
-        Utils::uniform(Ug, -1, 1);
-        Utils::uniform(Uf, -1, 1);
-        Utils::uniform(Uo, -1, 1);
+        Statistics::uniform(Ui, -1, 1);
+        Statistics::uniform(Ug, -1, 1);
+        Statistics::uniform(Uf, -1, 1);
+        Statistics::uniform(Uo, -1, 1);
 
-        Utils::uniform(Bi, -1, 1);
-        Utils::uniform(Bg, -1, 1);
-        Utils::uniform(Bf, -1, 1);
-        Utils::uniform(Bo, -1, 1);
+        Statistics::uniform(Bi, -1, 1);
+        Statistics::uniform(Bg, -1, 1);
+        Statistics::uniform(Bf, -1, 1);
+        Statistics::uniform(Bo, -1, 1);
 
-        Utils::uniform(W, -1, 1);
-        Utils::uniform(B, -1, 1);
+        Statistics::uniform(W, -1, 1);
+        Statistics::uniform(B, -1, 1);
         return;
     }
 };

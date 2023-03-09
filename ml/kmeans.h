@@ -5,8 +5,8 @@
 #include <cmath>
 #include <string>
 #include <random>
-#include "basic/mat.h"
-#include "basic/utils.h"
+#include "../basic/mat.h"
+#include "../basic/statistics.h"
 
 class KMeans
 {
@@ -38,7 +38,7 @@ public:
                 float maxD = -1;
                 std::size_t topic = 0;
                 for (std::size_t j = 0; j < centers.size(); j++) {
-                    float d = Utils::Norm::l2(x[i], centers[j]);
+                    float d = Statistics::Norm::l2(x[i], centers[j]);
                     if (d > maxD) {
                         maxD = d;
                         topic = j;
@@ -58,7 +58,7 @@ public:
             /* error */
             float delta = 0;
             for (std::size_t i = 0; i < centers.size(); i++) {
-                delta += Utils::Norm::l2(centers[i], centers_[i]);
+                delta += Statistics::Norm::l2(centers[i], centers_[i]);
             }
             delta /= float(topicDim);
             if (delta < eps && epoch > maxEpoch/4) {
@@ -86,7 +86,7 @@ public:
             float maxD = -1;
             std::size_t topic = 0;
             for (std::size_t j = 0; j < centers.size(); j++) {
-                float d = Utils::Norm::l2(x[i], centers[j]);
+                float d = Statistics::Norm::l2(x[i], centers[j]);
                 if (d > maxD) {
                     maxD = d;
                     topic = j;
@@ -102,7 +102,7 @@ public:
         float maxD = -1;
         std::size_t topic = 0;
         for (std::size_t i = 0; i < centers.size(); i++) {
-            float d = Utils::Norm::l2(x, centers[i]);
+            float d = Statistics::Norm::l2(x, centers[i]);
             if (d > maxD) {
                 maxD = d;
                 topic = i;
