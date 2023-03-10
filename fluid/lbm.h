@@ -120,6 +120,22 @@ public:
     }
 };
 
+
+struct D2Q9 {
+    /* weights for velocity.: (9) */
+    static Tensord w;
+    /* lattice vector: (9, 2) */
+    static Tensord e;
+
+};
+Tensord D2Q9::w({9}, {4.0 / 9.0,  1.0 / 9.0,  1.0 / 9.0,
+                      1.0 / 9.0,  1.0 / 9.0,  1.0 / 36.0,
+                      1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0});
+
+Tensord D2Q9::e({9, 2}, {0, 0,  1,  0, 0, 1,
+                        -1, 0,  0, -1, 1, 1,
+                        -1, 1, -1, -1, 1, -1});
+
 /*
     axis:
             o------------------> x
@@ -128,6 +144,8 @@ public:
             |
             v y
 */
+
+#define LBM_MRT 1
 template <typename Object>
 class LBM2d
 {
@@ -159,10 +177,6 @@ public:
     /* particle density function: (ny, nx, grid.shape) */
     Tensord fn;
     Tensord f;
-    /* weights for velocity.: (9) */
-    Tensord w;
-    /* lattice vector: (9, 2) */
-    Tensord e;
     /* boundary type: (top, right, bottom, left) */
     Tensord boundaryType;
     /* boundary value: (4, 2): (ny, nx)  */
@@ -191,22 +205,6 @@ public:
         /* particle density function: (ny, nx, grid.shape=9) */
         fn = Tensord(ny, nx, 9);
         f  = Tensord(ny, nx, 9);
-        /* weights for velocity.: (9) */
-        w = Tensord({9}, {4.0 / 9.0,  1.0 / 9.0,  1.0 / 9.0,
-                          1.0 / 9.0,  1.0 / 9.0,  1.0 / 36.0,
-                          1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0});
-        /* lattice vector: (9, 2) */
-        e = Tensord({9, 2},{
-                              0, 0,
-                              1, 0,
-                              0, 1,
-                             -1, 0,
-                              0, -1,
-                              1, 1,
-                             -1, 1,
-                             -1, -1,
-                              1, -1
-                    });
         /* init */
         for (int i = 0; i < fn.shape[0]; i++) {
             for (int j = 0; j < fn.shape[1]; j++) {
@@ -218,9 +216,18 @@ public:
                 //f(i, j, 3) = 3;
             }
         }
-        /* locate cylinder */
+        /* mask */
         for (int i = 0; i < mask.shape[0]; i++) {
             for (int j = 0; j < mask.shape[1]; j++) {
+#if LBM_MRT
+                /*
+                   half way bounce back for no-slip boundary
+                   borders
+                */
+                if (j == nx || i == 0 || i == ny) {
+                     mask(i, j) = 1.0;
+                }
+#endif
                 if (object.isInside(i, j) == true) {
                     mask(i, j) = 1;
                 } else {
@@ -234,18 +241,18 @@ public:
     {
         double u = vel(i, j, 0);
         double v = vel(i, j, 1);
-        double eu = e(k, 0) * u + e(k, 1) * v;
+        double eu = D2Q9::e(k, 0) * u + D2Q9::e(k, 1) * v;
         double uv = u*u + v*v;
-        return w[k] * rho(i, j) * (1.0 + 3.0 * eu + 4.5 * eu*eu - 1.5 * uv);
+        return D2Q9::w[k] * rho(i, j) * (1.0 + 3.0 * eu + 4.5 * eu*eu - 1.5 * uv);
     }
 
     void collideStream()
     {
         for (int i = 1; i < ny - 1; i++) {
             for (int j = 1; j < nx - 1; j++) {
-                for (int k = 0; k < e.shape[0]; k++) {
-                    int ip = i - e(k, 0);
-                    int jp = j - e(k, 1);
+                for (int k = 0; k < D2Q9::e.shape[0]; k++) {
+                    int ip = i - D2Q9::e(k, 0);
+                    int jp = j - D2Q9::e(k, 1);
                     fn(i, j, k) = (1 - sigma) * f(ip, jp, k) + feq(ip, jp, k) * sigma;
                 }
             }
@@ -253,12 +260,11 @@ public:
         return;
     }
 
-
     static Tensord toMoment(const Tensord& f)
     {
         static Tensord M({9, 9}, {
                 1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,
-                -4.0, -1.0, -1.0, -1.0, -1.0,  2.0,  2.0,  2.0,  2.0,
+               -4.0, -1.0, -1.0, -1.0, -1.0,  2.0,  2.0,  2.0,  2.0,
                 4.0, -2.0, -2.0, -2.0, -2.0,  1.0,  1.0,  1.0,  1.0,
                 0.0,  1.0,  0.0, -1.0,  0.0,  1.0, -1.0, -1.0,  1.0,
                 0.0, -2.0,  0.0,  2.0,  0.0,  1.0, -1.0, -1.0,  1.0,
@@ -275,16 +281,16 @@ public:
     {
         static Tensord d({9, 1}, {1./9, 1./36, 1./36, 1./6,
                                   1./12, 1./6, 1./12, 1./4, 1./4});
-        static Tensord M({9, 9}, {
-                        1, -4,  4,  0,  0,  0,  0,  0,  0,
-                        1, -1, -2,  1, -2,  0,  0,  1,  0,
-                        1, -1, -2,  0,  0,  1, -2, -1,  0,
-                        1, -1, -2, -1,  2,  0,  0,  1,  0,
-                        1, -1, -2,  0,  0, -1,  2, -1,  0,
-                        1,  2,  1,  1,  1,  1,  1,  0,  1,
-                        1,  2,  1, -1, -1,  1,  1,  0, -1,
-                        1,  2,  1, -1, -1, -1, -1,  0,  1,
-                        1,  2,  1,  1,  1, -1, -1,  0, -1});
+
+        static Tensord M({9, 9}, {1, -4,  4,  0,  0,  0,  0,  0,  0,
+                                  1, -1, -2,  1, -2,  0,  0,  1,  0,
+                                  1, -1, -2,  0,  0,  1, -2, -1,  0,
+                                  1, -1, -2, -1,  2,  0,  0,  1,  0,
+                                  1, -1, -2,  0,  0, -1,  2, -1,  0,
+                                  1,  2,  1,  1,  1,  1,  1,  0,  1,
+                                  1,  2,  1, -1, -1,  1,  1,  0, -1,
+                                  1,  2,  1, -1, -1, -1, -1,  0,  1,
+                                  1,  2,  1,  1,  1, -1, -1,  0, -1});
         Tensord r(9, 1);
         /* r = Mx(d*m) */
         Tensord::Mul::ikkj(r, M, d*m);
@@ -293,27 +299,15 @@ public:
 
     void colliding()
     {
-        Tensord feqs(9);
-#if 0
-        for (int i = 0; i < ny; i++) {
-            for (int j = nx - 1; j > 0; j++) {
-                f(i, j, 6) = f(i, j - 1, 6);
-                f(i, j, 7) = f(i, j - 1, 7);
-                f(i, j, 8) = f(i, j - 1, 8);
-            }
-            f(i, 0, 2) = f(i, 1, 2);
-            f(i, 0, 3) = f(i, 1, 3);
-            f(i, 0, 4) = f(i, 1, 4);
-        }
-#endif
+        static Tensord feqs(9, 1);
         for (int i = 1; i < ny - 1; i++) {
             for (int j = 1; j < nx - 1; j++) {
-                for (int k = 0; k < e.shape[0]; k++) {
+                for (int k = 0; k < D2Q9::e.shape[0]; k++) {
                     feqs[k] = feq(i, j, k);
                 }
-                Tensord fij = f.sub(i, j);
-                Tensord meq = toMoment(fij);
-                Tensord m = toMoment(feqs);
+                Tensord fij = f.sub(i, j).reshape(9, 1);
+                Tensord meq = toMoment(feqs);
+                Tensord m = toMoment(fij);
                 static Tensord s({9, 1}, {1.0, 1.63, 1.14, 1.0, 1.92, 0.0, 1.92, sigma, sigma});
                 s.val[7] = sigma;
                 s.val[8] = sigma;
@@ -335,9 +329,9 @@ public:
         static int bi[9] = {0, 3, 4, 1, 2, 7, 8, 5, 6};
         for (int i = 1; i < ny - 1; i++) {
             for (int j = 1; j < nx - 1; j++) {
-                for (int k = 0; k < e.shape[0]; k++) {
-                    int ip = i - e(k, 0);
-                    int jp = j - e(k, 1);
+                for (int k = 0; k < D2Q9::e.shape[0]; k++) {
+                    int ip = i - D2Q9::e(k, 0);
+                    int jp = j - D2Q9::e(k, 1);
                     if (mask(ip, jp) == 0) {
                         fn(i, j, k) = f(ip, jp, k);
                     } else {
@@ -358,13 +352,13 @@ public:
                 double r = 0;
                 double u = 0;
                 double v = 0;
-                for (int k = 0; k < e.shape[0]; k++) {
+                for (int k = 0; k < D2Q9::e.shape[0]; k++) {
                     /* calculate density */
                     double Fijk = fn(i, j, k);
                     r += Fijk;
                     /* velocity */
-                    u += e(k, 0) * Fijk;
-                    v += e(k, 1) * Fijk;
+                    u += D2Q9::e(k, 0) * Fijk;
+                    v += D2Q9::e(k, 1) * Fijk;
                 }
                 rho(i, j) = r;
                 vel(i, j, 0) = u / r;
@@ -385,8 +379,12 @@ public:
             }
         }
         rho(ibc, jbc) = rho(inb, jnb);
-        for (int k = 0; k < e.shape[0]; k++) {
+        for (int k = 0; k < D2Q9::e.shape[0]; k++) {
+#if LBM_MRT
+            f(ibc, jbc, k) = feq(ibc, jbc, k);
+#else
             f(ibc, jbc, k) = f(inb, jnb, k) + feq(ibc, jbc, k) - feq(inb, jnb, k);
+#endif
         }
         return;
     }
@@ -402,7 +400,7 @@ public:
             applyBoundaryCondition(1, BOUNDARY_RIGHT, i, nx - 1, i, nx - 2);
             applyBoundaryCondition(1, BOUNDARY_LEFT, i, 0, i, 1);
         }
-        /* cylinder boundary */
+        /* boundary */
         for (int i = 1; i < ny - 1; i++) {
             for (int j = 1; j < nx - 1; j++) {
                 if (mask(i, j) == 0) {
@@ -430,8 +428,13 @@ public:
 
     void solve(std::size_t iteratNum, const std::array<double, 3> &colorScaler, std::function<void(std::size_t i, Tensor &img)> func)
     {
-        for (std::size_t i = 0; i < iteratNum; i++) {
+        for (std::size_t it = 0; it < iteratNum; it++) {
+#if LBM_MRT
+            colliding();
+            streaming();
+#else
             collideStream();
+#endif
             update();
             applyBoundaryCondition();
             Tensor img(ny, nx, 3);
@@ -447,7 +450,7 @@ public:
             }
             float c = img.max()/255.0;
             img /= c;
-            func(i, img);
+            func(it, img);
         }
         return;
     }

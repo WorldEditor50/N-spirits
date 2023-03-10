@@ -983,6 +983,11 @@ int main()
     //test_mnist();
     //test_alexnet();
     //test_vgg16();
+    Tensor x({2, 3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9,
+                         0, 0, 1, 1, 1, 1, 1, 1, 1});
+    Tensor x1 = x.sub(0, 1).reshape(3, 1);
+    x1.printShape();
+    x1.printValue();
     return 0;
 }
 

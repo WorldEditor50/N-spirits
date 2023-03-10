@@ -223,10 +223,9 @@ public:
     template<typename ...Index>
     Tensor_ sub(Index ...index) const
     {
-        Tensor_ y;
         std::vector<int> indexes = std::vector<int>{index...};
         std::vector<int> subIndex(shape.begin() + indexes.size(), shape.end());
-        y = Tensor_(subIndex);
+        Tensor_ y(subIndex);
         std::size_t pos = 0;
         for (std::size_t i = 0; i < indexes.size(); i++) {
             pos += sizes[i]*indexes[i];
@@ -334,14 +333,11 @@ public:
     inline T operator()(const Shape &indexs) const { return val[posOf(indexs)]; }
 
     template<typename ...Index>
-    Tensor_ reshape(Index ...index) const
+    Tensor_& reshape(Index ...index)
     {
-        Tensor_ x(index...);
-        if (x.totalSize != totalSize) {
-            return x;
-        }
-        x.val = val;
-        return x;
+        shape = {index...};
+        initParams(shape, sizes, totalSize);
+        return *this;
     }
 
     template<typename ...Index>
@@ -818,7 +814,10 @@ public:
     {
         std::cout<<"(";
         for (std::size_t i = 0; i < shape.size(); i++) {
-            std::cout<<shape[i]<<",";
+            std::cout<<shape[i];
+            if (i < totalSize - 1) {
+                std::cout<<",";
+            }
         }
         std::cout<<")"<<std::endl;
         return;

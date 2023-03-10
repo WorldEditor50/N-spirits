@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include "../LBM/lbm.h"
+#include "../fluid/lbm.h"
 #include "../improcess/improcess.h"
 
 int main()
@@ -11,7 +11,7 @@ int main()
     ICylinder icylinder(200/2, 400/5, 12);
     LBM2d<ICylinder> lbm(200, 400, // shape
                          icylinder,
-                         3e-3, // relaxtion
+                         1e-4, // relaxtion
                          /* boundary type : in coming direction (top, right, bottom, left) */
                          Tensord({4}, {0, 1, 0, 0}),
                          /* boundary value : wave reflection (ny, nx) */
@@ -34,6 +34,7 @@ int main()
                                   img.shape[0], img.shape[1], img.shape[2]);
             std::cout<<"progress:"<<i<<"-->"<<N<<std::endl;
         }
+
     });
 	return 0;
 }
