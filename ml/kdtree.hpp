@@ -14,131 +14,180 @@ public:
     class Node
     {
     public:
-        std::size_t splitIndex;
-        std::shared_ptr<Node> left;
-        std::shared_ptr<Node> right;
+        using Pointer = std::shared_ptr<Node>;
+    public:
+        std::size_t compareIndex;
+        Pointer left;
+        Pointer right;
         Tensor value;
     public:
-        Node():splitIndex(0),left(nullptr),right(nullptr){}
+        Node():compareIndex(0),left(nullptr),right(nullptr){}
+        void show() const
+        {
+            value.printValue();
+        }
     };
-
-public:
-    std::size_t featureDim;
-    Node root;
+    class Result
+    {
+    public:
+        float distance;
+        Tensor value;
+    public:
+        Result(){}
+        explicit Result(float d, const Tensor &v)
+            :distance(d),value(v){}
+    };
 protected:
-
+    Node::Pointer root;
+protected:
     static std::size_t sort(std::vector<Tensor> &x)
     {
         /* variance of dataset */
         Tensor u = Statistics::sum(x) / x.size();
         Tensor sigma = Statistics::variance(x, u);
-        /* sort  */
-        std::size_t splitIndex = 0;
+        /* sort by variance */
+        std::size_t compareIndex = 0;
         for (std::size_t i = 1; i < sigma.size(); i++) {
             if (sigma[i - 1] < sigma[i]) {
-                splitIndex = i;
+                compareIndex = i;
             }
         }
         std::sort(x.begin(), x.end(), [=](Tensor &x1, Tensor &x2) -> bool {
-            return x1[splitIndex] < x2[splitIndex];
+            return x1[compareIndex] < x2[compareIndex];
         });
-        return splitIndex;
+        return compareIndex;
     }
 
-    static void generate(std::vector<Tensor> &x, KDTree::Node &node)
+    static Node::Pointer build(std::vector<Tensor> &x)
     {
         if (x.empty() == true) {
-            return;
+            return nullptr;
         }
-        /* sort by variance */
-        std::size_t splitIndex = sort(x);
-        /* split data */
         std::size_t len = x.size();
+        /* sort by variance of specific dimension */
+        std::size_t compareIndex = sort(x);
+        /* split data */
         std::vector<Tensor> left;
         std::vector<Tensor> right;
         for (std::size_t i = 0; i < x.size(); i++) {
             if (i == len/2) {
                 continue;
             }
-            if (x[i][splitIndex] <= x[len/2][splitIndex]) {
+            if (x[i][compareIndex] <= x[len/2][compareIndex]) {
                 left.push_back(x[i]);
             } else {
                 right.push_back(x[i]);
             }
         }
-        /* assign node */
-        node.value = x[len/2];
-        node.splitIndex = splitIndex;
-        node.left = std::make_shared<Node>();
-        node.right = std::make_shared<Node>();
-        /* next */
-        generate(left, *node.left);
-        generate(right, *node.right);
-        return;
+        /* create node */
+        Node::Pointer node = std::make_shared<Node>();
+        node->value = x[len/2];
+        node->compareIndex = compareIndex;
+        node->left = build(left);
+        node->right = build(right);
+        return node;
     }
 
-    static int find(KDTree::Node& root, const Tensor &x, Tensor & nearest, float& dist)
+    static void find(Node::Pointer& root,
+                     const Tensor &x,
+                     std::vector<Result>& nearest)
     {
-        std::stack<std::shared_ptr<KDTree::Node> > nodes;
-        std::shared_ptr<KDTree::Node> node(&root);
-        while (node != nullptr) {
-            nodes.push(node);
-            std::size_t i = node->splitIndex;
-            if (x[i] <= node->value[i]) {
-                node = node->left;
+        std::stack<Node::Pointer> prependingNodes;
+        Node::Pointer pNode(root);
+        while (pNode != nullptr) {
+            prependingNodes.push(pNode);
+            std::size_t i = pNode->compareIndex;
+            if (x[i] <= pNode->value[i]) {
+                pNode = pNode->left;
             } else {
-                node = node->right;
+                pNode = pNode->right;
             }
         }
         /* first node */
-        nearest = nodes.top()->value;
-        nodes.pop();
-        dist = Statistics::Norm::l2(x, nearest);
+        Tensor *nearestValue = &prependingNodes.top()->value;
+        prependingNodes.pop();
+        float nearestDist = Statistics::Norm::l2(x, *nearestValue);
+        nearest.push_back(Result(nearestDist, *nearestValue));
         /* find the rest */
-        while (nodes.empty()) {
-            auto p = nodes.top();
-            nodes.pop();
+        while (prependingNodes.empty() == false) {
+            pNode = prependingNodes.top();
+            prependingNodes.pop();
             /* leaf node */
-            if (p->left == nullptr && p->right == nullptr) {
-                float d = Statistics::Norm::l2(x, nearest);
-                if (dist > d) {
-                    nearest = p->value;
-                    dist = d;
+            if (pNode->left == nullptr && pNode->right == nullptr) {
+                float d = Statistics::Norm::l2(x, pNode->value);
+                if (nearestDist >= d) {
+                    nearestValue = &pNode->value;
+                    nearestDist = d;
+                    nearest.push_back(Result(d, pNode->value));
                 }
+                //std::cout<<"====== d="<<d<<" nearestDist="<<nearestDist<<std::endl;
             } else {
-                std::size_t i = p->splitIndex;
-                float delta = x[i] - p->value[i];
-                if (std::fabs(delta) > dist) {
-                    float d = Statistics::Norm::l2(x, nearest);
-                    if (dist > d) {
-                        nearest = p->value;
-                        dist = d;
+
+                std::size_t i = pNode->compareIndex;
+                float delta = x[i] - pNode->value[i];
+                if (std::fabs(delta) > nearestDist) {
+                    float d = Statistics::Norm::l2(x, pNode->value);
+                    if (nearestDist >= d) {
+                        nearestValue = &pNode->value;
+                        nearestDist = d;
+                        nearest.push_back(Result(d, pNode->value));
                     }
+                    //std::cout<<"------- d="<<d<<" nearestDist="<<nearestDist<<std::endl;
                 }
-                std::shared_ptr<KDTree::Node> next = nullptr;
+                Node::Pointer next = nullptr;
                 if (delta > 0) {
-                    next = p->left;
+                    next = pNode->left;
                 } else {
-                    next = p->right;
+                    next = pNode->right;
                 }
                 if (next != nullptr) {
-                    nodes.push(next);
+                    prependingNodes.push(next);
                 }
             }
         }
-        return 0;
+        return;
     }
 public:
     explicit KDTree(std::vector<Tensor> &x)
     {
-        generate(x, root);
+        root = build(x);
     }
-
-    int operator()(const Tensor &x, Tensor & nearest, float& dist)
+    int find(const Tensor &x, std::size_t k, std::vector<Result> &nearest)
     {
-        find(root, x, nearest, dist);
+        if (root == nullptr) {
+            return -1;
+        }
+        find(root, x, nearest);
+        if (nearest.size() > k) {
+            nearest.erase(nearest.begin() + k, nearest.end());
+        }
         return 0;
     }
+
+    int find(const Tensor &x, std::vector<Result> &nearest)
+    {
+        if (root == nullptr) {
+            return -1;
+        }
+        find(root, x, nearest);
+        return 0;
+    }
+
+    void show(Node::Pointer node) const
+    {
+        if (node == nullptr) {
+            return;
+        }
+        show(node->left);
+        show(node->right);
+        node->show();
+        return;
+    }
+    void display()
+    {
+        show(root);
+    }
+
 
 };
 

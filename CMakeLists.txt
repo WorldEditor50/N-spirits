@@ -39,6 +39,15 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/fluid)
 # test
 add_executable(test_basic test.cpp)
 target_link_libraries(test_basic BASIC)
+# test ml
+add_executable(test_ml test/test_ml.cpp)
+target_link_libraries(test_ml BASIC)
+# test dl
+add_executable(test_dl test/test_dl.cpp)
+target_link_libraries(test_dl BASIC)
+# test simd
+add_executable(test_simd test/test_simd.cpp)
+target_link_libraries(test_simd BASIC)
 # test improcess
 add_executable(test_improcess test/test_improcess.cpp)
 target_link_libraries(test_improcess IMPROCESS BASIC ${JPEG_LIBRARIES})
