@@ -4,6 +4,7 @@
 #include <memory>
 #include <functional>
 #include "jpegwrap.h"
+#include "bmp.hpp"
 #include "image.hpp"
 
 

@@ -119,7 +119,8 @@ fun with cpp
 #### 2.1 jpeg to video
 
 ```sh
-ffmpeg -i ./cylinder1/cylinder_%d.jpg -vcodec libx264 cylinder1.avi
+ffmpeg -i ./cylinder1/cylinder_%d.jpg -vcodec libx264 cylinder.avi
+ffmpeg -i ./cylinder_%d.bmp -vcodec mpeg4 cylinder.avi
 ```
 
 #### 2.2 reference:

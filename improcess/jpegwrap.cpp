@@ -64,7 +64,7 @@ int improcess::Jpeg::decode(uint8_t *rgb, int &w, int &h,
     }
     int rowstride = cinfo.output_width * cinfo.output_components;
     if (align == ALIGN_4) {
-        improcess::Jpeg::align4(cinfo.output_width, cinfo.output_components);
+        rowstride = improcess::Jpeg::align4(cinfo.output_width, cinfo.output_components);
     }
     w = cinfo.output_width;
     h = cinfo.output_height;

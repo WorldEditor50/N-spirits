@@ -1,10 +1,12 @@
 #include <iostream>
 #include <cmath>
 #include <numeric>
+#include <fstream>
 #include "../basic/tensor.hpp"
 #include "../improcess/image.hpp"
 #include "../improcess/jpegwrap.h"
 #include "../improcess/improcess.h"
+#include "../improcess/bmp.hpp"
 
 void test_jpeg()
 {
@@ -106,8 +108,30 @@ void test_convert2gray()
     return;
 }
 
+void test_bmp()
+{
+    std::shared_ptr<uint8_t[]> data = nullptr;
+    int w = 0;
+    int h = 0;
+    int ret = improcess::BMP::load("D:/home/picture/dota2.bmp", data, h, w);
+    if (ret != 0) {
+        std::cout<<"load error = "<<ret<<std::endl;
+        return;
+    }
+
+    ret = improcess::BMP::save("dota2_write.bmp", data, h, w);
+    if (ret != 0) {
+        std::cout<<"save error = "<<ret<<std::endl;
+        return;
+    }
+    std::cout<<"finished."<<std::endl;
+    return;
+}
+
 int main()
 {
-    test_jpeg_to_tensor();
+    //test_jpeg_to_tensor();
+    test_bmp();
+
 	return 0;
 }
