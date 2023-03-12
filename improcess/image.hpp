@@ -23,6 +23,8 @@ enum Color {
     COLOR_BLUE
 };
 
+constexpr static float pi = 3.1415926;
+
 inline float clamp(float x, float max_, float min_)
 {
     if (x > max_) {

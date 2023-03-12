@@ -251,20 +251,6 @@ public:
     }
 
     template<typename ...Index>
-    void embed(const Tensor_ &x, Index ...index)
-    {
-        std::vector<int> indexes = std::vector<int>{index...};
-        std::size_t pos = 0;
-        for (std::size_t i = 0; i < indexes.size(); i++) {
-            pos += sizes[i]*indexes[i];
-        }
-        for (std::size_t i = 0; i < x.totalSize; i++) {
-            val[i + pos] = x.val[i];
-        }
-        return;
-    }
-
-    template<typename ...Index>
     inline Sub& at(Index ...index)
     {
         subset.pointer = this;

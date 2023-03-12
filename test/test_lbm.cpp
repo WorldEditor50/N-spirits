@@ -5,16 +5,16 @@
 
 int main()
 {
+    int W = 100;
     int H = 100;
-    int W = 400;
-    int R = 12;
+    int R = 6;
     Cylinder cylinder(H/2, W/5, R);
     Square square(H/2, W/5, R);
     Cross cr(H/2, W/5, R);
     ICylinder icylinder(H/2, W/5, R);
     LBM2d<ICylinder> lbm(H, W, // shape
                          icylinder,
-                         1e-4, // relaxtion
+                         1e-5, // relaxtion
                          /* boundary type : in coming direction (top, right, bottom, left) */
                          Tensord({4}, {0, 1, 0, 0}),
                          /* boundary value : wave reflection (ny, nx) */
@@ -26,7 +26,7 @@ int main()
     std::shared_ptr<uint8_t[]> rgb = nullptr;
     std::size_t totalsize = improcess::BMP::size(H, W, 3);
     std::shared_ptr<uint8_t[]> bmp(new uint8_t[totalsize]);
-    std::size_t N = 2000;
+    std::size_t N = 20000;
     lbm.solve(N, {0.8, 0.1, 0.1}, // color scaler
               [&](std::size_t i, Tensor &img){
 

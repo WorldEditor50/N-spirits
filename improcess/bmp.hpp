@@ -52,10 +52,8 @@ public:
 public:
     inline static int align4(int width, int channel) {return  (width*channel+3)/4*4;}
 
-    inline static uint8_t byteOf(uint32_t x, uint8_t pos)
-    {
-        return ((uint8_t*)&x)[pos];
-    }
+    inline static uint8_t byteOf(uint32_t x, uint8_t pos) { return ((uint8_t*)&x)[pos]; }
+
     inline static uint32_t fromByte(uint8_t x0, uint8_t x1, uint8_t x2, uint8_t x3)
     {
         uint32_t x = 0;
@@ -174,7 +172,7 @@ public:
     static int fromRGB24(std::shared_ptr<uint8_t[]> rgb, int h, int w,
                          std::shared_ptr<uint8_t[]> bmp)
     {
-        if (rgb == nullptr) {
+        if (rgb == nullptr || bmp == nullptr) {
             return -1;
         }
         /* alignstep */
