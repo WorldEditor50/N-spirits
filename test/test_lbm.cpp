@@ -12,8 +12,8 @@ int main()
     Square square(H/2, W/5, R);
     Cross cr(H/2, W/5, R);
     ICylinder icylinder(H/2, W/5, R);
-    LBM2d<ICylinder> lbm(H, W, // shape
-                         icylinder,
+    LBM2d<Cylinder> lbm(H, W, // shape
+                         cylinder,
                          1e-5, // relaxtion
                          /* boundary type : in coming direction (top, right, bottom, left) */
                          Tensord({4}, {0, 1, 0, 0}),

@@ -220,9 +220,12 @@ public:
         if (fileName.empty()) {
             return -1;
         }
+        if (rgb == nullptr) {
+            return -2;
+        }
         std::ofstream file(fileName, std::ios::binary|std::ios::out);
         if (file.is_open() == false) {
-            return -2;
+            return -3;
         }
         std::shared_ptr<uint8_t[]> bmp;
         uint32_t totalsize = 0;

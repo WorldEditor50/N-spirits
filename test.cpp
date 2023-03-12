@@ -270,8 +270,7 @@ void test_tensor()
                              2, 2, 2
                         });
         x.at(1, 1) = Tensor({1, 3}, {0, 9, 0});
-        x.printValue();
-        x.embed(Tensor({1, 3}, {6, 0, 6}), 1, 1);
+        x.at(2, 1) = Tensor({1, 3}, {2, 1, 0});
         x.printValue();
     }
     /* reshpae */
@@ -282,16 +281,6 @@ void test_tensor()
         x1.printShape();
         x1.printValue();
     }
-    return;
-}
-
-void test_tensor_func()
-{
-    Tensor x({3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
-    Tensor y = Tensor::func(x, [&](float xi)->float{ return xi*xi;});
-    y.printValue();
-    y = Tensor::func(x, std::exp);
-    y.printValue();
     return;
 }
 
@@ -371,6 +360,7 @@ int main()
     test_permute();
 #endif
     test_tensor();
+    std::cout<<"size of tensor = "<<sizeof (Tensor)<<std::endl;
     return 0;
 }
 

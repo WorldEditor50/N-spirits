@@ -100,8 +100,8 @@ void test_conv()
     kernels.zero();
     x.zero();
 
-    kernels.assign(1, 1, 1, 1, 1, 1, 1, 1, 1);
-    x.assign(1, 1, 1, 1, 1, 1, 1, 1, 1);
+    kernels.fill(1);
+    x.fill(1);
 
     convi(o, kernels, x);
     o.printValue();

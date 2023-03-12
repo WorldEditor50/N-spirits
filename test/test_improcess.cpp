@@ -128,10 +128,49 @@ void test_bmp()
     return;
 }
 
+void test_write_ppm()
+{
+    std::shared_ptr<uint8_t[]> data = nullptr;
+    int w = 0;
+    int h = 0;
+    int c = 0;
+    int ret = improcess::Jpeg::load("D:/home/picture/dota-2-official.jpg", data, h, w, c);
+    if (ret < 0) {
+        std::cout<<"load jpeg failed."<<std::endl;
+        return;
+    }
+    /* write ppm */
+    ret = improcess::PPM::save("dota2.ppm", data, h, w);
+    if (ret != 0) {
+        std::cout<<"save ppm error = "<<ret<<std::endl;
+        return;
+    }
+    std::cout<<"finished."<<std::endl;
+    return;
+}
+
+void test_read_ppm()
+{
+    std::shared_ptr<uint8_t[]> data = nullptr;
+    int w = 0;
+    int h = 0;
+    /* read ppm */
+    int ret = improcess::PPM::load("dota2.ppm", data, h, w);
+    if (ret != 0) {
+        std::cout<<"save ppm error = "<<ret<<std::endl;
+        return;
+    }
+    ret = improcess::BMP::save("dota2_read_ppm.bmp", data, h, w);
+    if (ret < 0) {
+        std::cout<<"save bmp failed."<<std::endl;
+        return;
+    }
+    std::cout<<"finished."<<std::endl;
+    return;
+}
 int main()
 {
     //test_jpeg_to_tensor();
-    test_bmp();
-
+    test_read_ppm();
 	return 0;
 }

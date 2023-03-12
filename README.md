@@ -120,7 +120,7 @@ fun with cpp
 
 ```sh
 ffmpeg -i ./cylinder1/cylinder_%d.jpg -vcodec libx264 cylinder.avi
-ffmpeg -i ./cylinder_%d.bmp -vcodec mpeg4 cylinder.avi
+ffmpeg -i ./cylinder_%d.bmp -vcodec libx264 cylinder.avi
 ```
 
 #### 2.2 reference:

@@ -18,30 +18,22 @@ public:
     {
     public:
         Tensor_ *pointer;
-        std::vector<int> indexes;
+        std::size_t pos;
     public:
-        Sub():pointer(nullptr){}
+        Sub():pointer(nullptr),pos(0){}
         template<typename ...Index>
-        explicit Sub(Tensor_ *p, Index ... index)
-            :pointer(p),indexes(int(index)...){}
-        explicit Sub(Tensor_ *p, const std::vector<int> &indexes_)
-            :pointer(p),indexes(indexes_){}
-        Sub(const Sub &r):pointer(r.pointer),indexes(r.indexes){}
+        Sub(const Sub &r):pointer(r.pointer),pos(r.pos){}
         Sub& operator=(const Sub &r)
         {
             if (this == &r) {
                 return *this;
             }
             pointer = r.pointer;
-            indexes = indexes;
+            pos = r.pos;
             return *this;
         }
         inline void operator=(const Tensor_ &x)
         {
-            std::size_t pos = 0;
-            for (std::size_t i = 0; i < indexes.size(); i++) {
-                pos += pointer->sizes[i]*indexes[i];
-            }
             for (std::size_t i = 0; i < x.totalSize; i++) {
                 pointer->val[i + pos] = x.val[i];
             }
@@ -49,10 +41,6 @@ public:
         }
         inline void operator=(const std::vector<T> &x)
         {
-            std::size_t pos = 0;
-            for (std::size_t i = 0; i < indexes.size(); i++) {
-                pos += pointer->sizes[i]*indexes[i];
-            }
             for (std::size_t i = 0; i < x.size(); i++) {
                 pointer->val[i + pos] = x[i];
             }
@@ -147,25 +135,6 @@ public:
         }
         return true;
     }
-    /* compare value */
-    inline bool operator == (const Tensor_ &x) const
-    {
-        for (std::size_t i = 0; i < totalSize; i++) {
-            if (val[i] != x.val[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
-    inline bool operator != (const Tensor_ &x) const
-    {
-        for (std::size_t i = 0; i < totalSize; i++) {
-            if (val[i] != x.val[i]) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     /* assign operator */
     Tensor_ &operator=(const Tensor_ &r)
@@ -198,10 +167,10 @@ public:
         return x;
     }
 
-    template<typename ...Index>
-    static Tensor_ zeros(Index ...index)
+    template<typename ...Dim>
+    static Tensor_ zeros(Dim ...dim)
     {
-        Tensor_ x(index...);
+        Tensor_ x(dim...);
         return x;
     }
 
@@ -212,10 +181,10 @@ public:
         return x;
     }
 
-    template<typename ...Index>
-    static Tensor_ ones(Index ...index)
+    template<typename ...Dim>
+    static Tensor_ ones(Dim ...dim)
     {
-        Tensor_ x(index...);
+        Tensor_ x(dim...);
         x.fill(1);
         return x;
     }
@@ -223,11 +192,12 @@ public:
     template<typename ...Index>
     Tensor_ sub(Index ...index) const
     {
-        std::vector<int> indexes = std::vector<int>{index...};
-        std::vector<int> subIndex(shape.begin() + indexes.size(), shape.end());
+        int indexes[] = {index...};
+        std::size_t N = sizeof ...(Index);
+        std::vector<int> subIndex(shape.begin() + N, shape.end());
         Tensor_ y(subIndex);
         std::size_t pos = 0;
-        for (std::size_t i = 0; i < indexes.size(); i++) {
+        for (std::size_t i = 0; i < N; i++) {
             pos += sizes[i]*indexes[i];
         }
         for (std::size_t i = 0; i < y.totalSize; i++) {
@@ -239,9 +209,10 @@ public:
     template<typename ...Index>
     void slice(Tensor_ &y, Index ...index) const
     {
-        std::vector<int> indexes = std::vector<int>{index...};
+        int indexes[] = {index...};
+        std::size_t N = sizeof ...(Index);
         std::size_t pos = 0;
-        for (std::size_t i = 0; i < indexes.size(); i++) {
+        for (std::size_t i = 0; i < N; i++) {
             pos += sizes[i]*indexes[i];
         }
         for (std::size_t i = 0; i < y.totalSize; i++) {
@@ -254,7 +225,12 @@ public:
     inline Sub& at(Index ...index)
     {
         subset.pointer = this;
-        subset.indexes = {index...};
+        subset.pos = 0;
+        int indexs[] = {index...};
+        std::size_t N = sizeof ...(Index);
+        for (std::size_t i = 0; i < N; i++) {
+            subset.pos += sizes[i]*indexs[i];
+        }
         return subset;
     }
 
@@ -263,16 +239,16 @@ public:
     inline int posOf(Index ...index) const
     {
         int indexs[] = {index...};
-        int pos = 0;
+        std::size_t pos = 0;
         for (std::size_t i = 0; i < sizes.size(); i++) {
             pos += sizes[i]*indexs[i];
         }
         return pos;
     }
 
-    inline int posOf(const std::vector<int> &indexs) const
+    inline std::size_t posOf(const std::vector<int> &indexs) const
     {
-        int pos = 0;
+        std::size_t pos = 0;
         for (std::size_t i = 0; i < sizes.size(); i++) {
             pos += sizes[i]*indexs[i];
         }
@@ -624,13 +600,6 @@ public:
     }
 
     /* initialize */
-    template<typename ...Value>
-    void assign(Value ...value)
-    {
-        val = std::vector<T>{value...};
-        return;
-    }
-
     void normalize()
     {
         double minValue = val[0];
@@ -651,66 +620,6 @@ public:
 
     /* matrix operation */
     struct Mat {
-
-        static void set(Tensor_ &y, const Tensor_ &x, int offsetR, int offsetC)
-        {
-            /* (h, w) */
-            for (int h = 0; h < x.shape[0]; h++) {
-                for (int k = 0; k < x.shape[1]; k++) {
-                    y(h + offsetR, k + offsetC) = x(h, k);
-                }
-            }
-            return;
-        }
-
-        static void setRow(Tensor_ &y, size_t i, const Tensor_ &row)
-        {
-            /*
-                y: (r, c)
-                row: (1, c)
-            */
-            for (std::size_t j = 0; j < row.shape[1]; j++) {
-                y(i, j) = row(0, j);
-            }
-            return;
-        }
-
-        static void setColumn(Tensor_ &y, size_t j, const Tensor_ &col)
-        {
-            /*
-                y: (r, c)
-                col: (r, 1)
-            */
-            for (std::size_t i = 0; i < col.shape[0]; i++) {
-                y(i, j) = col(i, 0);
-            }
-            return;
-        }
-
-        static void row(const Tensor_ &x, size_t i, Tensor_ &row)
-        {
-            /*
-                x: (r, c)
-                row: (1, c)
-            */
-            for (std::size_t j = 0; j < row.shape[1]; j++) {
-                row(0, j) = x(i, j);
-            }
-            return;
-        }
-
-        static void column(const Tensor_ &x, size_t j, Tensor_ &col)
-        {
-            /*
-                y: (r, c)
-                col: (r, 1)
-            */
-            for (std::size_t i = 0; i < col.shape[0]; i++) {
-                col(i, 0) = x(i, j);
-            }
-            return;
-        }
-
         static void print(const Tensor_ &x)
         {
             for (std::size_t i = 0; i < x.shape[0]; i++) {
@@ -746,7 +655,6 @@ public:
             for (std::size_t i = 0; i < x.shape[0]; i++) {
                 for (std::size_t k = 0; k < x1.shape[0]; k++) {
                     for (std::size_t j = 0; j < x.shape[1]; j++) {
-
                         /* (i, j) = (k, i)^T * (k, j)^T */
                         x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i]*x2.val[k*x2.shape[1] + j];
                     }
@@ -809,70 +717,6 @@ public:
         return;
     }
 
-
-    inline static void copy(Tensor_ &x, const Tensor_ &x_)
-    {
-        for (std::size_t i = 0; i < x.totalSize; i++) {
-            x.val[i] = x_.val[i];
-        }
-        return;
-    }
-
-    inline static Tensor_ func(const Tensor_ &x, std::function<T(T)> func_)
-    {
-        Tensor_ y(x.shape);
-        for (std::size_t i = 0; i < y.totalSize; i++) {
-            y.val[i] = func_(x.val[i]);
-        }
-        return y;
-    }
-
-    inline static void func(Tensor_ &y, const Tensor_ &x, std::function<T(T)> func_)
-    {
-        for (std::size_t i = 0; i < y.totalSize; i++) {
-            y.val[i] = func_(x.val[i]);
-        }
-        return;
-    }
-
-    inline static Tensor_ func(const Tensor_ &x, T(*func_)(T))
-    {
-        Tensor_ y(x.shape);
-        for (std::size_t i = 0; i < y.totalSize; i++) {
-            y.val[i] = func_(x.val[i]);
-        }
-        return y;
-    }
-
-    inline static void set3D(Tensor_ &y, const Tensor_ &x, int offsetR, int offsetC)
-    {
-        /* (c, h, w) */
-        assert(y.shape[0] == x.shape[0]);
-        assert(y.shape[1] > x.shape[1] && y.shape[2] > x.shape[2]);
-        for (int i = 0; i < x.shape[0]; i++) {
-            for (int h = 0; h < x.shape[1]; h++) {
-                for (int k = 0; k < x.shape[2]; k++) {
-                    y(i, h + offsetR, k + offsetC) = x(i, h, k);
-                }
-            }
-        }
-        return;
-    }
-
-    inline static void product2D(Tensor_& y, const Tensor_& x1, const Tensor_& x2)
-    {
-        for (int i = 0; i < x1.shape[0]; i++) {
-            for (int j = 0; j < x1.shape[1]; j++) {
-                for (int h = 0; h < x2.shape[0]; h++) {
-                    for (int k = 0; k < x2.shape[1]; k++) {
-                        y(h + i*x1.shape[0], k + j*x1.shape[1]) = x1(i, j)*x2(h, k);
-                    }
-                }
-            }
-        }
-        return;
-    }
-
     inline static Tensor_ product2D(const Tensor_& x1, const Tensor_& x2)
     {
         int r = x1.shape[0]*x2.shape[0];
@@ -889,7 +733,6 @@ public:
         }
         return y;
     }
-
 
 };
 
