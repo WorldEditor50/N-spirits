@@ -255,7 +255,7 @@ void test_tensor()
         Tensori x2 = x.sub(0, 1);
         x2.printValue();
     }
-    /* assign subset */
+    /* assign sub space */
     {
         Tensor x({3, 3, 3}, {1, 2, 3,
                              4, 5, 6,
@@ -280,6 +280,37 @@ void test_tensor()
         Tensor x1 = x.sub(0, 1).reshape(3, 1);
         x1.printShape();
         x1.printValue();
+    }
+    /* sum of sub space */
+    {
+        Tensor x(2, 3, 3);
+        x = 7;
+        x.printValue();
+        std::cout<<"size = "<<x.size(1, 2)<<std::endl;
+        std::cout<<"sum(1, 2) = "<<x.sum(1, 2)<<std::endl;
+        std::cout<<"sum(1) = "<<x.sum(1)<<std::endl;
+        std::cout<<"sum = "<<x.sum()<<std::endl;
+    }
+    /* max */
+    {
+        Tensor x({3, 3, 3}, {1, 2, 3,
+                             4, 5, 6,
+                             7, 8, 9,
+
+                             1, 1, 1,
+                             1, 18, 1,
+                             1, 1, 1,
+
+                             2, 2, 2,
+                             2, 19, 2,
+                             2, 2, 2
+                        });
+        std::cout<<"max 0 = "<<x.max(0)<<std::endl;
+        std::cout<<"max 1 = "<<x.max(1)<<std::endl;
+        std::cout<<"max 2 = "<<x.max(2)<<std::endl;
+        x.printValue(2, 1);
+        x.sub(1, 1).printValue();
+        std::cout<<"(1, 1, 1) = "<<x(1, 1, 1)<<std::endl;
     }
     return;
 }
@@ -361,6 +392,7 @@ int main()
 #endif
     test_tensor();
     std::cout<<"size of tensor = "<<sizeof (Tensor)<<std::endl;
+
     return 0;
 }
 

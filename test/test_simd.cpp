@@ -160,9 +160,9 @@ void test_simd_transpose()
         Statistics::uniform(x, 0, 9);
         simd::AVX2::transpose(y.ptr(), 16, 16,
                               x.ptr(), 16, 16);
-        Tensor::Mat::print(x);
+        x.printValue();
         std::cout<<"simd transpose:"<<std::endl;
-        Tensor::Mat::print(y);
+        y.printValue();
     }
     return;
 #endif

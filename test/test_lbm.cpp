@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include "../fluid/lbm.h"
+#include "../fluid/eulerian.hpp"
 #include "../improcess/improcess.h"
 
 int main()
