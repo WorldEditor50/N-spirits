@@ -4,6 +4,9 @@ project(N-spirits LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# load option
+set(LOAD_SIMCL True)
+set(LOAD_IMPROCESS True)
 # compiler option
 if (MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -23,17 +26,34 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/basic)
 include_directories(${PROJECT_SOURCE_DIR}/net)
 # utils
 include_directories(${PROJECT_SOURCE_DIR}/utils)
+# cl
+if (LOAD_SIMCL)
+	set(OpenCL_ROOT "D:/home/3rdparty/opencl/opencl")
+	set(OpenCL_INCLUDE_DIR "${OpenCL_ROOT}/include")
+        set(OpenCL_LIBRARIES "${OpenCL_ROOT}/lib/OpenCL.lib")
+        message(STATUS "OpenCL_LIBRARIES=${OpenCL_LIBRARIES}")
+	include_directories(${OpenCL_INCLUDE_DIR})
+	add_subdirectory(${PROJECT_SOURCE_DIR}/simcl)
+        # test cl
+	add_executable(test_simcl test/test_simcl.cpp)
+        target_link_libraries(test_simcl SIMCL ${OpenCL_LIBRARIES})
+endif()
 # improcess
-if (MSVC)
-    set(JPEG_ROOT "D:/home/3rdparty/libjpeg")
+if (LOAD_IMPROCESS)
+    if (MSVC)
+        set(JPEG_ROOT "D:/home/3rdparty/libjpeg")
+    endif()
+    find_package(JPEG REQUIRED)
+    if (JPEG_FOUND)
+        include_directories(${JPEG_INCLUDE_DIR})
+        message(STATUS "JPEG_INCLUDE_DIR=${JPEG_INCLUDE_DIR}")
+        message(STATUS "JPEG_LIBRARIES=${JPEG_LIBRARIES}")
+    endif()
+    add_subdirectory(${PROJECT_SOURCE_DIR}/improcess)
+    # test improcess
+    add_executable(test_improcess test/test_improcess.cpp)
+    target_link_libraries(test_improcess IMPROCESS BASIC ${JPEG_LIBRARIES})
 endif()
-find_package(JPEG REQUIRED)
-if (JPEG_FOUND)
-    include_directories(${JPEG_INCLUDE_DIR})
-    message(STATUS "JPEG_INCLUDE_DIR=${JPEG_INCLUDE_DIR}")
-    message(STATUS "JPEG_LIBRARIES=${JPEG_LIBRARIES}")
-endif()
-add_subdirectory(${PROJECT_SOURCE_DIR}/improcess)
 # fluid
 add_subdirectory(${PROJECT_SOURCE_DIR}/fluid)
 # test
@@ -48,9 +68,6 @@ target_link_libraries(test_dl BASIC)
 # test simd
 add_executable(test_simd test/test_simd.cpp)
 target_link_libraries(test_simd BASIC)
-# test improcess
-add_executable(test_improcess test/test_improcess.cpp)
-target_link_libraries(test_improcess IMPROCESS BASIC ${JPEG_LIBRARIES})
 # test fluid
 add_executable(test_fluid test/test_lbm.cpp)
 #target_link_libraries(test_lbm FLUID BASIC)

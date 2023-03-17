@@ -29,4 +29,5 @@ class Conv2d;
 class MaxPooling2d;
 class AvgPooling2d;
 class ResidualConv2d;
+class NMS;
 #endif // LAYERDEF_H

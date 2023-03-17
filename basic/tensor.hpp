@@ -100,7 +100,7 @@ public:
         val = std::vector<T, Alloc<T> >(totalSize, 0);
     }
 
-    /* copy construct */
+    /* copy constructor */
     Tensor_(const Tensor_ &r)
         :totalSize(r.totalSize),shape(r.shape),sizes(r.sizes),val(r.val){}
 
@@ -202,7 +202,7 @@ public:
         x.fill(1);
         return x;
     }
-    /* sub set */
+    /* subset */
     template<typename ...Index>
     Tensor_ sub(Index ...index) const
     {
@@ -499,8 +499,6 @@ public:
     template<typename ...Index>
     T sum(Index ...index) const
     {
-        int indexes[] = {index...};
-        std::size_t N = sizeof ...(Index);
         std::size_t totalsize = size(index...);
         std::size_t pos = posOf(index...);
         T s = 0;
@@ -698,7 +696,7 @@ public:
             for (std::size_t i = 0; i < x.shape[0]; i++) {
                 for (std::size_t k = 0; k < x1.shape[0]; k++) {
                     for (std::size_t j = 0; j < x.shape[1]; j++) {
-                        /* (i, j) = (k, i)^T * (k, j)^T */
+                        /* (i, j) = (k, i)^T * (k, j) */
                         x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i]*x2.val[k*x2.shape[1] + j];
                     }
                 }

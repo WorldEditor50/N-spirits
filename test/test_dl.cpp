@@ -236,12 +236,14 @@ void test_lenet5()
 
 void test_mnist()
 {
-    using LeNet5 = Net<Conv2d, MaxPooling2d,
-                       Conv2d, MaxPooling2d,
+    using LeNet5 = Net<Conv2d, NMS, MaxPooling2d,
+                       Conv2d, NMS, MaxPooling2d,
                        FcLayer, LayerNorm, FcLayer>;
     LeNet5 lenet5(Conv2d(1, 28, 28, 6, 5, 1, 0, false, ACTIVE_LEAKRELU),
+                  NMS(6, 24, 24),
                   MaxPooling2d(6, 24, 24, 2, 2),
                   Conv2d(6, 12, 12, 16, 5, 1, 0, false, ACTIVE_LEAKRELU),
+                  NMS(16, 8, 8),
                   MaxPooling2d(16, 8, 8, 2, 2),
                   FcLayer(16*4*4, 120, true, ACTIVE_TANH),
                   LayerNorm(120, 84, true, ACTIVE_SIGMOID),
@@ -298,31 +300,36 @@ void test_mnist()
 
 void test_lstm()
 {
-    using LSTMNET = Net<LSTM, FcLayer, LayerNorm, FcLayer>;
+    using LSTMNET = Net<LSTM,
+                        FcLayer, LayerNorm, FcLayer, LayerNorm,
+                        FcLayer>;
+    LSTMNET lstm(LSTM(4, 16, 16),
+                 FcLayer(16, 16, true, ACTIVE_TANH),
+                 LayerNorm(16, 16, true, ACTIVE_SIGMOID),
+                 FcLayer(16, 16, true, ACTIVE_TANH),
+                 LayerNorm(16, 16, true, ACTIVE_SIGMOID),
+                 FcLayer(16, 1, true, ACTIVE_LINEAR));
 
-    LSTMNET lstm(LSTM(4, 64, 64),
-                 FcLayer(64, 64, true, ACTIVE_TANH),
-                 LayerNorm(64, 64, true, ACTIVE_SIGMOID),
-                 FcLayer(64, 1, true, ACTIVE_LINEAR));
-
-    Optimizer<LSTMNET, Optimize::RMSProp> optimizer(lstm, 1e-4);
+    Optimizer<LSTMNET, Optimize::RMSProp> optimizer(lstm, 1e-3);
     /* data */
     std::size_t N = 1000;
     std::vector<Tensor> x(N, Tensor(4, 1));
     std::vector<Tensor> yt(N, Tensor(1, 1));
     for (std::size_t i = 0; i < N; i++) {
         Statistics::uniform(x[i], -1, 1);
-        /* f(x1, x2, x3, x4) = exp(x1+x2+x3+x4) * sin(x1+x2+x3+x4) */
+        /* f(x1, x2, x3, x4) = exp((x1+x2+x3+x4)^2) * sin((x1+x2+x3+x4)^2) */
         float s = x[i].sum();
         yt[i][0] = std::exp(s)*std::sin(s);
         //yt[i][0] = x[i][0]*x[i][0] + x[i][1]*x[i][1] + x[i][2]*x[i][2] + x[i][3]*x[i][3];
     }
     /* train */
+    std::random_device device;
+    std::default_random_engine engine(device());
     std::uniform_int_distribution<int> distribution(0, N - 1);
     for (std::size_t epoch = 0; epoch < 5000; epoch++) {
         for (std::size_t i = 0; i < 16; i++) {
             /* forward */
-            int k = distribution(Statistics::engine);
+            int k = distribution(engine);
             Tensor& y = lstm(x[k]);
             /* loss */
             Tensor loss = Loss::MSE(y, yt[k]);
@@ -333,8 +340,9 @@ void test_lstm()
         optimizer.update();
     }
     /* predict */
+    std::get<0>(lstm.layers).reset();
     for (std::size_t i = 0; i < 16; i++) {
-        int k = distribution(Statistics::engine);
+        int k = distribution(engine);
         Tensor& y = lstm(x[k]);
         float error = Statistics::Norm::l2(y, yt[k]);
         std::cout<<"target="<<yt[k][0]<<", predict="<<y[0]<<", error="<<error<<std::endl;

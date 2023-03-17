@@ -5,6 +5,7 @@
 #include <array>
 #include "../basic/tensor.hpp"
 #include "../basic/statistics.h"
+#include "physics.hpp"
 
 /*
         reference:
@@ -146,6 +147,18 @@ Tensord D2Q9::e({9, 2}, {0, 0,  1,  0, 0, 1,
 */
 
 #define LBM_MRT 1
+
+/*
+
+    Re = ρ*v*d/μ
+    ρ: density
+    v: velocity
+    d: size of Obstacle
+    μ: fluid viscosity
+
+    laminar flow: Re < 2300
+    turbulent flow: Re > 4000
+*/
 template <typename Object>
 class LBM2d
 {
@@ -163,8 +176,6 @@ public:
 public:
     int nx;
     int ny;
-    double re;
-    double uLB;
     /* viscosity of fluid */
     double niu;
     double tau;
@@ -237,6 +248,7 @@ public:
         }
 
     }
+
     double feq(int i, int j, int k)
     {
         double u = vel(i, j, 0);

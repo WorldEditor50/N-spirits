@@ -266,9 +266,10 @@ public:
         }
         /* activate */
         Active::func[activeType].f(o);
-        /* NMS */
+#if 0
         float _max = std::abs(o.max());
         o /= _max;
+#endif
         return o;
     }
 
@@ -557,5 +558,58 @@ public:
         return c2;
     }
 };
+
+
+class NMS: public Conv2dParam
+{
+public:
+    using ParamType = Conv2dParam;
+    /* grad */
+    class Grad : public Conv2dParam
+    {
+    public:
+        Tensor delta;
+    public:
+        Grad(){}
+        explicit Grad(const Conv2dParam &param)
+            :Conv2dParam(param)
+        {
+            delta = Tensor(inChannels, hi, wi);
+        }
+        void backward(NMS &layer, Tensor &delta_)
+        {
+            delta_ = delta;
+            return;
+        }
+        /* no gradient */
+        void eval(const Tensor &, const Tensor &){}
+    };
+    /* optimizer */
+    template<typename Optimizer>
+    class OptimizeBlock
+    {
+    public:
+        OptimizeBlock(){}
+        explicit OptimizeBlock(const NMS &){}
+        void operator()(NMS&, Grad&, float){}
+    };
+public:
+    Tensor o;
+public:
+    NMS(){}
+    explicit NMS(int inChannels_, int h, int w)
+        :Conv2dParam(inChannels_, h, w, inChannels_, 0, 0, 0, false)
+    {
+        o = Tensor(inChannels, hi, wi);
+    }
+    Tensor& forward(const Tensor &x)
+    {
+        float max_ = x.max();
+        o = x / max_;
+        return o;
+    }
+
+};
+
 
 #endif // CONV2D_HPP
