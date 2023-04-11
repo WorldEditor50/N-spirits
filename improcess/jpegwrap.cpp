@@ -1,18 +1,18 @@
 #include "jpegwrap.h"
 
-void improcess::Jpeg::errorNotify(j_common_ptr cinfo)
+void imp::Jpeg::errorNotify(j_common_ptr cinfo)
 {
-    improcess::Jpeg::Error *error = (improcess::Jpeg::Error*) cinfo->err;
+    imp::Jpeg::Error *error = (imp::Jpeg::Error*) cinfo->err;
     (*cinfo->err->output_message) (cinfo);
     longjmp(error->setjmp_buffer, 1);
     return;
 }
 
-int improcess::Jpeg::encode(uint8_t*& jpeg, std::size_t &totalsize,
+int imp::Jpeg::encode(uint8_t*& jpeg, std::size_t &totalsize,
                             uint8_t* rgb, int w, int h, int rowstride, int quality)
 {
     struct jpeg_compress_struct cinfo;
-    improcess::Jpeg::Error jpegError;
+    imp::Jpeg::Error jpegError;
     JSAMPROW row_pointer[1];
     cinfo.err = jpeg_std_error(&jpegError.pub);
     jpegError.pub.error_exit = errorNotify;
@@ -40,14 +40,14 @@ int improcess::Jpeg::encode(uint8_t*& jpeg, std::size_t &totalsize,
     return 0;
 }
 
-int improcess::Jpeg::decode(uint8_t *rgb, int &w, int &h,
+int imp::Jpeg::decode(uint8_t *rgb, int &w, int &h,
                             uint8_t *jpeg, std::size_t totalsize, int scale, int align)
 {
     if (jpeg == nullptr || totalsize == 0) {
         return -1;
     }
     struct jpeg_decompress_struct cinfo;
-    improcess::Jpeg::Error jpegError;
+    imp::Jpeg::Error jpegError;
     cinfo.err = jpeg_std_error(&jpegError.pub);
     jpegError.pub.error_exit = errorNotify;
     if (setjmp(jpegError.setjmp_buffer)) {
@@ -64,7 +64,7 @@ int improcess::Jpeg::decode(uint8_t *rgb, int &w, int &h,
     }
     int rowstride = cinfo.output_width * cinfo.output_components;
     if (align == ALIGN_4) {
-        rowstride = improcess::Jpeg::align4(cinfo.output_width, cinfo.output_components);
+        rowstride = imp::Jpeg::align4(cinfo.output_width, cinfo.output_components);
     }
     w = cinfo.output_width;
     h = cinfo.output_height;
@@ -92,7 +92,7 @@ int improcess::Jpeg::decode(uint8_t *rgb, int &w, int &h,
     return 0;
 }
 
-int improcess::Jpeg::load(const char *filename, std::shared_ptr<uint8_t[]> &img, int &h, int &w, int &c)
+int imp::Jpeg::load(const char *filename, std::shared_ptr<uint8_t[]> &img, int &h, int &w, int &c)
 {
     /* This struct contains the JPEG decompression parameters and pointers to
      * working space (which is allocated as needed by the JPEG library).
@@ -102,7 +102,7 @@ int improcess::Jpeg::load(const char *filename, std::shared_ptr<uint8_t[]> &img,
      * Note that this struct must live as long as the main JPEG parameter
      * struct, to avoid dangling-pointer problems.
      */
-    improcess::Jpeg::Error jerr;
+    imp::Jpeg::Error jerr;
     /* More stuff */
     FILE * infile;		/* source file */
     JSAMPARRAY buffer;		/* Output row buffer */
@@ -225,7 +225,7 @@ int improcess::Jpeg::load(const char *filename, std::shared_ptr<uint8_t[]> &img,
     return 0;
 }
 
-int improcess::Jpeg::save(const char *filename, uint8_t *img, int h, int w, int c, int quality)
+int imp::Jpeg::save(const char *filename, uint8_t *img, int h, int w, int c, int quality)
 {
     /* This struct contains the JPEG compression parameters and pointers to
      * working space (which is allocated as needed by the JPEG library).

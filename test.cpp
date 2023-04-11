@@ -6,6 +6,7 @@
 #include "basic/tensor.hpp"
 #include "basic/complexnumber.h"
 #include "basic/statistics.h"
+#include "basic/fft.h"
 #include "utils/csv.h"
 #include "utils/dataset.h"
 #include "utils/clock.hpp"
@@ -392,7 +393,6 @@ int main()
 #endif
     test_tensor();
     std::cout<<"size of tensor = "<<sizeof (Tensor)<<std::endl;
-
     return 0;
 }
 

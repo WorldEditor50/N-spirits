@@ -2,7 +2,7 @@
 #define GEOMETRYTRANSFORM_H
 #include "image.hpp"
 
-namespace improcess {
+namespace imp {
 
 /* geometry */
 int move(const Tensor &x, const Point2i &offset, Tensor &y);

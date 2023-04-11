@@ -3,6 +3,7 @@
 #include <immintrin.h>
 #include <vector>
 #include <cmath>
+#include <iostream>
 #include "basic_def.h"
 
 namespace simd {
@@ -855,67 +856,67 @@ struct AVX2 {
 
         // step 3: get x / sum and store
         for (int i = 0; i < count; ++i) {
-        // using  1 / ((1 / x) * sum) instead x * (1 / sum) or x / sum for some bugs
-        // in intel cpu
-        auto x = _mm256_rcp_ps(_mm256_loadu_ps(dest + 8 * i));
-        auto y = _mm256_set1_ps(sumValue);
-        auto z = _mm256_rcp_ps(_mm256_mul_ps(x, y));
-        _mm256_storeu_ps(dest + 8 * i, z);
+            // using  1 / ((1 / x) * sum) instead x * (1 / sum) or x / sum for some bugs
+            // in intel cpu
+            auto x = _mm256_rcp_ps(_mm256_loadu_ps(dest + 8 * i));
+            auto y = _mm256_set1_ps(sumValue);
+            auto z = _mm256_rcp_ps(_mm256_mul_ps(x, y));
+            _mm256_storeu_ps(dest + 8 * i, z);
         }
     }
 
     inline static void gelu(float* dst, const float* src, size_t size)
     {
-      auto var1 = _mm256_set1_ps(0.044715f);
-      auto var2 = _mm256_set1_ps(0.79788458f);
-      auto var3 = _mm256_set1_ps(378.f);
-      auto var4 = _mm256_set1_ps(17325.f);
-      auto var5 = _mm256_set1_ps(135135.f);
-      auto var6 = _mm256_set1_ps(28.f);
-      auto var7 = _mm256_set1_ps(3150.f);
-      auto var8 = _mm256_set1_ps(62370.f);
-      auto var9 = _mm256_set1_ps(135135.f);
-      auto var10 = _mm256_set1_ps(0.5);
-      auto varOne = _mm256_set1_ps(1.f);
-      auto varNegOne = _mm256_set1_ps(-1.f);
+        auto var1 = _mm256_set1_ps(0.044715f);
+        auto var2 = _mm256_set1_ps(0.79788458f);
+        auto var3 = _mm256_set1_ps(378.f);
+        auto var4 = _mm256_set1_ps(17325.f);
+        auto var5 = _mm256_set1_ps(135135.f);
+        auto var6 = _mm256_set1_ps(28.f);
+        auto var7 = _mm256_set1_ps(3150.f);
+        auto var8 = _mm256_set1_ps(62370.f);
+        auto var9 = _mm256_set1_ps(135135.f);
+        auto var10 = _mm256_set1_ps(0.5);
+        auto varOne = _mm256_set1_ps(1.f);
+        auto varNegOne = _mm256_set1_ps(-1.f);
 
-      for (int i = 0; i < size; i++) {
-        // x^3
-        auto x = _mm256_loadu_ps(src + i * 8);
-        auto y = _mm256_mul_ps(x, x);
-        y = _mm256_mul_ps(y, x);
-        // 0.044715 * x^3
-        y = _mm256_mul_ps(y, var1);
-        // 0.044715 * x^3 + x
-        y = _mm256_add_ps(y, x);
-        // sqrt(2 / PI) * (0.044715 * x^3 + x)
-        y = _mm256_mul_ps(y, var2);
+        for (int i = 0; i < size; i++) {
+            // x^3
+            auto x = _mm256_loadu_ps(src + i * 8);
+            auto y = _mm256_mul_ps(x, x);
+            y = _mm256_mul_ps(y, x);
+            // 0.044715 * x^3
+            y = _mm256_mul_ps(y, var1);
+            // 0.044715 * x^3 + x
+            y = _mm256_add_ps(y, x);
+            // sqrt(2 / PI) * (0.044715 * x^3 + x)
+            y = _mm256_mul_ps(y, var2);
 
-        // y = tanh(y)
-        {
-          auto y2 = _mm256_mul_ps(y, y);
-          auto w = _mm256_add_ps(y2, var3);
-          w = _mm256_mul_ps(w, y2);
-          w = _mm256_add_ps(w, var4);
-          w = _mm256_mul_ps(w, y2);
-          w = _mm256_add_ps(w, var5);
-          w = _mm256_mul_ps(w, y);
-          auto z = _mm256_mul_ps(y2, var6);
-          z = _mm256_add_ps(z, var7);
-          z = _mm256_mul_ps(z, y2);
-          z = _mm256_add_ps(z, var8);
-          z = _mm256_mul_ps(z, y2);
-          z = _mm256_add_ps(z, var9);
-          z = _mm256_div_ps(w, z);
-          z = _mm256_max_ps(z, varNegOne);
-          y = _mm256_min_ps(z, varOne);
+            // y = tanh(y)
+            {
+              auto y2 = _mm256_mul_ps(y, y);
+              auto w = _mm256_add_ps(y2, var3);
+              w = _mm256_mul_ps(w, y2);
+              w = _mm256_add_ps(w, var4);
+              w = _mm256_mul_ps(w, y2);
+              w = _mm256_add_ps(w, var5);
+              w = _mm256_mul_ps(w, y);
+              auto z = _mm256_mul_ps(y2, var6);
+              z = _mm256_add_ps(z, var7);
+              z = _mm256_mul_ps(z, y2);
+              z = _mm256_add_ps(z, var8);
+              z = _mm256_mul_ps(z, y2);
+              z = _mm256_add_ps(z, var9);
+              z = _mm256_div_ps(w, z);
+              z = _mm256_max_ps(z, varNegOne);
+              y = _mm256_min_ps(z, varOne);
+            }
+
+            y = _mm256_add_ps(y, varOne);
+            y = _mm256_mul_ps(y, x);
+            y = _mm256_mul_ps(y, var10);
+            _mm256_storeu_ps(dst + i * 8, y);
         }
-
-        y = _mm256_add_ps(y, varOne);
-        y = _mm256_mul_ps(y, x);
-        y = _mm256_mul_ps(y, var10);
-        _mm256_storeu_ps(dst + i * 8, y);
-      }
     }
 
     inline static double dot(const double* __restrict x1, const double* __restrict x2, std::size_t N)
@@ -1528,7 +1529,7 @@ struct AVX2 {
                         _mm256_storeu_ps(z_ + i*xCol + j, vecz);
                     }
                     for (std::size_t j = zCol - r; j < zCol; j++) {
-                        z_[i*zCol + j] += xik * y_[k*yCol + j];
+                        z_[i*xCol + j] += xik * y_[k*yCol + j];
                     }
                 }
             }

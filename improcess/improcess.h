@@ -7,15 +7,19 @@
 #include "bmp.hpp"
 #include "ppm.hpp"
 #include "image.hpp"
+#include "graphic.h"
+#include "geometrytransform.h"
+#include "filter.h"
 
-
-namespace improcess {
+namespace imp {
 
     /* tensor shape: (h, w, c) */
-    int load(const std::string &fileName, Tensor &img);
-    int save(const std::string &fileName, const Tensor &img);
+    Tensor load(const std::string &fileName);
+    int save(const Tensor &img, const std::string &fileName);
+    Tensor toTensor(int h, int w, int c, std::shared_ptr<uint8_t[]> &img);
     int fromTensor(const Tensor &x, std::shared_ptr<uint8_t[]> &img);
     std::unique_ptr<uint8_t[]> fromTensor(const Tensor &x);
+    std::shared_ptr<imp::uint8_t[]> tensor2Rgb(const Tensor &x);
     /* gray */
     int rgb2gray(const Tensor& rgb, Tensor &gray);
     int gray2rgb(const Tensor& gray, Tensor &rgb);

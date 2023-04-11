@@ -16,7 +16,7 @@
 */
 
 
-namespace improcess {
+namespace imp {
 #ifndef uint8_t
 using uint8_t = unsigned char;
 #endif

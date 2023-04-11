@@ -2,7 +2,7 @@
 #define LINEARTRANSFORM_H
 #include "image.hpp"
 
-namespace improcess {
+namespace imp {
 
 /* histogram */
 int histogram1(const Tensor& gray, Tensor &hist);

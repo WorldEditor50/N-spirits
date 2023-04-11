@@ -5,6 +5,19 @@
 #include "../basic/statistics.h"
 #include "../utils/clock.hpp"
 
+double correct(const Tensor &x1, const Tensor &x2)
+{
+    double N = x1.totalSize;
+    double n = 0;
+    for (std::size_t i = 0; i < N; i++) {
+        if (std::abs(x1[i] - x2[i]) < 1e-2) {
+            n++;
+        } else {
+            //std::cout<<"error:"<<x1[i]<<" "<<x2[i]<<std::endl;
+        }
+    }
+    return n/N*100;
+}
 void test_simd_matmul()
 {
 #if defined(__AVX2__)
@@ -25,53 +38,67 @@ void test_simd_matmul()
     Tensor x2(N, N);
     Statistics::uniform(x1, -9, 9);
     Statistics::uniform(x2, -9, 9);
+    /* trivial matmul */
+    {
+        x.zero();
+        Tensorf x3(N, N);
+        Tensorf xt1(N, N);
+        Tensorf xt2(N, N);
+        for (std::size_t i = 0; i < x1.totalSize; i++) {
+            xt1[i] = x1[i];
+            xt2[i] = x2[i];
+        }
+        auto t1 = Clock::tiktok();
+        Tensorf::Mul::ikkj(x3, xt1, xt2);
+        auto t2 = Clock::tiktok();
+        double cost = Clock::duration(t2, t1);
+        std::cout<<"trivial matmul cost:"<<cost<<"s"<<std::endl;
+        for (std::size_t i = 0; i < x.totalSize; i++) {
+            x[i] = x3[i];
+        }
+        //x3.printValue();
+    }
     /* simd matmul */
     /* 8-channel */
     {
+        Tensor x3(N, N);
         auto t1 = Clock::tiktok();
-        simd::AVX2::matMul(x.ptr(), x.shape[0], x.shape[1],
+        simd::AVX2::matMul(x3.ptr(), x3.shape[0], x3.shape[1],
                            x1.ptr(), x1.shape[0], x1.shape[1],
                            x2.ptr(), x2.shape[0], x2.shape[1]);
         auto t2 = Clock::tiktok();
         double cost = Clock::duration(t2, t1);
         std::cout<<"simd matmul8 cost:"<<cost<<"s"<<std::endl;
-        //x.printValue();
+        std::cout<<"simd matmul8 correct rate:"<<correct(x, x3)<<"%"<<std::endl;
+        //x3.printValue();
     }
 
     /* 64 channel */
     {
-        x.zero();
+        Tensor x3(N, N);
         auto t1 = Clock::tiktok();
-        simd::AVX2::matMul64(x.ptr(), x.shape[0], x.shape[1],
+        simd::AVX2::matMul64(x3.ptr(), x3.shape[0], x3.shape[1],
                              x1.ptr(), x1.shape[0], x1.shape[1],
                              x2.ptr(), x2.shape[0], x2.shape[1]);
         auto t2 = Clock::tiktok();
         double cost = Clock::duration(t2, t1);
         std::cout<<"simd matmul64 cost:"<<cost<<"s"<<std::endl;
-        //x.printValue();
+        std::cout<<"simd matmul64 correct rate:"<<correct(x, x3)<<"%"<<std::endl;
+        //x3.printValue();
     }
 
     /* 8-channel wrapper */
     {
-        x.zero();
+        Tensor x3(N, N);
         auto t1 = Clock::tiktok();
-        simd::wrap<float, simd::AVX>::matMul(x.ptr(), x.shape[0], x.shape[1],
+        simd::wrap<float, simd::AVX>::matMul(x3.ptr(), x3.shape[0], x3.shape[1],
                                              x1.ptr(), x1.shape[0], x1.shape[1],
                                              x2.ptr(), x2.shape[0], x2.shape[1]);
         auto t2 = Clock::tiktok();
         double cost = Clock::duration(t2, t1);
         std::cout<<"avx2 wrapper matmul cost:"<<cost<<"s"<<std::endl;
-        //x.printValue();
-    }
-    /* trivial matmul */
-    {
-        x.zero();
-        auto t1 = Clock::tiktok();
-        Tensor::Mul::ikkj(x, x1, x2);
-        auto t2 = Clock::tiktok();
-        double cost = Clock::duration(t2, t1);
-        std::cout<<"trivial matmul cost:"<<cost<<"s"<<std::endl;
-        //x.printValue();
+        std::cout<<"avx2 wrapper matmul correct rate:"<<correct(x, x3)<<"%"<<std::endl;
+        //x3.printValue();
     }
 #endif
     return;
@@ -170,8 +197,23 @@ void test_simd_transpose()
 
 int main()
 {
-    test_simd();
-    test_simd_matmul();
-    test_simd_transpose();
+    //test_simd();
+    //test_simd_matmul();
+    //test_simd_transpose();
+    int N = 128;
+    Tensor x(1, N);
+    Tensor x1(N, N);
+    Tensor x2(N, 1);
+    Statistics::uniform(x1, -9, 9);
+    Statistics::uniform(x2, -9, 9);
+    for (std::size_t i = 0; i < 4; i++) {
+        x.zero();
+        Tensor::Mul::ikkj(x, x1, x2);
+    }
+    Tensor x3(N, N);
+    Tensor::Mul::ikkj(x3, x1, x2);
+    std::cout<<"correct rate:"<<correct(x, x3)<<std::endl;
+    //x.printValue();
+    //x3.printValue();
 	return 0;
 }

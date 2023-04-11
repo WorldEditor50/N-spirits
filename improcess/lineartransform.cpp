@@ -1,7 +1,7 @@
 #include "lineartransform.h"
 
 
-int improcess::histogram1(const Tensor &gray, Tensor &hist)
+int imp::histogram1(const Tensor &gray, Tensor &hist)
 {
     if (isGray(gray) == false) {
         return -1;
@@ -16,7 +16,7 @@ int improcess::histogram1(const Tensor &gray, Tensor &hist)
     return 0;
 }
 
-int improcess::histogram3(const Tensor &rgb, Tensor &hist)
+int imp::histogram3(const Tensor &rgb, Tensor &hist)
 {
     hist = Tensor(3, 256);
     for (int i = 0; i < rgb.shape[HWC_H]; i++) {
@@ -34,7 +34,7 @@ int improcess::histogram3(const Tensor &rgb, Tensor &hist)
     return 0;
 }
 
-int improcess::linearTransform(const Tensor &x, float alpha, float beta, Tensor &y)
+int imp::linearTransform(const Tensor &x, float alpha, float beta, Tensor &y)
 {
     if (isGray(x) == false) {
         return -1;
@@ -46,7 +46,7 @@ int improcess::linearTransform(const Tensor &x, float alpha, float beta, Tensor 
     return 0;
 }
 
-int improcess::logTransform(const Tensor &x, float c, Tensor &y)
+int imp::logTransform(const Tensor &x, float c, Tensor &y)
 {
     if (isGray(x) == false) {
         return -1;
@@ -58,7 +58,7 @@ int improcess::logTransform(const Tensor &x, float c, Tensor &y)
     return 0;
 }
 
-int improcess::gammaTransform(const Tensor &x, float esp, float gamma, Tensor &y)
+int imp::gammaTransform(const Tensor &x, float esp, float gamma, Tensor &y)
 {
     if (isGray(x) == false) {
         return -1;
@@ -71,7 +71,7 @@ int improcess::gammaTransform(const Tensor &x, float esp, float gamma, Tensor &y
     return 0;
 }
 
-int improcess::threshold(const Tensor &x, float thres, float max_, float min_, Tensor &y)
+int imp::threshold(const Tensor &x, float thres, float max_, float min_, Tensor &y)
 {
     if (isGray(x) == false) {
         return -1;
@@ -87,7 +87,7 @@ int improcess::threshold(const Tensor &x, float thres, float max_, float min_, T
     return 0;
 }
 
-int improcess::histogramEqualize(const Tensor &x, Tensor &y)
+int imp::histogramEqualize(const Tensor &x, Tensor &y)
 {
     if (isGray(x) == false) {
         return -1;

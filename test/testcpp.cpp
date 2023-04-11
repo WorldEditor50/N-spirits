@@ -17,6 +17,7 @@ struct Person {
         return;
     }
 };
+
 struct Stu {
     std::string name;
     int rank;

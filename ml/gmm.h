@@ -10,16 +10,16 @@ public:
     class Gaussian
     {
     public:
-        Mat u;
-        Mat sigma;
+        Tensor u;
+        Tensor sigma;
     public:
         Gaussian(){}
         Gaussian(std::size_t featureDim)
         {
-            u = Mat(featureDim, 1);
-            sigma = Mat(featureDim, 1);
+            u = Tensor(featureDim, 1);
+            sigma = Tensor(featureDim, 1);
         }
-        float operator()(const Mat &x)
+        float operator()(const Tensor &x)
         {
             /* N(x;u,sigma) = exp((x-u)^2/sigma)/sqrt(2*pi*sigma) */
             float p = 1;
@@ -39,19 +39,19 @@ public:
 public:
     std::size_t componentDim;
     std::size_t featureDim;
-    Mat priors;
-    Mat minSigma;
+    Tensor priors;
+    Tensor minSigma;
     std::vector<Gaussian> gaussians;
 public:
     GMM():componentDim(0), featureDim(0){}
     explicit GMM(std::size_t k, std::size_t featureDim_)
         :componentDim(k), featureDim(featureDim_)
     {
-        priors = Mat(componentDim, 1);
-        minSigma = Mat(componentDim, 1);
+        priors = Tensor(componentDim, 1);
+        minSigma = Tensor(componentDim, 1);
         gaussians = std::vector<Gaussian>(componentDim, Gaussian(featureDim));
     }
-    void init(const std::vector<Mat> &x, std::size_t maxEpoch)
+    void init(const std::vector<Tensor> &x, std::size_t maxEpoch)
     {
         /* run kmeans to select centers */
         KMeans model(componentDim);
@@ -59,7 +59,7 @@ public:
         std::vector<std::size_t> y;
         model(x, y);
         /* mean of all data */
-        Mat u(componentDim, 1);
+        Tensor u(componentDim, 1);
         for (std::size_t i = 0; i < x.size(); i++) {
             u += x[i];
         }
@@ -73,7 +73,7 @@ public:
             minSigma[i] = std::max(1e-10, 0.01*(minSigma[i]/float(x.size()) - u[i]*u[i]));
         }
         /* prior of each topic */
-        Mat N(componentDim, 1);
+        Tensor N(componentDim, 1);
         for (std::size_t i = 0; i < x.size(); i++) {
             std::size_t topic = y[i];
             N[topic]++;
@@ -88,7 +88,7 @@ public:
         /* variance of each topic */
         for (std::size_t i = 0; i < x.size(); i++) {
             std::size_t topic = y[i];
-            Mat& uc = model.centers[topic];
+            Tensor& uc = model.centers[topic];
             for (std::size_t j = 0; j < gaussians[topic].sigma.totalSize; j++) {
                 gaussians[topic].sigma[j] += (x[i][j] - uc[j])*(x[i][j] - uc[j]);
             }
@@ -109,12 +109,12 @@ public:
         return;
     }
 
-    void cluster(const std::vector<Mat> &x, std::size_t maxEpoch, float eps)
+    void cluster(const std::vector<Tensor> &x, std::size_t maxEpoch, float eps)
     {
         /* init */
         init(x, maxEpoch);
-        /* estimate */
-        Mat priors_(componentDim, 1);
+        /* estiTensore */
+        Tensor priors_(componentDim, 1);
         std::vector<Gaussian> s(x.size(), Gaussian(featureDim));
         for (std::size_t epoch = 0; epoch < maxEpoch; epoch++) {
             for (std::size_t i = 0; i < s.size(); i++) {
@@ -154,7 +154,7 @@ public:
                 if (priors[i] <= 0) {
                     continue;
                 }
-                Mat& u = gaussians[i].u;
+                Tensor& u = gaussians[i].u;
                 for (std::size_t j = 0; j < u.totalSize; j++) {
                     u[j] = s[i].u[j]/priors_[i];
                     /* Cov(X，Y)=E(XY)-E(X)E(Y) */
@@ -168,7 +168,7 @@ public:
         return;
     }
 
-    std::size_t operator()(const Mat &x)
+    std::size_t operator()(const Tensor &x)
     {
         float maxP = -1;
         std::size_t topic = 0;

@@ -5,7 +5,7 @@
 #include <memory>
 #include <sstream>
 #include <iostream>
-namespace improcess {
+namespace imp {
 
 /*
     +---------------

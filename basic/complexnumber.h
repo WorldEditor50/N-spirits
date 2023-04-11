@@ -12,6 +12,13 @@ public:
     Complex():re(0),im(0){}
     explicit Complex(float r, float i)
         :re(r),im(i){}
+    explicit Complex(float value):re(value),im(value){}
+    Complex& operator()(float value)
+    {
+        im = value;
+        re = value;
+        return *this;
+    }
     static Complex fromPolor(float rho, float theta)
     {
         Complex c;

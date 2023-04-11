@@ -6,9 +6,9 @@
 
 int main()
 {
-    int W = 100;
-    int H = 100;
-    int R = 6;
+    int W = 640;
+    int H = 480;
+    int R = 12;
     Cylinder cylinder(H/2, W/5, R);
     Square square(H/2, W/5, R);
     Cross cr(H/2, W/5, R);
@@ -25,21 +25,22 @@ int main()
                                           0.0, 0.1}));
 
     std::shared_ptr<uint8_t[]> rgb = nullptr;
-    std::size_t totalsize = improcess::BMP::size(H, W, 3);
+    std::size_t totalsize = imp::BMP::size(H, W, 3);
     std::shared_ptr<uint8_t[]> bmp(new uint8_t[totalsize]);
-    std::size_t N = 20000;
+    std::size_t N = 2000;
     lbm.solve(N, {0.8, 0.1, 0.1}, // color scaler
               [&](std::size_t i, Tensor &img){
 
         if (i % 20 == 0) {
-            std::string fileName = "./cylinder3/cylinder_" + std::to_string(i/20) + ".bmp";
-            improcess::fromTensor(img, rgb);
+            std::string fileName = "./cylinder4/cylinder_" + std::to_string(i/20) + ".bmp";
+            imp::fromTensor(img, rgb);
 #if 0
             improcess::Jpeg::save(fileName.c_str(),
                                   rgb.get(),
                                   img.shape[0], img.shape[1], img.shape[2]);
+#else
+            imp::BMP::save(fileName, bmp, totalsize, rgb, H, W);
 #endif
-            improcess::BMP::save(fileName, bmp, totalsize, rgb, H, W);
             std::cout<<"progress:"<<i<<"-->"<<N<<std::endl;
         }
 

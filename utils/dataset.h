@@ -32,6 +32,19 @@ public:
         }
         return 0;
     }
+    int load(std::vector<Tensor> &x)
+    {
+        std::string title;
+        std::vector<Vec> data;
+        int ret = CSV<Vec>::load(title, data);
+        if (ret < 0) {
+            return -1;
+        }
+        for (std::size_t i = 0; i < data.size(); i++) {
+            x.push_back(Tensor({1, int(cols)}, data[i]));
+        }
+        return 0;
+    }
 
 };
 

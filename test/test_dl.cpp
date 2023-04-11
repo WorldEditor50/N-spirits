@@ -1,4 +1,5 @@
 #include <iostream>
+#include <thread>
 #include "../dl/net.h"
 #include "../dl/optimizer.h"
 #include "../dl/layer.h"
@@ -7,6 +8,7 @@
 #include "../dl/lstm.hpp"
 #include "../utils/clock.hpp"
 #include "../utils/dataset.h"
+#include "../dl/vae.hpp"
 
 void convi(Tensori &o, const Tensori &kernels, const Tensori &x, int stride=1, int padding=1)
 {
@@ -276,6 +278,7 @@ void test_mnist()
         }
         /* update */
         optimizer.update();
+        std::cout<<"progress:---"<<epoch<<"---"<<std::endl;
     }
     auto t2 = Clock::tiktok();
     std::cout<<"lenet5 training cost:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
@@ -293,7 +296,7 @@ void test_mnist()
             count++;
         }
     }
-    std::cout<<"correct/total:"<<count/float(Nt)<<std::endl;
+    std::cout<<"accuracy:"<<count/float(Nt)<<std::endl;
     return;
 }
 
@@ -422,7 +425,7 @@ void test_vgg16()
     /*
           vgg16 forward cost:
                           @ naive conv: 194.117s
-                          @ conv with :  75.4293s
+                          @ conv with im2col:  75.4293s
     */
     auto t1 = Clock::tiktok();
     vgg16(x);
@@ -438,6 +441,7 @@ int main()
     test_lenet5();
     test_lstm();
 #endif
+    //test_bpnn();
     test_mnist();
     //test_alexnet();
     //test_vgg16();

@@ -5,7 +5,7 @@
 #include <cmath>
 #include <string>
 #include <random>
-#include "../basic/mat.h"
+#include "../basic/tensor.hpp"
 #include "../basic/statistics.h"
 
 class KMeans
@@ -13,25 +13,25 @@ class KMeans
 public:
     std::size_t topicDim;
     std::size_t featureDim;
-    std::vector<Mat> centers;
+    std::vector<Tensor> centers;
 public:
     KMeans(){}
     explicit KMeans(std::size_t k):topicDim(k),featureDim(0){}
 
-    void cluster(const std::vector<Mat> &x, std::size_t maxEpoch, float eps=1e-6)
+    void cluster(const std::vector<Tensor> &x, std::size_t maxEpoch, float eps=1e-6)
     {
         /* init center */
-        featureDim = x[0].cols;
+        featureDim = x[0].shape[1];
         std::uniform_int_distribution<int> distribution(0, x.size() - 1);
         std::default_random_engine engine;
-        centers = std::vector<Mat>(topicDim);
+        centers = std::vector<Tensor>(topicDim);
         for (std::size_t i = 0; i < centers.size(); i++) {
             int j = distribution(engine);
             centers[i] = x[j];
         }
         /* cluster */
         std::vector<std::vector<std::size_t> > groups(topicDim);
-        std::vector<Mat> centers_(topicDim, Mat(1, featureDim));
+        std::vector<Tensor> centers_(topicDim, Tensor(1, featureDim));
         for (std::size_t epoch = 0; epoch < maxEpoch; epoch++) {
             /* pick the nearest topic */
             for (std::size_t i = 0; i < x.size(); i++) {
@@ -79,7 +79,7 @@ public:
         return;
     }
 
-    void operator()(const std::vector<Mat> &x, std::vector<std::size_t> &y)
+    void operator()(const std::vector<Tensor> &x, std::vector<std::size_t> &y)
     {
         y = std::vector<std::size_t>(topicDim);
         for (std::size_t i = 0; i < x.size(); i++) {
@@ -97,7 +97,7 @@ public:
         return;
     }
 
-    std::size_t operator()(const Mat &x)
+    std::size_t operator()(const Tensor &x)
     {
         float maxD = -1;
         std::size_t topic = 0;

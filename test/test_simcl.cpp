@@ -15,7 +15,16 @@ int main()
     std::vector<float> x(1024, 0);
     ret = simcl::Compute<simcl::Mul>::eval(x.data(), x1.data(), x2.data(), 1024);
     if (ret != 0) {
-        std::cout<<"compute error="<<std::endl;
+        std::cout<<"add error="<<std::endl;
+        return -2;
+    }
+    for (std::size_t i = 0; i < 1024; i++) {
+        std::cout<<x[i]<<" ";
+    }
+    std::cout<<std::endl;
+    ret = simcl::Compute<simcl::Exp>::eval(x.data(), x1.data(), 1024);
+    if (ret != 0) {
+        std::cout<<"exp error="<<std::endl;
         return -2;
     }
     for (std::size_t i = 0; i < 1024; i++) {

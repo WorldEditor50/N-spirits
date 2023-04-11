@@ -8,9 +8,10 @@
 
 void test_kmeans()
 {
+
     /* load data */
     NumericDB db("D:/home/dataset/wine-clustering.csv");
-    std::vector<Mat> x;
+    std::vector<Tensor> x;
     db.load(x);
     /* clustering */
     KMeans model(3);
@@ -18,14 +19,17 @@ void test_kmeans()
     /* predict */
     std::size_t label = model(x[0]);
     std::cout<<"label:"<<label<<std::endl;
+#if 0
     /* project to 2d-plane */
     LinearAlgebra::PCA pca;
-    Mat x1;
+    Mat x1(x.size(), x[0].shape[1]);
+
     Mat::fromArray(x, x1);
     pca.fit(x1);
-    Mat y;
+    Tensor y;
     pca.project(x[0], 2, y);
-    y.show();
+    y.printValue();
+#endif
     return;
 }
 

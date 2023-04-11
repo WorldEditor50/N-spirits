@@ -1,10 +1,15 @@
 #ifndef CONV_HPP
 #define CONV_HPP
+#include <cmath>
 #include "../basic/tensor.hpp"
 #include "../basic/statistics.h"
 
 namespace conv {
 
+inline int out(int i, int kernelSize, int stride, int padding)
+{
+    return std::floor((i - kernelSize + 2*padding)/stride) + 1;
+}
 /* naive conv2d */
 inline void eval1(Tensor &y, const Tensor &kernels, const Tensor &x, int stride=1, int padding=0)
 {

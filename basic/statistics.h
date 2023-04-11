@@ -16,6 +16,16 @@ inline void sqrt(const T &x, T &y)
 }
 
 template<typename T>
+inline T sqrt(const T &x)
+{
+    T y(x);
+    for (std::size_t i = 0; i < x.totalSize; i++) {
+        y.val[i] = std::sqrt(x.val[i]);
+    }
+    return y;
+}
+
+template<typename T>
 inline void exp(const T &x, T &y)
 {
     for (std::size_t i = 0; i < x.totalSize; i++) {
@@ -50,6 +60,7 @@ inline void tanh(const T &x, T &y)
     }
     return;
 }
+
 template<typename T>
 inline void uniform(T &x)
 {
@@ -68,15 +79,29 @@ inline void uniform(T &x, typename T::ValueType x1, typename T::ValueType x2)
     }
     return;
 }
+
 template<typename T>
 void bernoulli(T &x, float p)
 {
     std::bernoulli_distribution distribution(p);
     for (std::size_t i = 0; i < x.totalSize; i++) {
-      x.val[i] = distribution(engine);
+        x.val[i] = distribution(engine);
     }
     return;
 }
+
+template<typename T>
+void gaussian(T &x, typename T::ValueType mu, typename T::ValueType sigma)
+{
+    std::random_device device;
+    std::default_random_engine engine(device());
+    std::normal_distribution<typename T::ValueType> distribution(mu, sigma);
+    for (std::size_t i = 0; i < x.totalSize; i++) {
+        x.val[i] = distribution(engine);
+    }
+    return;
+}
+
 template<typename T>
 inline void add(T &y, const T &x1, const T &x2)
 {

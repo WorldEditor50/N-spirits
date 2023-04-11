@@ -2,17 +2,68 @@
 #define SVM_H
 #include <iostream>
 #include <cmath>
-#include "../basic/vec.h"
-#include "../basic/kernel.h"
+#include <vector>
+#include <random>
+#include "../basic/statistics.h"
+#include "../basic/tensor.hpp"
 
-template<typename KernelF>
+
+namespace kernel {
+
+struct RBF {
+    static float f(const Tensor& x1, const Tensor& x2)
+    {
+        float sigma = 1;
+        float xL2 = Statistics::dot(x1, x1) + Statistics::dot(x2, x2) - 2*Statistics::dot(x1, x2);
+        xL2 = xL2/(-2*sigma*sigma);
+        return std::exp(xL2);
+    }
+};
+struct Laplace {
+    static float f(const Tensor& x1, const Tensor& x2)
+    {
+        float sigma = 1;
+        float xL2 = Statistics::dot(x1, x1) + Statistics::dot(x2, x2) - 2*Statistics::dot(x1, x2);
+        xL2 = -sqrt(xL2)/sigma;
+        return exp(xL2);
+    }
+};
+
+struct Sigmoid {
+    static float f(const Tensor& x1, const Tensor& x2)
+    {
+        float beta1 = 1;
+        float theta = -1;
+        return std::tanh(beta1 * Statistics::dot(x1, x2) + theta);
+    }
+};
+
+struct Polynomial {
+    static float f(const Tensor& x1, const Tensor& x2)
+    {
+        float d = 1.0;
+        float p = 100;
+        return pow(Statistics::dot(x1, x2) + d, p);
+    }
+};
+
+struct Linear {
+    static float f(const Tensor& x1, const Tensor& x2)
+    {
+        return Statistics::dot(x1, x2);
+    }
+};
+
+}
+
+template<typename Kernel>
 class SVM
 {
 public:
     struct Vector {
         float alpha;
         float y;
-        Vec x;
+        Tensor x;
     };
     float b;
     float c;
@@ -21,16 +72,16 @@ public:
 public:
     SVM():c(1),b(0),tolerance(1e-3){}
 
-    int predict(const Vec& xi)
+    int operator()(const Tensor& xi)
     {
         int label = 0.0;
-        float sum = 0.0;
-        for (int j = 0; j < vectors.size(); j++) {
-            sum += vectors[j].alpha*vectors[j].y*KernelF::f(vectors[j].x, xi);
+        float s = 0.0;
+        for (std::size_t j = 0; j < vectors.size(); j++) {
+            s += vectors[j].alpha * vectors[j].y * Kernel::f(vectors[j].x, xi);
         }
-        sum += b;
+        s += b;
         /* f(x) = sign(sum(alpha_j * yj * K(xj, x))) */
-        if (sum >= 0) {
+        if (s >= 0) {
             label = 1.0;
         } else {
             label = -1.0;
@@ -38,10 +89,10 @@ public:
         return label;
     }
 
-    void SMO(const std::vector<Vec> &x, const Vec &y, int maxEpoch)
+    void SMO(const std::vector<Tensor> &x, const Tensor &y, int maxEpoch)
     {
         int k = 0;
-        Vec alpha(x.size(), 0);
+        Tensor alpha(x.size(), 0);
         while (k < maxEpoch) {
             bool alphaOptimized = false;
             for (std::size_t i = 0; i < x.size(); i++) {
@@ -67,9 +118,9 @@ public:
                 if (L == H) {
                     continue;
                 }
-                float Kii = KernelF::f(x[i], x[i]);
-                float Kjj = KernelF::f(x[j], x[j]);
-                float Kij = KernelF::f(x[i], x[j]);
+                float Kii = Kernel::f(x[i], x[i]);
+                float Kjj = Kernel::f(x[j], x[j]);
+                float Kij = Kernel::f(x[i], x[j]);
                 float eta = Kii + Kjj - 2 * Kij;
                 if (eta <= 0) {
                     continue;
@@ -122,17 +173,18 @@ public:
         return ((yi*Ei < -tolerance) && (alpha_i < c)) || ((yi*Ei > tolerance) && (alpha_i > 0));
     }
 
-    float g(const Vec &alpha, const std::vector<Vec> &x, const Vec& xi, const Vec &y)
+    float g(const Tensor &alpha, const std::vector<Tensor> &x,
+            const Tensor& xi, const Tensor &y)
     {
-        float sum = 0.0;
+        float s = 0.0;
         for (std::size_t j = 0; j < x.size(); j++) {
-            sum += alpha[j]*y[j]*KernelF::f(x[j], xi);
+            s += alpha[j]*y[j]*Kernel::f(x[j], xi);
         }
-        sum += b;
-        return sum;
+        s += b;
+        return s;
     }
 
-    int random(std::size_t s, int i)
+    static int random(std::size_t s, int i)
     {
         int j = 0;
         j = rand() % s;

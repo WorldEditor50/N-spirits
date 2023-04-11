@@ -13,6 +13,12 @@ struct Compute {
         Op op;
         return op(x, x1, x2, totalsize);
     }
+    template<typename T>
+    inline static int eval(T *y, T *x, std::size_t totalsize)
+    {
+        Op op;
+        return op(y, x, totalsize);
+    }
 };
 
 }

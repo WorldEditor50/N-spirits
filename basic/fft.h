@@ -1,5 +1,6 @@
 #ifndef FFT_H
 #define FFT_H
+#include <vector>
 #include "tensor.hpp"
 #include "complexnumber.h"
 
@@ -56,17 +57,16 @@ namespace FFT {
     inline void transform2D(CTensor &src, CTensor &dst, int opt)
     {
         for (int i = 0; i < src.shape[0]; i++) {
-            CTensor row(1, src.shape[1]);
-            CTensor::Mat::row(src, i, row);
+            CTensor row = src.sub(i);
             transform1D(row, opt);
-            CTensor::Mat::setRow(dst, i, row);
+            dst.at(i) = row;
         }
 
         for (int i = 0; i < src.shape[1]; i++) {
             CTensor column(src.shape[0], 1);
-            CTensor::Mat::row(src, i, column);
+           // CTensor::Mat::row(src, i, column);
             transform1D(column, opt);
-            CTensor::Mat::setColumn(dst, i, column);
+           // CTensor::Mat::setColumn(dst, i, column);
         }
         return;
     }

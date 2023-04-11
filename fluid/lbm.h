@@ -122,21 +122,6 @@ public:
 };
 
 
-struct D2Q9 {
-    /* weights for velocity.: (9) */
-    static Tensord w;
-    /* lattice vector: (9, 2) */
-    static Tensord e;
-
-};
-Tensord D2Q9::w({9}, {4.0 / 9.0,  1.0 / 9.0,  1.0 / 9.0,
-                      1.0 / 9.0,  1.0 / 9.0,  1.0 / 36.0,
-                      1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0});
-
-Tensord D2Q9::e({9, 2}, {0, 0,  1,  0, 0, 1,
-                        -1, 0,  0, -1, 1, 1,
-                        -1, 1, -1, -1, 1, -1});
-
 /*
     axis:
             o------------------> x
@@ -180,6 +165,10 @@ public:
     double niu;
     double tau;
     double sigma;
+    /* weights for velocity.: (9) */
+    static Tensord w;
+    /* lattice vector: (9, 2) */
+    static Tensord e;
     /* density: (ny, nx) */
     Tensord rho;
     /* velocity: (ny, nx, 2) */
@@ -253,18 +242,18 @@ public:
     {
         double u = vel(i, j, 0);
         double v = vel(i, j, 1);
-        double eu = D2Q9::e(k, 0) * u + D2Q9::e(k, 1) * v;
+        double eu = e(k, 0) * u + e(k, 1) * v;
         double uv = u*u + v*v;
-        return D2Q9::w[k] * rho(i, j) * (1.0 + 3.0 * eu + 4.5 * eu*eu - 1.5 * uv);
+        return w[k] * rho(i, j) * (1.0 + 3.0 * eu + 4.5 * eu*eu - 1.5 * uv);
     }
 
     void collideStream()
     {
         for (int i = 1; i < ny - 1; i++) {
             for (int j = 1; j < nx - 1; j++) {
-                for (int k = 0; k < D2Q9::e.shape[0]; k++) {
-                    int ip = i - D2Q9::e(k, 0);
-                    int jp = j - D2Q9::e(k, 1);
+                for (int k = 0; k < e.shape[0]; k++) {
+                    int ip = i - e(k, 0);
+                    int jp = j - e(k, 1);
                     fn(i, j, k) = (1 - sigma) * f(ip, jp, k) + feq(ip, jp, k) * sigma;
                 }
             }
@@ -314,7 +303,7 @@ public:
         static Tensord feqs(9, 1);
         for (int i = 1; i < ny - 1; i++) {
             for (int j = 1; j < nx - 1; j++) {
-                for (int k = 0; k < D2Q9::e.shape[0]; k++) {
+                for (int k = 0; k < e.shape[0]; k++) {
                     feqs[k] = feq(i, j, k);
                 }
                 Tensord fij = f.sub(i, j).reshape(9, 1);
@@ -341,9 +330,9 @@ public:
         static int bi[9] = {0, 3, 4, 1, 2, 7, 8, 5, 6};
         for (int i = 1; i < ny - 1; i++) {
             for (int j = 1; j < nx - 1; j++) {
-                for (int k = 0; k < D2Q9::e.shape[0]; k++) {
-                    int ip = i - D2Q9::e(k, 0);
-                    int jp = j - D2Q9::e(k, 1);
+                for (int k = 0; k < e.shape[0]; k++) {
+                    int ip = i - e(k, 0);
+                    int jp = j - e(k, 1);
                     if (mask(ip, jp) == 0) {
                         fn(i, j, k) = f(ip, jp, k);
                     } else {
@@ -364,13 +353,13 @@ public:
                 double r = 0;
                 double u = 0;
                 double v = 0;
-                for (int k = 0; k < D2Q9::e.shape[0]; k++) {
+                for (int k = 0; k < e.shape[0]; k++) {
                     /* calculate density */
                     double Fijk = fn(i, j, k);
                     r += Fijk;
                     /* velocity */
-                    u += D2Q9::e(k, 0) * Fijk;
-                    v += D2Q9::e(k, 1) * Fijk;
+                    u += e(k, 0) * Fijk;
+                    v += e(k, 1) * Fijk;
                 }
                 rho(i, j) = r;
                 vel(i, j, 0) = u / r;
@@ -391,7 +380,7 @@ public:
             }
         }
         rho(ibc, jbc) = rho(inb, jnb);
-        for (int k = 0; k < D2Q9::e.shape[0]; k++) {
+        for (int k = 0; k < e.shape[0]; k++) {
 #if LBM_MRT
             f(ibc, jbc, k) = feq(ibc, jbc, k);
 #else
@@ -468,5 +457,13 @@ public:
     }
 
 };
+template <typename T>
+Tensord LBM2d<T>::w({9}, {4.0 / 9.0,  1.0 / 9.0,  1.0 / 9.0,
+                      1.0 / 9.0,  1.0 / 9.0,  1.0 / 36.0,
+                      1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0});
+template <typename T>
+Tensord LBM2d<T>::e({9, 2}, {0, 0,  1,  0, 0, 1,
+                        -1, 0,  0, -1, 1, 1,
+                        -1, 1, -1, -1, 1, -1});
 #endif // LBM_H
 

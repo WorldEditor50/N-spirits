@@ -28,15 +28,17 @@ include_directories(${PROJECT_SOURCE_DIR}/net)
 include_directories(${PROJECT_SOURCE_DIR}/utils)
 # cl
 if (LOAD_SIMCL)
+    if (MSVC)
 	set(OpenCL_ROOT "D:/home/3rdparty/opencl/opencl")
 	set(OpenCL_INCLUDE_DIR "${OpenCL_ROOT}/include")
         set(OpenCL_LIBRARIES "${OpenCL_ROOT}/lib/OpenCL.lib")
-        message(STATUS "OpenCL_LIBRARIES=${OpenCL_LIBRARIES}")
-	include_directories(${OpenCL_INCLUDE_DIR})
-	add_subdirectory(${PROJECT_SOURCE_DIR}/simcl)
-        # test cl
-	add_executable(test_simcl test/test_simcl.cpp)
-        target_link_libraries(test_simcl SIMCL ${OpenCL_LIBRARIES})
+    endif()
+    message(STATUS "OpenCL_LIBRARIES=${OpenCL_LIBRARIES}")
+    include_directories(${OpenCL_INCLUDE_DIR})
+    add_subdirectory(${PROJECT_SOURCE_DIR}/simcl)
+    # test cl
+    add_executable(test_simcl test/test_simcl.cpp)
+    target_link_libraries(test_simcl SIMCL ${OpenCL_LIBRARIES})
 endif()
 # improcess
 if (LOAD_IMPROCESS)

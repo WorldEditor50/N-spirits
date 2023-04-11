@@ -5,7 +5,7 @@
 #include <fstream>
 #include <iostream>
 
-namespace improcess {
+namespace imp {
 
 class BMP
 {

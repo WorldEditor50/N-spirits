@@ -42,7 +42,13 @@ static std::string Div = SOURCECODE(
             return;
         });
 
-
+static std::string Exp = SOURCECODE(
+            __kernel void expf(__global float* y, __global float* x)
+            {
+                uint i = get_global_id(0);
+                y[i] = exp(x[i]);
+                return;
+            });
 static std::string MatMul = SOURCECODE(
             #define BLOCK_SIZE 16
             #define AS(i, j) As[j + i * BLOCK_SIZE]

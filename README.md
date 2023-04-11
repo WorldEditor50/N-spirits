@@ -116,7 +116,7 @@ fun with cpp
     });
 ```
 
-#### 2.1 jpeg to video
+#### 2.1 image to video
 
 ```sh
 ffmpeg -i ./cylinder1/cylinder_%d.jpg -vcodec libx264 cylinder.avi
