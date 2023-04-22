@@ -1,5 +1,5 @@
-#ifndef GRAPHIC_H
-#define GRAPHIC_H
+#ifndef GRAPHIC2D_H
+#define GRAPHIC2D_H
 #include <vector>
 #include "../basic/tensor.hpp"
 #include "../basic/point.hpp"
@@ -20,7 +20,7 @@ namespace graphic2D {
     int polygon(Tensor &img, const std::vector<Point2i> &p, imp::Color3 color, float thick=1.0);
     int circle(Tensor &img, const Point2i &center, float radius, Color3 color=Color3(0, 255, 0), float thick=1.0);
     int rectangle(Tensor &img, const Point2i &pos, const Point2i &size, Color3 color=Color3(0, 255, 0), float thick=1.0);
-} // graphic
+} // GRAPHIC2D_H
 
 }// improcess
 

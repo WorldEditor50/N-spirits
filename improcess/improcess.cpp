@@ -166,3 +166,9 @@ int imp::save(const Tensor &img, const std::string &fileName)
     }
     return 0;
 }
+
+int imp::resize(Tensor &dst, Tensor &src, const imp::Size &size)
+{
+
+    return 0;
+}

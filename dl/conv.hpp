@@ -10,6 +10,28 @@ inline int out(int i, int kernelSize, int stride, int padding)
 {
     return std::floor((i - kernelSize + 2*padding)/stride) + 1;
 }
+
+inline void conv1d(Tensor &y, const Tensor &kernels, const Tensor &x, int stride=1, int padding=0)
+{
+    /*
+        x: [n]
+        kernels: [c, m]
+        y: [c, p]
+    */
+    for (int i = 0; i < y.shape[0]; i++) {
+        for (int j = 0; j < y.shape[1]; j++) {
+            for (int h = 0; h < kernels.shape[1]; h++) {
+                int k = h + j*stride - padding;
+                if (k < 0 || k >= x.totalSize) {
+                    continue;
+                }
+                y(i, j) += kernels(i, h)*x[k];
+            }
+        }
+    }
+    return;
+}
+
 /* naive conv2d */
 inline void eval1(Tensor &y, const Tensor &kernels, const Tensor &x, int stride=1, int padding=0)
 {

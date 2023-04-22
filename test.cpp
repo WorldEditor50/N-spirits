@@ -313,6 +313,18 @@ void test_tensor()
         x.sub(1, 1).printValue();
         std::cout<<"(1, 1, 1) = "<<x(1, 1, 1)<<std::endl;
     }
+    /* row and column */
+    {
+        Tensor x({3, 3}, {1, 2, 3,
+                          4, 5, 6,
+                          7, 8, 9});
+        std::cout<<"row:";
+        Tensor r = x.row(1);
+        r.printValue();
+        std::cout<<"col:";
+        Tensor c = x.column(1);
+        c.printValue();
+    }
     return;
 }
 
@@ -380,6 +392,78 @@ void test_permute()
     return;
 }
 
+void test_dft1d()
+{
+    int N = 8;
+    /* signal: sin(x) */
+    CTensor x(N);
+    float value = 0;
+    for (int i = 0; i < N; i++) {
+        x[i].re = std::sin(value);
+        std::cout<<x[i].re<<",";
+        value += 1;
+    }
+    /* DFT1D */
+    std::cout<<std::endl;
+    std::cout<<"DFT:"<<std::endl;
+    CTensor X = DFT::transform1D(x);
+    for (int i = 0; i < N; i++) {
+        X[i].print();
+    }
+    /* iDFT1D */
+    std::cout<<"iDFT:"<<std::endl;
+    CTensor xr = DFT::inverse1D(X);
+    for (int i = 0; i < N; i++) {
+        xr[i].print();
+    }
+    return;
+}
+
+void test_dft2d()
+{
+    /* signal */
+    CTensor x({3, 3}, {Complex(1), Complex(-2), Complex(1),
+                       Complex(-2), Complex(0), Complex(2),
+                       Complex(1), Complex(2), Complex(1)
+              });
+    /* DFT2D */
+    std::cout<<"DFT2D:"<<std::endl;
+    CTensor X = DFT::transform2D(x);
+    for (std::size_t i = 0; i < X.totalSize; i++) {
+        X[i].print();
+    }
+    /* iDFT2D */
+    std::cout<<"iDFT2D:"<<std::endl;
+    CTensor xr = DFT::inverse2D(X);
+    for (std::size_t i = 0; i < X.totalSize; i++) {
+        xr[i].print();
+    }
+    return;
+}
+
+void test_fft1d()
+{
+    int N = 8;
+    /* signal: sin(x) */
+    CTensor x(N);
+    float value = 0;
+    for (int i = 0; i < N; i++) {
+        x[i].re = std::sin(value);
+        std::cout<<x[i].re<<",";
+        value += 1;
+    }
+    /* FFT1D */
+    std::cout<<std::endl;
+    std::cout<<"FFT:"<<std::endl;
+    CTensor X(N);
+    FFT::transform1D(X, x);
+    for (int i = 0; i < N; i++) {
+        X[i].print();
+    }
+    return;
+}
+
+
 int main()
 {
 #if 0
@@ -391,8 +475,11 @@ int main()
     test_conv();
     test_permute();
 #endif
-    test_tensor();
-    std::cout<<"size of tensor = "<<sizeof (Tensor)<<std::endl;
+    //test_tensor();
+    //std::cout<<"size of tensor = "<<sizeof (Tensor)<<std::endl;
+    //test_dft2d();
+    test_dft1d();
+    test_fft1d();
     return 0;
 }
 

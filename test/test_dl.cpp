@@ -434,6 +434,29 @@ void test_vgg16()
     return;
 }
 
+void test_conv1d()
+{
+    /*
+        x:
+        +--+--+--+--+--+--+--+--+--+
+        |  |  |  |  |  |  |  |  |  |
+        +--+--+--+--+--+--+--+--+--+
+        kernel:
+        +--+--+--+
+        |  |  |  |
+        +--+--+--+
+    */
+    Tensor x = Tensor::ones(9);
+    Tensor kernel = Tensor::ones(1, 3);
+    int stride = 1;
+    int padding = 1;
+    int n = conv::out(9, 3, stride, padding);
+    Tensor y(1, n);
+    conv::conv1d(y, kernel, x, stride, padding);
+    y.printValue();
+    return;
+}
+
 int main()
 {
 #if 0
@@ -442,8 +465,9 @@ int main()
     test_lstm();
 #endif
     //test_bpnn();
-    test_mnist();
+    //test_mnist();
     //test_alexnet();
     //test_vgg16();
+    test_conv1d();
 	return 0;
 }

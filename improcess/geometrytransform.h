@@ -12,7 +12,6 @@ int verticalFlip(const Tensor &x, Tensor &y);
 int scale(const Tensor &x, float alpha, Tensor &y);
 int rotate(const Tensor &x, float angle, Tensor &y);
 int bilinearInterpolate(const Tensor &x, Tensor &y);
-int resize(const Tensor &x, Tensor &y);
 int interpolate(const Tensor &x, Tensor &y);
 int affine();
 int project();

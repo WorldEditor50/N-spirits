@@ -1,6 +1,7 @@
 #ifndef COMPLEXNUMBER_H
 #define COMPLEXNUMBER_H
 #include "basic_def.h"
+#include <iostream>
 #include <cmath>
 
 class Complex
@@ -12,10 +13,9 @@ public:
     Complex():re(0),im(0){}
     explicit Complex(float r, float i)
         :re(r),im(i){}
-    explicit Complex(float value):re(value),im(value){}
-    Complex& operator()(float value)
+    explicit Complex(float value):re(value),im(0){}
+    Complex& operator=(float value)
     {
-        im = value;
         re = value;
         return *this;
     }
@@ -127,6 +127,17 @@ public:
         re /= r;
         im /= r;
         return *this;
+    }
+    void print() const
+    {
+        if (im > 0) {
+            std::cout<<re<<" + "<<im<<"i"<<std::endl;
+        } else if (im == 0) {
+            std::cout<<re<<std::endl;
+        } else {
+            std::cout<<re<<" - "<<std::abs(im)<<"i"<<std::endl;
+        }
+        return;
     }
 };
 

@@ -7,7 +7,7 @@
 #include "bmp.hpp"
 #include "ppm.hpp"
 #include "image.hpp"
-#include "graphic.h"
+#include "graphic2d.h"
 #include "geometrytransform.h"
 #include "filter.h"
 
@@ -23,7 +23,8 @@ namespace imp {
     /* gray */
     int rgb2gray(const Tensor& rgb, Tensor &gray);
     int gray2rgb(const Tensor& gray, Tensor &rgb);
-
+    /* resize */
+    int resize(Tensor &dst, Tensor &src, const Size &size);
 }
 
 
