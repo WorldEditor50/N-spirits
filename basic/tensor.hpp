@@ -117,6 +117,16 @@ public:
         r.totalSize = 0;
     }
 
+    inline operator T* () noexcept
+    {
+        return val.data();
+    }
+
+    inline operator Vector ()
+    {
+        return val;
+    }
+
     inline T* ptr() noexcept { return val.data(); }
     inline const T* ptr() const noexcept { return val.data(); }
     inline bool empty() const {return totalSize == 0;}

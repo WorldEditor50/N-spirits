@@ -4,9 +4,11 @@ project(N-spirits LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# specify default 3rd-party library path
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # load option
-set(LOAD_SIMCL True)
-set(LOAD_IMPROCESS True)
+option(ENABLE_SIMCL "ENABLE CL" ON)
+option(ENABLE_IMPROCESS "ENABLE IMPROCESS" ON)
 # compiler option
 if (MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -27,7 +29,7 @@ include_directories(${PROJECT_SOURCE_DIR}/net)
 # utils
 include_directories(${PROJECT_SOURCE_DIR}/utils)
 # cl
-if (LOAD_SIMCL)
+if (ENABLE_SIMCL)
     if (MSVC)
 	set(OpenCL_ROOT "D:/home/3rdparty/opencl/opencl")
 	set(OpenCL_INCLUDE_DIR "${OpenCL_ROOT}/include")
@@ -41,7 +43,7 @@ if (LOAD_SIMCL)
     target_link_libraries(test_simcl SIMCL ${OpenCL_LIBRARIES})
 endif()
 # improcess
-if (LOAD_IMPROCESS)
+if (ENABLE_IMPROCESS)
     if (MSVC)
         set(JPEG_ROOT "D:/home/3rdparty/libjpeg")
     endif()

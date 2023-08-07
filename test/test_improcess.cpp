@@ -3,7 +3,7 @@
 #include <numeric>
 #include <fstream>
 #include <algorithm>
-#include "../basic/statistics.h"
+#include "../basic/util.hpp"
 #include "../basic/tensor.hpp"
 #include "../improcess/image.hpp"
 #include "../improcess/jpegwrap.h"
@@ -314,7 +314,7 @@ void noise_img()
     }
     Tensor epsilon(img.shape);
     //Statistics::gaussian(epsilon, 0, 1);
-    Statistics::uniform(epsilon, -1, 1);
+    util::uniform(epsilon, -1, 1);
     Tensor dst = img + epsilon;
     imp::save(dst, "dota2_noise.bmp");
     return;

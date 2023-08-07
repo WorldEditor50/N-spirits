@@ -257,7 +257,7 @@ int LinearAlgebra::LU::inv(const Mat &x, Mat &xi)
 
 float LinearAlgebra::SVD::normalize(Mat &x, float eps)
 {
-    float s = std::sqrt(Statistics::dot(x, x));
+    float s = std::sqrt(util::dot(x, x));
     if (s < eps) {
         return 0;
     }
@@ -295,7 +295,7 @@ int LinearAlgebra::SVD::solve(const Mat &x, Mat &u, Mat &s, Mat &v, float eps, s
     Mat vr(x.cols, 1);
     Mat nextVr(x.cols, 1);
     while (1) {
-        Statistics::uniform(ur);
+        util::uniform(ur);
         float s = normalize(ur,eps);
         if (s > eps) {
             break;
@@ -322,7 +322,7 @@ int LinearAlgebra::SVD::solve(const Mat &x, Mat &u, Mat &s, Mat &v, float eps, s
                 break;
             }
             /* error */
-            float delta = Statistics::Norm::l2(nextUr, ur);
+            float delta = util::Norm::l2(nextUr, ur);
             if (delta < eps) {
                 break;
             }
@@ -346,7 +346,7 @@ void LinearAlgebra::PCA::fit(const Mat &datas)
 {
     /* covariance matrix */
     Mat y(datas.cols, datas.cols);
-    Statistics::cov(y, datas);
+    util::cov(y, datas);
     /* svd */
     Mat s;
     Mat v;

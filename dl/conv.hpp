@@ -2,7 +2,7 @@
 #define CONV_HPP
 #include <cmath>
 #include "../basic/tensor.hpp"
-#include "../basic/statistics.h"
+#include "../basic/util.hpp"
 
 namespace conv {
 
@@ -166,7 +166,7 @@ inline void eval2(Tensor &y, const Tensor &kernels, const Tensor &x, int stride=
                     /* image subset to vector */
                     im2col(img, x, kernelSize, stride, padding, c, i, j);
                     /* convolution */
-                    float s = Statistics::dot(kernel, img);
+                    float s = util::dot(kernel, img);
                     y(n, i, j) += s;
                 }
             }

@@ -5,7 +5,7 @@
 #include "basic/linearalgebra.h"
 #include "basic/tensor.hpp"
 #include "basic/complexnumber.h"
-#include "basic/statistics.h"
+#include "basic/util.hpp"
 #include "basic/fft.h"
 #include "utils/csv.h"
 #include "utils/dataset.h"
@@ -158,8 +158,8 @@ void test_transpose_multiply()
     Mat x9(3, 4);
     Mat x10(3, 5);
     Mat x11(4, 5);
-    Statistics::uniform(x9, 0, 9);
-    Statistics::uniform(x10, 0, 9);
+    util::uniform(x9, 0, 9);
+    util::uniform(x10, 0, 9);
     Mat::Multiply::kikj(x11, x9, x10);
     std::cout<<"x9:"<<std::endl;
     x9.show();
@@ -475,11 +475,12 @@ int main()
     test_conv();
     test_permute();
 #endif
-    //test_tensor();
+    test_tensor();
+    getchar();
     //std::cout<<"size of tensor = "<<sizeof (Tensor)<<std::endl;
     //test_dft2d();
-    test_dft1d();
-    test_fft1d();
+    //test_dft1d();
+    //test_fft1d();
     return 0;
 }
 

@@ -1,7 +1,7 @@
 #ifndef LSTM_H
 #define LSTM_H
 #include <vector>
-#include "activate.h"
+#include "activate.hpp"
 #include "../basic/tensor.hpp"
 
 
@@ -97,23 +97,23 @@ public:
     }
     void random()
     {
-        Statistics::uniform(Wi, -1, 1);
-        Statistics::uniform(Wg, -1, 1);
-        Statistics::uniform(Wf, -1, 1);
-        Statistics::uniform(Wo, -1, 1);
+        util::uniform(Wi, -1, 1);
+        util::uniform(Wg, -1, 1);
+        util::uniform(Wf, -1, 1);
+        util::uniform(Wo, -1, 1);
 
-        Statistics::uniform(Ui, -1, 1);
-        Statistics::uniform(Ug, -1, 1);
-        Statistics::uniform(Uf, -1, 1);
-        Statistics::uniform(Uo, -1, 1);
+        util::uniform(Ui, -1, 1);
+        util::uniform(Ug, -1, 1);
+        util::uniform(Uf, -1, 1);
+        util::uniform(Uo, -1, 1);
 
-        Statistics::uniform(Bi, -1, 1);
-        Statistics::uniform(Bg, -1, 1);
-        Statistics::uniform(Bf, -1, 1);
-        Statistics::uniform(Bo, -1, 1);
+        util::uniform(Bi, -1, 1);
+        util::uniform(Bg, -1, 1);
+        util::uniform(Bf, -1, 1);
+        util::uniform(Bo, -1, 1);
 
-        Statistics::uniform(W, -1, 1);
-        Statistics::uniform(B, -1, 1);
+        util::uniform(W, -1, 1);
+        util::uniform(B, -1, 1);
         return;
     }
 };

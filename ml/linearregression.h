@@ -1,7 +1,7 @@
 #ifndef LINEARREGRESSION_H
 #define LINEARREGRESSION_H
 #include "../basic/tensor.hpp"
-#include "../basic/statistics.h"
+#include "../basic/util.hpp"
 
 class LinearModel
 {

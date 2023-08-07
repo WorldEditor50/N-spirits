@@ -2,7 +2,7 @@
 #include "../basic/tensor.hpp"
 #include "../basic/simd.hpp"
 #include "../basic/avx2func.hpp"
-#include "../basic/statistics.h"
+#include "../basic/util.hpp"
 #include "../utils/clock.hpp"
 
 double correct(const Tensor &x1, const Tensor &x2)
@@ -36,8 +36,8 @@ void test_simd_matmul()
     Tensor x(N, N);
     Tensor x1(N, N);
     Tensor x2(N, N);
-    Statistics::uniform(x1, -9, 9);
-    Statistics::uniform(x2, -9, 9);
+    util::uniform(x1, -9, 9);
+    util::uniform(x2, -9, 9);
     /* trivial matmul */
     {
         x.zero();
@@ -117,7 +117,7 @@ void test_simd()
     }
     /* max */
     Tensor x(100);
-    Statistics::uniform(x, 0, 100);
+    util::uniform(x, 0, 100);
     x[50] = 101;
     x.printValue();
     std::cout<<"max:"<<simd::AVX2::max(x.ptr(), x.totalSize)<<std::endl;
@@ -128,7 +128,7 @@ void test_simd()
     /* mean, variance */
     {
         Tensorsi_<float, simd::AVX2> x1(512, 512);
-        Statistics::uniform(x1, -1, 1);
+        util::uniform(x1, -1, 1);
         float u = x1.mean();
         auto t1 = Clock::tiktok();
         float sigma = x1.variance(u);
@@ -146,7 +146,7 @@ void test_simd()
         y1.printValue();
         std::cout<<"cmath exp:"<<std::endl;
         Tensor y2(100);
-        Statistics::exp(x, y2);
+        util::exp(x, y2);
         y2.printValue();
     }
     /* sqrt */
@@ -169,7 +169,7 @@ void test_simd_transpose()
     {
         Tensor_<double> x(N, N);
         Tensor_<double> y(N, N);
-        Statistics::uniform(x, 0, 9);
+        util::uniform(x, 0, 9);
         auto t1 = Clock::tiktok();
         simd::AVX2::transpose(y.ptr(), N, N,
                               x.ptr(), N, N);
@@ -184,7 +184,7 @@ void test_simd_transpose()
     {
         Tensor x(16, 16);
         Tensor y(16, 16);
-        Statistics::uniform(x, 0, 9);
+        util::uniform(x, 0, 9);
         simd::AVX2::transpose(y.ptr(), 16, 16,
                               x.ptr(), 16, 16);
         x.printValue();
@@ -204,8 +204,8 @@ int main()
     Tensor x(1, N);
     Tensor x1(N, N);
     Tensor x2(N, 1);
-    Statistics::uniform(x1, -9, 9);
-    Statistics::uniform(x2, -9, 9);
+    util::uniform(x1, -9, 9);
+    util::uniform(x2, -9, 9);
     for (std::size_t i = 0; i < 4; i++) {
         x.zero();
         Tensor::Mul::ikkj(x, x1, x2);

@@ -1,14 +1,15 @@
 #include <iostream>
 #include <thread>
-#include "../dl/net.h"
-#include "../dl/optimizer.h"
-#include "../dl/layer.h"
-#include "../dl/loss.h"
+#include "../dl/net.hpp"
+#include "../dl/optimizer.hpp"
+#include "../dl/layer.hpp"
+#include "../dl/loss.hpp"
 #include "../dl/conv2d.hpp"
 #include "../dl/lstm.hpp"
 #include "../utils/clock.hpp"
 #include "../utils/dataset.h"
 #include "../dl/vae.hpp"
+#include "../dl/transformer.hpp"
 
 void convi(Tensori &o, const Tensori &kernels, const Tensori &x, int stride=1, int padding=1)
 {
@@ -149,7 +150,7 @@ void test_bpnn()
     auto t1 = Clock::tiktok();
     for (int i = 0; i < 10000; i++) {
         for (int j = 0; j < 4; j++) {
-            int k = distribution(Statistics::engine);
+            int k = distribution(util::engine);
             /* forward */
             Tensor& y = bp(x[k]);
             /* loss */
@@ -196,13 +197,13 @@ void test_lenet5()
     Tensor yt(10, 1);
     auto t1 = Clock::tiktok();
     for (std::size_t i = 0; i < 1; i++) {
-        Statistics::uniform(x, 0, 1);
+        util::uniform(x, 0, 1);
         /* forward */
         Tensor& y = lenet5(x);
         y.printValue();
         /* loss */
-        Statistics::uniform(yt, 0, 1);
-        Tensor loss = Loss::CROSS_EMTROPY(y, yt);
+        util::uniform(yt, 0, 1);
+        Tensor loss = Loss::CrossEntropy(y, yt);
         /* backward */
         optimizer.backward(loss, x, yt);
     }
@@ -304,11 +305,9 @@ void test_mnist()
 void test_lstm()
 {
     using LSTMNET = Net<LSTM,
-                        FcLayer, LayerNorm, FcLayer, LayerNorm,
+                        FcLayer, LayerNorm,
                         FcLayer>;
     LSTMNET lstm(LSTM(4, 16, 16),
-                 FcLayer(16, 16, true, ACTIVE_TANH),
-                 LayerNorm(16, 16, true, ACTIVE_SIGMOID),
                  FcLayer(16, 16, true, ACTIVE_TANH),
                  LayerNorm(16, 16, true, ACTIVE_SIGMOID),
                  FcLayer(16, 1, true, ACTIVE_LINEAR));
@@ -319,7 +318,7 @@ void test_lstm()
     std::vector<Tensor> x(N, Tensor(4, 1));
     std::vector<Tensor> yt(N, Tensor(1, 1));
     for (std::size_t i = 0; i < N; i++) {
-        Statistics::uniform(x[i], -1, 1);
+        util::uniform(x[i], -1, 1);
         /* f(x1, x2, x3, x4) = exp((x1+x2+x3+x4)^2) * sin((x1+x2+x3+x4)^2) */
         float s = x[i].sum();
         yt[i][0] = std::exp(s)*std::sin(s);
@@ -347,7 +346,7 @@ void test_lstm()
     for (std::size_t i = 0; i < 16; i++) {
         int k = distribution(engine);
         Tensor& y = lstm(x[k]);
-        float error = Statistics::Norm::l2(y, yt[k]);
+        float error = util::Norm::l2(y, yt[k]);
         std::cout<<"target="<<yt[k][0]<<", predict="<<y[0]<<", error="<<error<<std::endl;
     }
     return;

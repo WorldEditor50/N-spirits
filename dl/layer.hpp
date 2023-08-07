@@ -2,9 +2,9 @@
 #define LAYER_H
 #include <iostream>
 #include <fstream>
-#include "activate.h"
+#include "activate.hpp"
 #include "layerdef.h"
-#include "../basic/statistics.h"
+#include "../basic/util.hpp"
 
 
 class FcParam
@@ -126,8 +126,8 @@ public:
         }
         o = Tensor(outputDim, 1);
         /* init */
-        Statistics::uniform(w, -1, 1);
-        Statistics::uniform(b, -1, 1);
+        util::uniform(w, -1, 1);
+        util::uniform(b, -1, 1);
     }
 
     inline Tensor& output() {return o;}
@@ -146,6 +146,11 @@ public:
         }
         Active::func[activeType].f(o);
         return o;
+    }
+
+    Tensor& operator()(const Tensor &x)
+    {
+        return forward(x);
     }
 
     void save(std::ofstream &file)
@@ -209,10 +214,14 @@ public:
         float max_ = o.max();
         o -= max_;
         /* softmax(x) = exp(xi)/Σexp(xj)  */
-        Statistics::exp(o, o);
+        util::exp(o, o);
         float s = o.sum();     
         o /= s;
         return o;
+    }
+    Tensor& operator()(const Tensor &x)
+    {
+        return forward(x);
     }
 };
 
@@ -254,11 +263,15 @@ public:
     {
         FcLayer::forward(x);
         if (Grad::enable == true) {
-            Statistics::bernoulli(mask, p);
+            util::bernoulli(mask, p);
             mask /= (1 - p);
             FcLayer::o *= mask;
         }
         return o;
+    }
+    Tensor& operator()(const Tensor &x)
+    {
+        return forward(x);
     }
 };
 bool Dropout::Grad::enable = false;
@@ -305,6 +318,10 @@ public:
         }
         Active::func[activeType].f(o);
         return o;
+    }
+    Tensor& operator()(const Tensor &x)
+    {
+        return forward(x);
     }
 };
 
@@ -390,6 +407,10 @@ public:
         Tensor& o2 = fc2.forward(o1);
         o2 += x;
         return o2;
+    }
+    Tensor& operator()(const Tensor &x)
+    {
+        return forward(x);
     }
 };
 
@@ -490,24 +511,24 @@ public:
         /* xh */
         xh = std::vector<Tensor>(batchsize, Tensor(u.shape));
         for (std::size_t i = 0; i < x.size(); i++) {
-            Statistics::sub(xh[i], x[i], u);
+            util::sub(xh[i], x[i], u);
         }
         /* sigma */
         Tensor r(u.shape);
         for (std::size_t i = 0; i < xh.size(); i++) {
-            Statistics::mul(r, xh[i], xh[i]);
+            util::mul(r, xh[i], xh[i]);
             sigma += r;
         }
         sigma /= batchsize;
         sigma += 1e-9;
-        Statistics::sqrt(sigma, sigma);
+        util::sqrt(sigma, sigma);
         /* xh = (xi - u)/sqrt(sigma + 1e-9) */
         for (std::size_t i = 0; i < x.size(); i++) {
             xh[i] /= sigma;
         }
         /* o = gamma*xh + b */
         for (std::size_t i = 0; i < xh.size(); i++) {
-            Statistics::mul(o[i], gamma, xh[i]);
+            util::mul(o[i], gamma, xh[i]);
             o[i] += beta;
         }
         return;
@@ -533,7 +554,7 @@ public:
         Tensor values(p.shape);
         for (std::size_t i = 0; i < p.totalSize; i++) {
             std::bernoulli_distribution distribution(p.val[i]);
-            values.val[i] = distribution(Statistics::engine);
+            values.val[i] = distribution(util::engine);
         }
         return values;
     }

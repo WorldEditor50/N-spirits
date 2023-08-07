@@ -1,7 +1,7 @@
 #ifndef FILTER_H
 #define FILTER_H
 #include <functional>
-#include "../basic/statistics.h"
+#include "../basic/util.hpp"
 #include "image.hpp"
 
 namespace imp {

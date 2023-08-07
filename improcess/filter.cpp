@@ -83,7 +83,7 @@ int imp::sobel3x3(Tensor &dst, const Tensor &src)
                             -1, -2, -1});
     Tensor grady;
     imp::conv2d(grady, kernely, src, 1);
-    dst = Statistics::sqrt(gradx*gradx + grady*grady);
+    dst = util::sqrt(gradx*gradx + grady*grady);
     return 0;
 }
 
@@ -103,8 +103,8 @@ int imp::sobel5x5(Tensor &dst, const Tensor &src)
                            -5,  -8, -10,  -8, -5});
     Tensor grady;
     imp::conv2d(grady, kernely, src, 1);
-    //dst = gradx + grady;
-    dst = Statistics::sqrt(gradx*gradx + grady*grady);
+    //dst = sqrt(gradx*gradx + grady*grady);
+    dst = util::sqrt(gradx*gradx + grady*grady);
     return 0;
 }
 
@@ -130,6 +130,6 @@ int imp::prewitt3x3(Tensor &dst, const Tensor &src)
                             -1, -1, -1});
     Tensor grady;
     imp::conv2d(grady, kernely, src, 1);
-    dst = Statistics::sqrt(gradx*gradx + grady*grady);
+    dst = util::sqrt(gradx*gradx + grady*grady);
     return 0;
 }

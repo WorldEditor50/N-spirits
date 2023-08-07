@@ -1,7 +1,7 @@
 #ifndef CONV2D_HPP
 #define CONV2D_HPP
 #include "../basic/tensor.hpp"
-#include "activate.h"
+#include "activate.hpp"
 #include "layerdef.h"
 #include "conv.hpp"
 
@@ -242,13 +242,13 @@ public:
         Conv2dParam(inChannels_, h, w, outChannels_, kernelSize_, stride_, padding_, bias_, activeType_)
     {
         kernels = Tensor(outChannels, inChannels, kernelSize, kernelSize);
-        Statistics::uniform(kernels, -1, 1);
+        util::uniform(kernels, -1, 1);
         ho = std::floor((hi - kernelSize + 2*padding)/stride) + 1;
         wo = std::floor((wi - kernelSize + 2*padding)/stride) + 1;
         o = Tensor(outChannels, ho, wo);
         if (bias == true) {
             b = Tensor(outChannels, kernelSize, kernelSize);
-            Statistics::uniform(b, -1, 1);
+            util::uniform(b, -1, 1);
         }
         layerType = LAYER_CONV2D;
     }

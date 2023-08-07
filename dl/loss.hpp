@@ -13,7 +13,7 @@ struct Loss
         return loss;
     }
 
-    static Tensor CROSS_EMTROPY(const Tensor& yp, const Tensor& yt)
+    static Tensor CrossEntropy(const Tensor& yp, const Tensor& yt)
     {
         Tensor loss(yp.shape);
         for (std::size_t i = 0; i < yp.totalSize; i++) {

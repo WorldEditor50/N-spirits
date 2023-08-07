@@ -1,7 +1,7 @@
 #ifndef OPTIMIZER_H
 #define OPTIMIZER_H
 #include <vector>
-#include "optimize.h"
+#include "optimize.hpp"
 #include "layerdef.h"
 #include "../basic/tensor.hpp"
 

@@ -48,9 +48,9 @@ void test_kdtree()
                              Tensor({4, 1}, {0, 1, 1, 1}),
                              Tensor({4, 1}, {0, 0, 0, 1})};
 
-    Tensor u = Statistics::sum(x) / x.size();
+    Tensor u = util::sum(x) / x.size();
     u.printValue();
-    Tensor sigma = Statistics::variance(x, u);
+    Tensor sigma = util::variance(x, u);
     sigma.printValue();
     //return 0;
     KDTree kdtree(x);

@@ -1,10 +1,10 @@
 #ifndef VAE_HPP
 #define VAE_HPP
 #include <tuple>
-#include "activate.h"
-#include "layer.h"
+#include "activate.hpp"
+#include "layer.hpp"
 #include "../basic/tensor.hpp"
-#include "../basic/statistics.h"
+#include "../basic/util.hpp"
 
 class VAE
 {  
@@ -47,7 +47,7 @@ public:
         Tensor sigma;
         encoder(img, mu, sigma);
         Tensor epsilon = Tensor(sigma.shape);
-        Statistics::uniform(epsilon, -1, 1);
+        util::uniform(epsilon, -1, 1);
         Tensor z = mu + epsilon;
         Tensor img_ = decoder(z);
         return std::tuple<Tensor, Tensor, Tensor>(img_, mu, sigma);
@@ -59,7 +59,7 @@ public:
         Tensor sigma;
         encoder(img, mu, sigma);
         Tensor epsilon = Tensor(sigma.shape);
-        Statistics::uniform(epsilon, -1, 1);
+        util::uniform(epsilon, -1, 1);
         Tensor z = mu + epsilon;
         return decoder(z);
     }

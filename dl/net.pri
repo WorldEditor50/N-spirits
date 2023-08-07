@@ -1,13 +1,13 @@
 INCLUDEpATH += $$PWD
 
-HEADERS += $$PWD/activate.h \
+HEADERS += $$PWD/activate.hpp \
            $$PWD/autograd.h \
-    $$PWD/conv.hpp \
-    $$PWD/conv2d.hpp \
-           $$PWD/layer.h \
+		   $$PWD/conv.hpp \
+		   $$PWD/conv2d.hpp \
+           $$PWD/layer.hpp \
            $$PWD/layerdef.h \
            $$PWD/lstm.hpp \
-           $$PWD/loss.h \
-           $$PWD/net.h \
-           $$PWD/optimize.h \
-           $$PWD/optimizer.h \
+           $$PWD/loss.hpp \
+           $$PWD/net.hpp \
+           $$PWD/optimize.hpp \
+           $$PWD/optimizer.hpp \

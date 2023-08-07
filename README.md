@@ -3,6 +3,12 @@ fun with cpp
 
 ## Features
 
+- expression template
+- simd (support SSE2, AVX2)
+- matrix
+- tensor
+- complex number
+- basic linear algerbra (LU, QR, SVD, PCA, DET)
 - kmeans
 - gmm
 - svm
@@ -10,12 +16,6 @@ fun with cpp
 - BPNET
 - LeNet5
 - LSTM
-- expression template
-- matrix
-- tensor
-- basic linear algerbra (LU, QR, SVD, PCA, det)
-- complex number
-- simd (support SSE2, AVX2)
 - LBM (D2Q9)
 
 ## Requirements
