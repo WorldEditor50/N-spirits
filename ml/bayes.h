@@ -11,7 +11,7 @@
         P = prior*likelihood/evidence
         P(A|B) = P(A)*P(B|A)/P(B)
         P(A|B1,B2,...,Bn) = P(A)*P(B1,B2,...,Bn|A)/P(B1,B2,...,Bn)
-    2. Conditional Indepdence
+    2. Conditional Independence
         P(A|B1,B2,...,Bn) = P(A)*∏ P(Bi|A)/∏ P(Bi)
         P(A|B1,B2,...,Bn) ≈ P(A)*∏ P(Bi|A)
     3. classify

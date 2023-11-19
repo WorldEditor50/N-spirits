@@ -251,7 +251,7 @@ int LinearAlgebra::LU::inv(const Mat &x, Mat &xi)
     }
     /* inverse matrix of x, x = l*u , xi = ui*li */
     xi = Mat(x.rows, x.cols);
-    Mat::Multiply::ikkj(xi, ui, li);
+    Mat::Multi::ikkj(xi, ui, li);
     return 0;
 }
 
@@ -308,14 +308,14 @@ int LinearAlgebra::SVD::solve(const Mat &x, Mat &u, Mat &s, Mat &v, float eps, s
             nextUr.zero();
             nextVr.zero();
             /* nextVr = a^T * ur */
-            Mat::Multiply::kikj(nextVr, x, ur);
+            Mat::Multi::kikj(nextVr, x, ur);
             /* QR: v */
             r = qrIteration(nextVr, v, eps);
             if (r < eps) {
                 break;
             }
             /* nextUr = a * nextVr */
-            Mat::Multiply::ikkj(nextUr, x, nextVr);
+            Mat::Multi::ikkj(nextUr, x, nextVr);
             /* QR: u */
             r = qrIteration(nextUr, u, eps);
             if (r < eps) {
@@ -370,6 +370,6 @@ void LinearAlgebra::PCA::project(const Mat &x, std::size_t k, Mat &y)
     /* y = u^T * x */
     y = Mat(x.rows, k);
     /* (1, 2) = (1, 13)*(13, 2)^T */
-    Mat::Multiply::ikkj(y, x, uh);
+    Mat::Multi::ikkj(y, x, uh);
     return;
 }

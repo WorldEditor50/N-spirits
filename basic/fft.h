@@ -1,11 +1,7 @@
 #ifndef FFT_H
 #define FFT_H
 #include <vector>
-#include "tensor.hpp"
-#include "complexnumber.h"
-
-using CTensor = Tensor_<Complex>;
-
+#include "ctensor.hpp"
 
 namespace DFT {
 

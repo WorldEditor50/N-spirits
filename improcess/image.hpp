@@ -35,6 +35,13 @@ inline float clamp(float x, float max_, float min_)
     }
     return x;
 }
+inline void clamp(Tensor &img, float max_, float min_)
+{
+    for (std::size_t i = 0; i < img.totalSize; i++) {
+        img[i] = clamp(img[i], max_, min_);
+    }
+    return;
+}
 
 inline bool isGray(const Tensor &x)
 {

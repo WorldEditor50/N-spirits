@@ -43,5 +43,7 @@ public:
     void fit(const Mat &datas);
     void project(const Mat &x, size_t, Mat &y);
 };
+
+
 }
 #endif // LINEARALGEBRA_H

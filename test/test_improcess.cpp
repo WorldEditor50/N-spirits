@@ -326,13 +326,13 @@ int main()
     //test_jpeg_to_tensor();
     //test_read_ppm();
     //test_circle();
-    //test_polygon();
+    test_polygon();
     //test_rect();
     //test_conv();
     //test_averageBlur();
     //test_sobel();
     //test_laplacian();
     //test_medianBlur();
-    test_prewitt();
+    //test_prewitt();
 	return 0;
 }

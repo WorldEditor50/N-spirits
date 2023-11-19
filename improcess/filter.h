@@ -2,6 +2,8 @@
 #define FILTER_H
 #include <functional>
 #include "../basic/util.hpp"
+#include "../basic/ctensor.hpp"
+#include "../basic/complexnumber.h"
 #include "image.hpp"
 
 namespace imp {
@@ -51,6 +53,20 @@ int sobel3x3(Tensor &dst, const Tensor &src);
 int sobel5x5(Tensor &dst, const Tensor &src);
 int laplacian3x3(Tensor &dst, const Tensor &src);
 int prewitt3x3(Tensor &dst, const Tensor &src);
+
+int adaptiveMedianFilter(Tensor &dst, const Tensor &src, std::size_t kernelSize);
+
+int extendSize(int size);
+int FFT(CTensor &xf, const CTensor &xt, int t);
+int IFFT(CTensor &xt, const CTensor &xf, int t);
+int FFT2D(Tensor &dst, CTensor &f, const Tensor &img, bool expand, unsigned char color);
+int IFFT2D(Tensor &dst, const CTensor &xf);
+Tensor freqLPF(const Tensor &img, int freq);
+Tensor freqGaussHPF(const Tensor &img, float sigma);
+Tensor freqLaplaceFilter(const Tensor &img);
+Tensor freqInvDegenerate(const Tensor &img);
+Tensor freqInvFilter(const Tensor &img, int rad);
+Tensor freqWienerFilter(const Tensor &img, float K);
 }
 
 #endif // FILTER_H

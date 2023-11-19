@@ -21,7 +21,7 @@ void test_lu()
     xi.show();
     std::cout<<"test inverse:"<<std::endl;
     Mat I(x.rows, x.cols);
-    Mat::Multiply::ikkj(I, x, xi);
+    Mat::Multi::ikkj(I, x, xi);
     I.show();
     return;
 }
@@ -112,13 +112,13 @@ void test_transpose_multiply()
     std::cout<<"ikkj:"<<std::endl;
     Mat x5(2, 2);
     /* (2, 3) * (3, 2) = (2, 2) */
-    Mat::Multiply::ikkj(x5, x1, x2);
+    Mat::Multi::ikkj(x5, x1, x2);
     /* [[22, 28], [49, 64]] */
     x5.show();
     std::cout<<"kikj:"<<std::endl;
     Mat x6(2, 2);
     /* (3, 2) * (3, 2) = (2, 2) */
-    Mat::Multiply::kikj(x6, x4, x2);
+    Mat::Multi::kikj(x6, x4, x2);
     /*
         0, 3, 1     1, 2
         2, 4, 0     3, 4
@@ -129,7 +129,7 @@ void test_transpose_multiply()
     std::cout<<"ikjk:"<<std::endl;
     Mat x7(2, 2);
     /* (2, 3) * (2, 3) = (2, 2) */
-    Mat::Multiply::ikjk(x7, x1, x3);
+    Mat::Multi::ikjk(x7, x1, x3);
     /*
         1, 2, 3   1, 4
         4, 5, 6   0, 2
@@ -141,7 +141,7 @@ void test_transpose_multiply()
     std::cout<<"kijk:"<<std::endl;
     Mat x8(2, 2);
     /* (3, 2) * (2, 3) = (2, 2) */
-    Mat::Multiply::kijk(x8, x4, x3);
+    Mat::Multi::kijk(x8, x4, x3);
     /*
         0, 2      1, 0, 3
         3, 4      4, 2, 0
@@ -160,7 +160,7 @@ void test_transpose_multiply()
     Mat x11(4, 5);
     util::uniform(x9, 0, 9);
     util::uniform(x10, 0, 9);
-    Mat::Multiply::kikj(x11, x9, x10);
+    Mat::Multi::kikj(x11, x9, x10);
     std::cout<<"x9:"<<std::endl;
     x9.show();
     std::cout<<"x10:"<<std::endl;
@@ -475,12 +475,13 @@ int main()
     test_conv();
     test_permute();
 #endif
-    test_tensor();
-    getchar();
+    //test_tensor();
+    //getchar();
     //std::cout<<"size of tensor = "<<sizeof (Tensor)<<std::endl;
-    //test_dft2d();
+
     //test_dft1d();
     //test_fft1d();
+    test_dft2d();
     return 0;
 }
 

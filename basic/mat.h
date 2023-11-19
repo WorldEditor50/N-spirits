@@ -472,7 +472,7 @@ public:
             return;
         }
     };
-    struct Multiply {
+    struct Multi {
         static void ikkj(Mat &y, const Mat &x1, const Mat &x2)
         {
             /* no transpose */

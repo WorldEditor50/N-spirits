@@ -95,6 +95,18 @@ public:
         initParams(shape, sizes, totalSize);
     }
 
+    explicit Tensor_(const std::vector<Tensor_> &x)
+    {
+        totalSize = x.size()*x[0].totalsize;
+        sizes.push_back(x.size()*x[0].sizes[0]);
+        sizes.push_back(x[0].sizes);
+        shape.push_back(x.size());
+        shape.push_back(x[0].shape);
+        for (std::size_t i = 0; i < x.size(); i++) {
+            val.push_back(x[i].val);
+        }
+    }
+
     /* construct with shape */
     template<typename ...Dim>
     explicit Tensor_(Dim ...dim):totalSize(1),shape({int(dim)...})
@@ -157,7 +169,7 @@ public:
     inline T operator[](std::size_t i) const {return val[i];}
 
     /* assign operator */
-    inline Tensor_ &operator=(const Tensor_ &r)
+    inline Tensor_& operator=(const Tensor_ &r)
     {
         if (this == &r) {
             return *this;
@@ -169,16 +181,17 @@ public:
         return *this;
     }
 
-    inline Tensor_ operator=(const std::vector<T> &x)
+    inline Tensor_& operator=(const std::vector<T> &x)
     {
         val.assign(x.begin(), x.end());
         return *this;
     }
-    inline Tensor_ operator=(T x)
+    inline Tensor_& operator=(T x)
     {
         val.assign(totalSize, x);
         return *this;
     }
+
     /* move */
     Tensor_ &operator=(Tensor_ &&r)
     {
@@ -844,6 +857,7 @@ public:
         }
         return y;
     }
+
 
 };
 
