@@ -1,6 +1,6 @@
 #include "improcess.h"
 
-int imp::fromTensor(const Tensor &x, std::shared_ptr<imp::uint8_t[]> &img)
+int imp::fromTensor(InTensor x, std::shared_ptr<uint8_t[]> &img)
 {
     if (img == nullptr) {
         img = std::shared_ptr<uint8_t[]>(new uint8_t[x.totalSize]);
@@ -17,7 +17,7 @@ int imp::fromTensor(const Tensor &x, std::shared_ptr<imp::uint8_t[]> &img)
     return 0;
 }
 
-std::unique_ptr<imp::uint8_t[]> imp::fromTensor(const Tensor &x)
+std::unique_ptr<uint8_t[]> imp::fromTensor(InTensor x)
 {
     std::unique_ptr<uint8_t[]> img(new uint8_t[x.totalSize]);
     for (std::size_t i = 0; i < x.totalSize; i++) {
@@ -32,7 +32,7 @@ std::unique_ptr<imp::uint8_t[]> imp::fromTensor(const Tensor &x)
     return img;
 }
 
-std::shared_ptr<imp::uint8_t[]> imp::tensor2Rgb(const Tensor &x)
+std::shared_ptr<uint8_t[]> imp::tensor2Rgb(InTensor x)
 {
     std::shared_ptr<uint8_t[]> img(new uint8_t[x.totalSize]);
     for (std::size_t i = 0; i < x.totalSize; i++) {
@@ -47,7 +47,7 @@ std::shared_ptr<imp::uint8_t[]> imp::tensor2Rgb(const Tensor &x)
     return img;
 }
 
-int imp::rgb2gray(const Tensor &rgb, Tensor &gray)
+int imp::rgb2gray(OutTensor gray, InTensor rgb)
 {
     if (isRGB(rgb) == false) {
         return -1;
@@ -64,7 +64,7 @@ int imp::rgb2gray(const Tensor &rgb, Tensor &gray)
     return 0;
 }
 
-int imp::gray2rgb(const Tensor &gray, Tensor &rgb)
+int imp::gray2rgb(OutTensor rgb, InTensor gray)
 {
     if (isGray(gray) == false) {
         return -1;
@@ -81,7 +81,61 @@ int imp::gray2rgb(const Tensor &gray, Tensor &rgb)
     return 0;
 }
 
-Tensor imp::toTensor(int h, int w, int c, std::shared_ptr<imp::uint8_t[]> &img)
+
+int imp::rgb2rgba(OutTensor rgba, InTensor rgb, int alpha)
+{
+    if (isRGB(rgb) == false) {
+        return -1;
+    }
+    int h = rgb.shape[HWC_H];
+    int w = rgb.shape[HWC_W];
+    rgba = Tensor(h, w, 4);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            rgba(i, j, 0) = rgb(i, j, 0);
+            rgba(i, j, 1) = rgb(i, j, 1);
+            rgba(i, j, 2) = rgb(i, j, 2);
+            rgba(i, j, 3) = alpha%256;
+        }
+    }
+    return 0;
+}
+
+int imp::rgba2rgb(OutTensor rgb, InTensor rgba)
+{
+    int h = rgb.shape[HWC_H];
+    int w = rgb.shape[HWC_W];
+    rgb = Tensor(h, w, 3);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            rgb(i, j, 0) = rgba(i, j, 0);
+            rgb(i, j, 1) = rgba(i, j, 1);
+            rgb(i, j, 2) = rgba(i, j, 2);
+        }
+    }
+    return 0;
+}
+
+
+int imp::transparent(OutTensor rgba, InTensor rgb, int alpha)
+{
+    rgb2rgba(rgba, rgb, alpha);
+    int h = rgb.shape[HWC_H];
+    int w = rgb.shape[HWC_W];
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            if (rgb(i, j, 0) == 255 &&
+                    rgb(i, j, 1) == 255 &&
+                    rgb(i, j, 2) == 255) {
+                rgba(i, j, 3) = 0;
+            }
+
+        }
+    }
+    return 0;
+}
+
+Tensor imp::toTensor(int h, int w, int c, std::shared_ptr<uint8_t[]> &img)
 {
     Tensor x(h, w, c);
     for (std::size_t i = 0; i < x.totalSize; i++) {
@@ -127,7 +181,7 @@ Tensor imp::load(const std::string &fileName)
     return img;
 }
 
-int imp::save(const Tensor &img, const std::string &fileName)
+int imp::save(InTensor img, const std::string &fileName)
 {
     if (fileName.empty()) {
         return -1;
@@ -167,8 +221,156 @@ int imp::save(const Tensor &img, const std::string &fileName)
     return 0;
 }
 
-int imp::resize(Tensor &dst, Tensor &src, const imp::Size &size)
+int imp::resize(OutTensor xo, InTensor xi, const imp::Size &size, int type)
 {
+    switch (type) {
+    case INTERPOLATE_NEAREST:
+        imp::nearestInterpolate(xo, xi, size);
+        break;
+    case INTERPOLATE_BILINEAR:
+        imp::bilinearInterpolate(xo, xi, size);
+        break;
+    case INTERPOLATE_CUBIC:
+        imp::cubicInterpolate(xo, xi, size);
+        break;
+    default:
+        imp::nearestInterpolate(xo, xi, size);
+        break;
+    }
+    return 0;
+}
+/*
+    kernel: -1 --> ignore,
+             0 --> background,
+             1 --> roi
+*/
+int imp::erode(OutTensor xo, InTensor xi, InTensor kernel)
+{
+    int width = xi.shape[HWC_W];
+    int height = xi.shape[HWC_H];
+    int kernelSize = kernel.shape[HWC_H];
+    xo = Tensor(xi.shape);
+    for (int i = 1; i < height - 1; i++) {
+        for (int j = 1; j < width - 1; j++) {
+            bool matched = true;
+            for (int h = 0; h < kernelSize; h++) {
+                for (int k = 0; k < kernelSize; k++) {
+                    if (kernel(h, k) == -1) {
+                        continue;
+                    }
+                    if (kernel(h, k) == 1) {
+                        if (xi(i - 1 + h, j - 1 + k) != 0) {
+                            matched = false;
+                            break;
+                        }
+                    } else if (kernel(h, k) == 0) {
+                        if (xi(i - 1 + h, j - 1 + k) != 255) {
+                            matched = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            xo(i, j) = matched ? 0 : 255;
+        }
+    }
+    return 0;
+}
+/*
+    kernel: -1 --> ignore,
+             1 --> roi
+*/
+int imp::dilate(OutTensor xo, InTensor xi, InTensor kernel)
+{
+    int width = xi.shape[HWC_W];
+    int height = xi.shape[HWC_H];
+    int kernelSize = kernel.shape[HWC_H];
+    xo = Tensor(xi.shape);
+    xo.fill(255);
+    for (int i = 1; i < height - 1; i++) {
+        for (int j = 1; j < width - 1; j++) {
+            for (int h = 0; h < kernelSize; h++) {
+                for (int k = 0; k < kernelSize; k++) {
+                    if (kernel(h, k) == -1) {
+                        continue;
+                    }
+                    if (kernel(h, k) == 1) {
+                        if (xi(i - 1 + h, j - 1 + k) == 0) {
+                            xo(i, j) = 0;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+int imp::traceBoundary(OutTensor xo, InTensor xi, std::vector<Point2i> &boundary)
+{
+    Tensor gray;
+    rgb2gray(gray, xi);
+    xo = Tensor(xi);
+    int width = gray.shape[HWC_W];
+    int height = gray.shape[HWC_H];
+    /* boundary */
+    for (int i = 0; i < height; i++) {
+        gray(i, 0) = 255;
+        gray(i, width - 1) = 255;
+    }
+    for (int i = 0; i < width; i++) {
+        gray(0, i) = 255;
+        gray(height - 1, i) = 255;;
+    }
+
+    Point2i startPoint;
+    Point2i currentPoint;
+    bool isAtStartPoint = true;
+    int k = 0;
+    Point2i directs[8] = {{-1, 0}, {-1, 1}, {0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}};
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            if (gray(i, j) != 0) {
+                continue;
+            }
+            startPoint = Point2i(i, j);
+            currentPoint = startPoint;
+            isAtStartPoint = true;
+            while ((startPoint.x != currentPoint.x || startPoint.y != currentPoint.y) ||
+                   isAtStartPoint) {
+                isAtStartPoint = false;
+                Point2i pos = currentPoint + directs[k];
+                int searchTime = 1;
+                while (gray(pos.x, pos.y) == 255) {
+                    k = (k + 1)%8;
+                    pos = currentPoint + directs[k];
+                    if (++searchTime >= 8) {
+                        pos = currentPoint;
+                        break;
+                    }
+                }
+                currentPoint = pos;
+                boundary.push_back(pos);
+                xo(currentPoint.x, currentPoint.y, 0) = 0;
+                xo(currentPoint.x, currentPoint.y, 1) = 0;
+                xo(currentPoint.x, currentPoint.y, 2) = 0;
+
+                k -= 2;
+                k = k < 0 ? (k + 8) : k;
+            }
+            break;
+        }
+    }
+    return 0;
+}
+
+
+int imp::findConnectedRegion(InTensor x, OutTensor mask, int &labelCount)
+{
+    int width = x.shape[HWC_W];
+    int height = x.shape[HWC_H];
+
 
     return 0;
 }

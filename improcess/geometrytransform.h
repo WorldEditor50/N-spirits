@@ -1,18 +1,19 @@
 #ifndef GEOMETRYTRANSFORM_H
 #define GEOMETRYTRANSFORM_H
 #include "image.hpp"
+#include "improcess_def.h"
 
 namespace imp {
 
 /* geometry */
-int move(const Tensor &x, const Point2i &offset, Tensor &y);
-int transpose(const Tensor &x, Tensor &y);
-int horizontalFlip(const Tensor &x, Tensor &y);
-int verticalFlip(const Tensor &x, Tensor &y);
-int scale(const Tensor &x, float alpha, Tensor &y);
-int rotate(const Tensor &x, float angle, Tensor &y);
-int bilinearInterpolate(const Tensor &x, Tensor &y);
-int interpolate(const Tensor &x, Tensor &y);
+int move(OutTensor xo, InTensor xi, const Point2i &offset);
+int transpose(OutTensor xo, InTensor xi);
+int horizontalFlip(OutTensor xo, InTensor xi);
+int verticalFlip(OutTensor xo, InTensor xi);
+int rotate(OutTensor xo, InTensor xi, float angle);
+int nearestInterpolate(OutTensor xo, InTensor xi, const Size &size);
+int bilinearInterpolate(OutTensor xo, InTensor xi, const Size &size);
+int cubicInterpolate(OutTensor xo, InTensor xi, const Size &size, float a=0.5);
 int affine();
 int project();
 

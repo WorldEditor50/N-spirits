@@ -170,7 +170,7 @@ public:
     }
 
     static int fromRGB24(std::shared_ptr<uint8_t[]> rgb, int h, int w,
-                         std::shared_ptr<uint8_t[]> bmp)
+                         std::shared_ptr<uint8_t[]> &bmp)
     {
         if (rgb == nullptr || bmp == nullptr) {
             return -1;
@@ -207,9 +207,9 @@ public:
         int rowstep = w * 3;
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < alignstep; j+=3) {
-                p[i*alignstep + j]     = rgb[(h - 1 - i)*rowstep + j + 2];
-                p[i*alignstep + j + 1] = rgb[(h - 1 - i)*rowstep + j + 1];
-                p[i*alignstep + j + 2] = rgb[(h - 1 - i)*rowstep + j];
+                p[i*alignstep + j]     = rgb[(h - 1 - i)*rowstep + rowstep - j + 2];
+                p[i*alignstep + j + 1] = rgb[(h - 1 - i)*rowstep + rowstep - j + 1];
+                p[i*alignstep + j + 2] = rgb[(h - 1 - i)*rowstep + rowstep - j];
             }
         }
         return 0;

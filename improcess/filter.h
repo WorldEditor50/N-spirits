@@ -10,7 +10,7 @@ namespace imp {
 
 
 /* naive conv2d */
-inline void conv2d(Tensor &y, const Tensor &kernel, const Tensor &x, int stride=1, int padding=0)
+inline void conv2d(OutTensor y, InTensor kernel, InTensor x, int stride=1, int padding=0)
 {
     /*
         x: (h, w, c)
@@ -44,17 +44,17 @@ inline void conv2d(Tensor &y, const Tensor &kernel, const Tensor &x, int stride=
     return;
 }
 
-int averageFilter(Tensor &dst, const Tensor &src, const Size &size);
-int gaussianFilter3x3(Tensor &dst, const Tensor &src);
-int gaussianFilter5x5(Tensor &dst, const Tensor &src);
-int medianFilter(Tensor &dst, const Tensor &src, const Size &size);
+int averageFilter(OutTensor xo, InTensor xi, const Size &size);
+int gaussianFilter3x3(OutTensor xo, InTensor xi);
+int gaussianFilter5x5(OutTensor xo, InTensor xi);
+int medianFilter(OutTensor xo, InTensor xi, const Size &size);
 
-int sobel3x3(Tensor &dst, const Tensor &src);
-int sobel5x5(Tensor &dst, const Tensor &src);
-int laplacian3x3(Tensor &dst, const Tensor &src);
-int prewitt3x3(Tensor &dst, const Tensor &src);
+int sobel3x3(OutTensor xo, InTensor xi);
+int sobel5x5(OutTensor xo, InTensor xi);
+int laplacian3x3(OutTensor xo, InTensor xi);
+int prewitt3x3(OutTensor xo, InTensor xi);
 
-int adaptiveMedianFilter(Tensor &dst, const Tensor &src, std::size_t kernelSize);
+int adaptiveMedianFilter(OutTensor xo, InTensor xi, std::size_t kernelSize);
 
 int extendSize(int size);
 int FFT(CTensor &xf, const CTensor &xt, int t);

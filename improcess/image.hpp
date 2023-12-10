@@ -11,7 +11,6 @@ enum HWC {
     HWC_W = 1,
     HWC_C = 2
 };
-
 enum CHW {
     CHW_C = 0,
     CHW_H = 1,

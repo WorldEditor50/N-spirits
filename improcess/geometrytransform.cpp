@@ -1,87 +1,60 @@
 #include "geometrytransform.h"
 
-int imp::move(const Tensor &x, const Point2i &offset, Tensor &y)
+int imp::move(OutTensor xo, InTensor xi, const Point2i &offset)
 {
-    if (offset.x < 0 || offset.x > x.shape[HWC_W] ||
-        offset.y < 0 || offset.y > x.shape[HWC_H]) {
+    if (offset.x < 0 || offset.x > xi.shape[HWC_W] ||
+        offset.y < 0 || offset.y > xi.shape[HWC_H]) {
         return -1;
     }
-    for (int i = 0; i < x.shape[HWC_H]; i++) {
-        for (int j = 0; j < x.shape[HWC_W]; j++) {
+    for (int i = 0; i < xi.shape[HWC_H]; i++) {
+        for (int j = 0; j < xi.shape[HWC_W]; j++) {
             if (i < offset.y || j < offset.x) {
                 continue;
             }
-            for (int k = 0; k < x.shape[HWC_C]; k++) {
-                y(i, j, k) = x(i - offset.y, j - offset.x, k);
+            for (int k = 0; k < xi.shape[HWC_C]; k++) {
+                xo(i, j, k) = xi(i - offset.y, j - offset.x, k);
             }
         }
     }
     return 0;
 }
 
-int imp::transpose(const Tensor &x, Tensor &y)
+int imp::transpose(OutTensor xo, InTensor xi)
 {
     /* HWC -> WHC */
-    y = x.permute(1, 0, 2);
+    xo = xi.permute(1, 0, 2);
     return 0;
 }
 
-int imp::horizontalFlip(const Tensor &x, Tensor &y)
+int imp::horizontalFlip(OutTensor xo, InTensor xi)
 {
-    int w = x.shape[HWC_W];
-    y = Tensor(x.shape);
-    for (int i = 0; i < x.shape[HWC_H]; i++) {
-        for (int j = 0; j < x.shape[HWC_W]; j++) {
-            for (int k = 0; k < x.shape[HWC_C]; k++) {
-                y(i, j, k) = x(i, w - j - 1, k);
+    int w = xi.shape[HWC_W];
+    xo = Tensor(xi.shape);
+    for (int i = 0; i < xi.shape[HWC_H]; i++) {
+        for (int j = 0; j < xi.shape[HWC_W]; j++) {
+            for (int k = 0; k < xi.shape[HWC_C]; k++) {
+                xo(i, j, k) = xi(i, w - j - 1, k);
             }
         }
     }
     return 0;
 }
 
-int imp::verticalFlip(const Tensor &x, Tensor &y)
+int imp::verticalFlip(OutTensor xo, InTensor xi)
 {
-    int h = x.shape[HWC_H];
-    y = Tensor(x.shape);
-    for (int i = 0; i < x.shape[HWC_H]; i++) {
-        for (int j = 0; j < x.shape[HWC_W]; j++) {
-            for (int k = 0; k < x.shape[HWC_C]; k++) {
-                y(i, j, k) = x(h - i - 1, j, k);
+    int h = xi.shape[HWC_H];
+    xo = Tensor(xi.shape);
+    for (int i = 0; i < xi.shape[HWC_H]; i++) {
+        for (int j = 0; j < xi.shape[HWC_W]; j++) {
+            for (int k = 0; k < xi.shape[HWC_C]; k++) {
+                xo(i, j, k) = xi(h - i - 1, j, k);
             }
         }
     }
     return 0;
 }
 
-int imp::scale(const Tensor &x, float alpha, Tensor &y)
-{
-    int h = x.shape[HWC_H];
-    int w = x.shape[HWC_W];
-    y = Tensor(int(h*alpha), int(w*alpha), x.shape[HWC_C]);
-    for (int i = 0; i < y.shape[HWC_H]; i++) {
-
-        int u = int(float(i)/alpha + 0.5);
-
-        for (int j = 0; j < y.shape[HWC_W]; j++) {
-
-            int v = int(float(j)/alpha + 0.5);
-
-            if (v < w && u < h) {
-                y(i, j, 0) = x(u, v, 0);
-                y(i, j, 1) = x(u, v, 1);
-                y(i, j, 2) = x(u, v, 2);
-            } else {
-                y(i, j, 0) = 255;
-                y(i, j, 1) = 255;
-                y(i, j, 2) = 255;
-            }
-        }
-    }
-    return 0;
-}
-
-int imp::rotate(const Tensor &x, float angle, Tensor &y)
+int imp::rotate(OutTensor xo, InTensor xi, float angle)
 {
     /*
         rotate center = (h/2, w/2)
@@ -90,23 +63,90 @@ int imp::rotate(const Tensor &x, float angle, Tensor &y)
     float theta = angle*pi/180;
     float sinTheta = std::sin(theta);
     float cosTheta = std::cos(theta);
-    int h = x.shape[HWC_H];
-    int w = x.shape[HWC_W];
-    y = Tensor(x.shape);
-    for (int i = 0; i < y.shape[HWC_H]; i++) {
-        for (int j = 0; j < y.shape[HWC_W]; j++) {
-            int u = i * cosTheta - j * sinTheta + 0.5;
-            int v = j * cosTheta + i * sinTheta + 0.5;
-            if (u < h && v < w && u >= 0 && v >= 0) {
-                y(i, j, 0) = x(u, v, 0);
-                y(i, j, 1) = x(u, v, 1);
-                y(i, j, 2) = x(u, v, 2);
-            } else {
-                y(i, j, 0) = 0;
-                y(i, j, 1) = 0;
-                y(i, j, 2) = 0;
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    int c = xi.shape[HWC_C];
+    int ho = float(h*cosTheta + w*sinTheta + 0.5);
+    int wo = float(w*cosTheta + h*sinTheta + 0.5);
+    xo = Tensor(ho, wo, c);
+    for (int i = 0; i < ho; i++) {
+        for (int j = 0; j < wo; j++) {
+            int u = imp::bound(i*cosTheta - j*sinTheta + 0.5, 0, h);
+            int v = imp::bound(j*cosTheta + i*sinTheta + 0.5, 0, w);
+            for (int k = 0; k < c; k++) {
+                xo(i, j, k) = xi(u, v, k);
             }
         }
     }
+    return 0;
+}
+
+int imp::nearestInterpolate(OutTensor xo, InTensor xi, const imp::Size &size)
+{
+    int height = xi.shape[HWC_H];
+    int width = xi.shape[HWC_W];
+    int channels = xi.shape[HWC_C];
+    xo = Tensor(size.x, size.y, channels);
+    int ho = size.x;
+    int wo = size.y;
+    double hr = double(height)/double(ho);
+    double wr = double(width)/double(wo);
+    for (int i = 1; i < ho + 1; i++) {
+        for (int j = 1; j < wo + 1; j++) {
+            int u = imp::bound(i*hr + 0.5, 1, height + 1);
+            int v = imp::bound(j*wr + 0.5, 1, width + 1);
+            for (int k = 0; k < channels; k++) {
+                xo(i - 1, j - 1, k) = xi(u - 1, v - 1, k);
+            }
+
+        }
+    }
+    return 0;
+}
+
+int imp::bilinearInterpolate(OutTensor xo, InTensor xi, const Size &size)
+{
+    int height = xi.shape[HWC_H];
+    int width = xi.shape[HWC_W];
+    int channels = xi.shape[HWC_C];
+    xo = Tensor(size.x, size.y, channels);
+    double hr = double(height)/double(size.x);
+    double wr = double(width)/double(size.y);
+
+    for (int i = 0; i < size.x; i++) {
+        for (int j = 0; j < size.y; j++) {
+            for (int k = 0; k < channels; k++) {
+                double rx = i*hr;
+                double ry = j*wr;
+                int xLeft = int(rx);
+                int xRight = xLeft + 1;
+                int yLeft = int(ry);
+                int yRight = yLeft + 1;
+                if (xRight >= height) {
+                    xRight = height - 1;
+                }
+                if (yRight >= width) {
+                    yRight = width - 1;
+                }
+                float y1 = xi(xRight, yLeft, k)*(rx - xLeft) - xi(xLeft, yLeft, k)*(rx - xLeft) + xi(xLeft, yLeft, k);
+                float y2 = xi(xRight, yRight, k)*(rx - xLeft) - xi(xLeft, yRight, k)*(rx -xLeft) + xi(xLeft, yRight, k);
+                float y3 = y2*(ry - yLeft) - y1*(ry - yLeft) + y1;
+
+                xo(i, j, k) = clamp(y3, 255, 0);
+            }
+        }
+    }
+    return 0;
+}
+
+int imp::cubicInterpolate(OutTensor xo, InTensor xi, const imp::Size &size, float a)
+{
+    /*
+        F(i + u, j + v) = ΣΣf(i + row, j + col)*S(row - u, col - v)
+
+        S(x) = 1 - (a + 3)x^2 + (a + 2)|x|^3, for 0<|x|<1
+        S(x) = -4a + 8a|x| - 5ax^2 + a|x|^3, for 1<|x|<2
+    */
+
     return 0;
 }

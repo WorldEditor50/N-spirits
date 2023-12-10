@@ -1,6 +1,6 @@
 #include "color.h"
 
-int imp::RGB2CMY(Tensor &xo, const Tensor &xi)
+int imp::RGB2CMY(OutTensor xo, InTensor xi)
 {
     int h = xi.shape[HWC_H];
     int w = xi.shape[HWC_W];
@@ -15,7 +15,7 @@ int imp::RGB2CMY(Tensor &xo, const Tensor &xi)
     return 0;
 }
 
-int imp::RGB2HSI(Tensor &xo, const Tensor &xi)
+int imp::RGB2HSI(OutTensor xo, InTensor xi)
 {
     /*
         H = theta (b <= g)
@@ -75,37 +75,37 @@ int imp::RGB2HSI(Tensor &xo, const Tensor &xi)
     return 0;
 }
 
-int imp::HSI2RGB(Tensor &xo, const Tensor &xi)
+int imp::HSI2RGB(OutTensor xo, InTensor xi)
 {
     return 0;
 }
 
-int imp::RGB2HSV(Tensor &xo, const Tensor &xi)
+int imp::RGB2HSV(OutTensor xo, InTensor xi)
 {
     return 0;
 }
 
-int imp::HSV2RGB(Tensor &xo, const Tensor &xi)
+int imp::HSV2RGB(OutTensor xo, InTensor xi)
 {
     return 0;
 }
 
-int imp::RGB2YUV(Tensor &xo, const Tensor &xi)
+int imp::RGB2YUV(OutTensor xo, InTensor xi)
 {
     return 0;
 }
 
-int imp::YUV2RGB(Tensor &xo, const Tensor &xi)
+int imp::YUV2RGB(OutTensor xo, InTensor xi)
 {
     return 0;
 }
 
-int imp::RGB2YIQ(Tensor &xo, const Tensor &xi)
+int imp::RGB2YIQ(OutTensor xo, InTensor xi)
 {
     return 0;
 }
 
-int imp::YIQ2RGB(Tensor &xo, const Tensor &xi)
+int imp::YIQ2RGB(OutTensor xo, InTensor xi)
 {
     return 0;
 }

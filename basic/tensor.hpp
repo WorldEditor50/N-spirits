@@ -1237,10 +1237,11 @@ public:
     };
 
 };
-using Tensorc = Tensor_<char>;
-using Tensori = Tensor_<int>;
-using Tensorf = Tensor_<float>;
-using Tensord = Tensor_<double>;
+using Tensorc  = Tensor_<char>;
+using Tensoru8 = Tensor_<unsigned char>;
+using Tensori  = Tensor_<int>;
+using Tensorf  = Tensor_<float>;
+using Tensord  = Tensor_<double>;
 
 #if defined(__AVX2__)
 using Tensorsi = Tensorsi_<float, simd::AVX2, AlignAllocator32>;
@@ -1251,6 +1252,8 @@ using Tensorsi = Tensorsi_<float, simd::AVX2, AlignAllocator32>;
     using Tensor = Tensorsi;
 #else
     using Tensor = Tensorf;
+    using InTensor = const Tensor&;
+    using OutTensor = Tensor&;
 #endif
 
 #endif // TENSOR_H

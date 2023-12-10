@@ -13,18 +13,36 @@
 
 namespace imp {
 
+    enum InterplateType {
+        INTERPOLATE_NEAREST = 0,
+        INTERPOLATE_BILINEAR,
+        INTERPOLATE_CUBIC
+    };
+
     /* tensor shape: (h, w, c) */
     Tensor load(const std::string &fileName);
-    int save(const Tensor &img, const std::string &fileName);
+    int save(InTensor img, const std::string &fileName);
     Tensor toTensor(int h, int w, int c, std::shared_ptr<uint8_t[]> &img);
-    int fromTensor(const Tensor &x, std::shared_ptr<uint8_t[]> &img);
-    std::unique_ptr<uint8_t[]> fromTensor(const Tensor &x);
-    std::shared_ptr<imp::uint8_t[]> tensor2Rgb(const Tensor &x);
+    int fromTensor(InTensor x, std::shared_ptr<uint8_t[]> &img);
+    std::unique_ptr<uint8_t[]> fromTensor(InTensor x);
+    std::shared_ptr<uint8_t[]> tensor2Rgb(InTensor x);
     /* gray */
-    int rgb2gray(const Tensor& rgb, Tensor &gray);
-    int gray2rgb(const Tensor& gray, Tensor &rgb);
+    int rgb2gray(OutTensor gray, InTensor rgb);
+    int gray2rgb(OutTensor rgb, InTensor gray);
+    /* rgb <--> rgba */
+    int rgb2rgba(OutTensor rgba, InTensor rgb, int alpha=120);
+    int rgba2rgb(OutTensor rgba, InTensor rgb);
+    int transparent(OutTensor rgba, InTensor rgb, int alpha=120);
     /* resize */
-    int resize(Tensor &dst, Tensor &src, const Size &size);
+    int resize(OutTensor xo, InTensor xi, const Size &size, int type=INTERPOLATE_NEAREST);
+    /* erode */
+    int erode(OutTensor xo, InTensor xi, InTensor kernel);
+    /* dilate */
+    int dilate(OutTensor xo, InTensor xi, InTensor kernel);
+    /* trace boundary */
+    int traceBoundary(OutTensor xo, InTensor xi, std::vector<Point2i> &boundary);
+    /* connected region */
+    int findConnectedRegion(InTensor x, OutTensor mask, int &labelCount);
 }
 
 

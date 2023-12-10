@@ -97,7 +97,7 @@ void test_convert2gray()
     }
     /* convert to gray image */
     Tensor gray;
-    int ret = imp::rgb2gray(img, gray);
+    int ret = imp::rgb2gray(gray, img);
     /* save img */
     ret = imp::save(gray, "data2_gray.jpg");
     if (ret < 0) {
@@ -305,6 +305,52 @@ void test_prewitt()
     return;
 }
 
+void test_rotate()
+{
+    Tensor img = imp::load("D:/home/picture/dota2-official.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    imp::Size size(img.shape[imp::HWC_H], img.shape[imp::HWC_W]);
+    Tensor dst;
+    imp::rotate(dst, img, 45);
+    imp::save(dst, "rotate_45.bmp");
+    return;
+}
+void test_nearest_interpolation()
+{
+    Tensor img = imp::load("D:/home/picture/dota2-official.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    imp::Size size(img.shape[imp::HWC_H], img.shape[imp::HWC_W]);
+    Tensor dst;
+    imp::nearestInterpolate(dst, img, size*4);
+    imp::save(dst, "nearestInterpolate_x4.bmp");
+    return;
+}
+
+void test_bilinear_interpolation()
+{
+    Tensor img = imp::load("D:/home/picture/dota2-official.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    imp::Size size(img.shape[imp::HWC_H], img.shape[imp::HWC_W]);
+    Tensor dst;
+    imp::bilinearInterpolate(dst, img, size*8);
+    imp::save(dst, "bilinear-interpolate.bmp");
+    return;
+}
+
+void test_dilate()
+{
+
+}
+
 void noise_img()
 {
     Tensor img = imp::load("dota2.bmp");
@@ -321,18 +367,21 @@ void noise_img()
 }
 int main()
 {
-    //noise_img();
-    //test_line();
-    //test_jpeg_to_tensor();
-    //test_read_ppm();
-    //test_circle();
+    noise_img();
+    test_line();
+    test_jpeg_to_tensor();
+    test_read_ppm();
+    test_circle();
     test_polygon();
-    //test_rect();
-    //test_conv();
-    //test_averageBlur();
-    //test_sobel();
-    //test_laplacian();
-    //test_medianBlur();
-    //test_prewitt();
+    test_rect();
+    test_conv();
+    test_averageBlur();
+    test_sobel();
+    test_laplacian();
+    test_medianBlur();
+    test_prewitt();
+    test_nearest_interpolation();
+    test_bilinear_interpolation();
+    test_rotate();
 	return 0;
 }

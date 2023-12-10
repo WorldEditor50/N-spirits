@@ -5,20 +5,20 @@
 namespace imp {
 
 /* histogram */
-int histogram1(const Tensor& gray, Tensor &hist);
-int histogram3(const Tensor& rgb, Tensor &hist);
+int histogram1(OutTensor hist, InTensor gray);
+int histogram3(OutTensor hist, InTensor rgb);
 /* transform */
-int transform(const Tensor &src, Tensor &dst, std::function<float(float)> func);
+int transform(OutTensor xo, InTensor xi, std::function<float(float)> func);
 /* linear transform */
-int linearTransform(const Tensor &x, float alpha, float beta, Tensor &y);
+int linearTransform(OutTensor xo, InTensor xi, float alpha, float beta);
 /* log transform */
-int logTransform(const Tensor &x, float c, Tensor &y);
+int logTransform(OutTensor xo, InTensor xi, float c);
 /* gamma transform */
-int gammaTransform(const Tensor &x, float exsp, float gamma, Tensor &y);
+int gammaTransform(OutTensor xo, InTensor xi, float exsp, float gamma);
 /* threshold */
-int threshold(const Tensor &x, float thres, float max_, float min_, Tensor &y);
+int threshold(OutTensor xo, InTensor xi, float thres, float max_, float min_);
 /* histogram equalize */
-int histogramEqualize(const Tensor &x, Tensor &y);
+int histogramEqualize(OutTensor xo, InTensor xi);
 
 }
 
