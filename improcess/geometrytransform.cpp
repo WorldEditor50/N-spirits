@@ -1,17 +1,21 @@
 #include "geometrytransform.h"
 
-int imp::move(OutTensor xo, InTensor xi, const Point2i &offset)
+int imp::move(OutTensor xo, InTensor xi, const Size &offset)
 {
     if (offset.x < 0 || offset.x > xi.shape[HWC_W] ||
         offset.y < 0 || offset.y > xi.shape[HWC_H]) {
         return -1;
     }
-    for (int i = 0; i < xi.shape[HWC_H]; i++) {
-        for (int j = 0; j < xi.shape[HWC_W]; j++) {
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    int c = xi.shape[HWC_C];
+    xo = Tensor(h + offset.x, w + offset.y, c);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
             if (i < offset.y || j < offset.x) {
                 continue;
             }
-            for (int k = 0; k < xi.shape[HWC_C]; k++) {
+            for (int k = 0; k < c; k++) {
                 xo(i, j, k) = xi(i - offset.y, j - offset.x, k);
             }
         }
@@ -132,7 +136,7 @@ int imp::bilinearInterpolate(OutTensor xo, InTensor xi, const Size &size)
                 float y2 = xi(xRight, yRight, k)*(rx - xLeft) - xi(xLeft, yRight, k)*(rx -xLeft) + xi(xLeft, yRight, k);
                 float y3 = y2*(ry - yLeft) - y1*(ry - yLeft) + y1;
 
-                xo(i, j, k) = clamp(y3, 255, 0);
+                xo(i, j, k) = bound(y3, 255, 0);
             }
         }
     }

@@ -49,7 +49,7 @@ std::shared_ptr<uint8_t[]> imp::tensor2Rgb(InTensor x)
 
 int imp::rgb2gray(OutTensor gray, InTensor rgb)
 {
-    if (isRGB(rgb) == false) {
+    if (rgb.shape[HWC_C] != 3) {
         return -1;
     }
     gray = Tensor(rgb.shape);
@@ -66,7 +66,7 @@ int imp::rgb2gray(OutTensor gray, InTensor rgb)
 
 int imp::gray2rgb(OutTensor rgb, InTensor gray)
 {
-    if (isGray(gray) == false) {
+    if (gray.shape[HWC_C] != 1) {
         return -1;
     }
     rgb = Tensor(gray.shape[HWC_H], gray.shape[HWC_W], 3);
@@ -84,7 +84,7 @@ int imp::gray2rgb(OutTensor rgb, InTensor gray)
 
 int imp::rgb2rgba(OutTensor rgba, InTensor rgb, int alpha)
 {
-    if (isRGB(rgb) == false) {
+    if (rgb.shape[HWC_C] != 3) {
         return -1;
     }
     int h = rgb.shape[HWC_H];
@@ -203,17 +203,17 @@ int imp::save(InTensor img, const std::string &fileName)
             return -3;
         }
     } else if (fileName.find(".bmp") != std::string::npos) {
-        int ret = imp::BMP::save(fileName.c_str(), data, h, w);
+        int ret = imp::BMP::save(fileName, data, h, w);
         if (ret < 0) {
             return -3;
         }
     } else if (fileName.find(".ppm") != std::string::npos) {
-        int ret = imp::PPM::save(fileName.c_str(), data, h, w);
+        int ret = imp::PPM::save(fileName, data, h, w);
         if (ret < 0) {
             return -3;
         }
     } else {
-        int ret = imp::BMP::save(fileName.c_str(), data, h, w);
+        int ret = imp::BMP::save(fileName, data, h, w);
         if (ret < 0) {
             return -3;
         }

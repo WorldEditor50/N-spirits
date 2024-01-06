@@ -6,31 +6,35 @@
 #include <iostream>
 
 namespace imp {
-
-class BMP
-{
-public:
-    struct Head {
+#pragma pack(push, 1)
+    struct BmpHead {
         uint16_t type;
         uint32_t filesize;
         uint16_t reserved1;
         uint16_t reserved2;
         uint32_t offset;
     };
+#pragma pack(pop)
 
-    struct Information {
-        uint32_t infosize;
-        uint32_t width;
-        uint32_t height;
-        uint16_t planes;
-        uint16_t depth;
-        uint32_t compression;
-        uint32_t imagesize;
-        uint32_t x;
-        uint32_t y;
-        uint32_t colorused;
-        uint32_t colorimportant;
-    };
+#pragma pack(push 1)
+struct BmpInformation {
+    uint32_t infosize;
+    uint32_t width;
+    uint32_t height;
+    uint16_t planes;
+    uint16_t depth;
+    uint32_t compression;
+    uint32_t imagesize;
+    uint32_t x;
+    uint32_t y;
+    uint32_t colorused;
+    uint32_t colorimportant;
+};
+#pragma pack(pop)
+
+class BMP
+{
+public:
     enum Offset {
         OFFSET_HEAD_TYPE = 0,
         OFFSET_HEAD_FILEISZE = 2,
@@ -74,7 +78,7 @@ public:
         return x;
     }
 
-    static void writeHeader(std::shared_ptr<uint8_t[]> bmp, const Head &head)
+    static void writeHeader(std::shared_ptr<uint8_t[]> bmp, const BmpHead &head)
     {
         /* type */
         bmp[OFFSET_HEAD_TYPE]     = byteOf(head.type, 0);
@@ -97,7 +101,7 @@ public:
         return;
     }
 
-    static void writeInfo(std::shared_ptr<uint8_t[]> bmp, const Information &info)
+    static void writeInfo(std::shared_ptr<uint8_t[]> bmp, const BmpInformation &info)
     {
         /* info size */
         bmp[OFFSET_INFO_INFOSIZE + 0] = byteOf(info.infosize, 0);
@@ -178,7 +182,7 @@ public:
         /* alignstep */
         int alignstep = align4(w, 3);
         /* write header */
-        Head head;
+        BmpHead head;
         head.type = 0x4d42;
         head.filesize = 54 + h*alignstep;
         head.reserved1 = 0;
@@ -186,7 +190,7 @@ public:
         head.offset = 54;
         writeHeader(bmp, head);
         /* write info */
-        Information info;
+        BmpInformation info;
         info.infosize = 40;
         info.height = h;
         info.width  = w;

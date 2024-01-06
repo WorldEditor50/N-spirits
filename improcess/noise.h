@@ -1,6 +1,6 @@
 #ifndef NOISE_H
 #define NOISE_H
-#include "image.hpp"
+#include "improcess_def.h"
 #include "../basic/util.hpp"
 
 namespace Noise {

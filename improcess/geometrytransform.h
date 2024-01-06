@@ -1,12 +1,11 @@
 #ifndef GEOMETRYTRANSFORM_H
 #define GEOMETRYTRANSFORM_H
-#include "image.hpp"
 #include "improcess_def.h"
 
 namespace imp {
 
 /* geometry */
-int move(OutTensor xo, InTensor xi, const Point2i &offset);
+int move(OutTensor xo, InTensor xi, const Size &offset);
 int transpose(OutTensor xo, InTensor xi);
 int horizontalFlip(OutTensor xo, InTensor xi);
 int verticalFlip(OutTensor xo, InTensor xi);

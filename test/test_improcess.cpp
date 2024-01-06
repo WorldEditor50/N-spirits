@@ -113,7 +113,7 @@ void test_bmp()
     std::shared_ptr<uint8_t[]> data = nullptr;
     int w = 0;
     int h = 0;
-    int ret = imp::BMP::load("D:/home/picture/dota2.bmp", data, h, w);
+    int ret = imp::BMP::load("D:/home/picture/dota-2-official.bmp", data, h, w);
     if (ret != 0) {
         std::cout<<"load error = "<<ret<<std::endl;
         return;
@@ -208,7 +208,7 @@ void test_rect()
 void test_conv()
 {
     /* load image */
-    Tensor img = imp::load("D:/home/picture/dota2.bmp");
+    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -235,7 +235,7 @@ void test_conv()
 void test_averageBlur()
 {
     /* load image */
-    Tensor img = imp::load("D:/home/picture/dota2.bmp");
+    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -251,7 +251,7 @@ void test_averageBlur()
 void test_medianBlur()
 {
     /* load image */
-    Tensor img = imp::load("D:/home/picture/dota2.bmp");
+    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -266,7 +266,7 @@ void test_medianBlur()
 
 void test_sobel()
 {
-    Tensor img = imp::load("D:/home/picture/dota2.bmp");
+    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -279,7 +279,7 @@ void test_sobel()
 
 void test_laplacian()
 {
-    Tensor img = imp::load("D:/home/picture/dota2.bmp");
+    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -294,7 +294,7 @@ void test_laplacian()
 
 void test_prewitt()
 {
-    Tensor img = imp::load("D:/home/picture/dota2.bmp");
+    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -307,12 +307,11 @@ void test_prewitt()
 
 void test_rotate()
 {
-    Tensor img = imp::load("D:/home/picture/dota2-official.bmp");
+    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
     }
-    imp::Size size(img.shape[imp::HWC_H], img.shape[imp::HWC_W]);
     Tensor dst;
     imp::rotate(dst, img, 45);
     imp::save(dst, "rotate_45.bmp");
@@ -320,28 +319,28 @@ void test_rotate()
 }
 void test_nearest_interpolation()
 {
-    Tensor img = imp::load("D:/home/picture/dota2-official.bmp");
+    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
     }
     imp::Size size(img.shape[imp::HWC_H], img.shape[imp::HWC_W]);
     Tensor dst;
-    imp::nearestInterpolate(dst, img, size*4);
-    imp::save(dst, "nearestInterpolate_x4.bmp");
+    imp::nearestInterpolate(dst, img, size*2);
+    imp::save(dst, "nearestInterpolate_x2.bmp");
     return;
 }
 
 void test_bilinear_interpolation()
 {
-    Tensor img = imp::load("D:/home/picture/dota2-official.bmp");
+    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
     }
     imp::Size size(img.shape[imp::HWC_H], img.shape[imp::HWC_W]);
     Tensor dst;
-    imp::bilinearInterpolate(dst, img, size*8);
+    imp::bilinearInterpolate(dst, img, size/2);
     imp::save(dst, "bilinear-interpolate.bmp");
     return;
 }
@@ -353,7 +352,7 @@ void test_dilate()
 
 void noise_img()
 {
-    Tensor img = imp::load("dota2.bmp");
+    Tensor img = imp::load("dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;

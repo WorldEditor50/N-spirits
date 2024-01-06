@@ -1,8 +1,7 @@
 #ifndef COLOR_H
 #define COLOR_H
 #include <cstdint>
-#include "../basic/tensor.hpp"
-#include "image.hpp"
+#include "improcess_def.h"
 
 namespace imp {
 

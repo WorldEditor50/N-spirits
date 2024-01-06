@@ -1,7 +1,7 @@
 #ifndef CTENSOR_HPP
 #define CTENSOR_HPP
 #include "tensor.hpp"
-#include "complexnumber.h"
+#include "complex.hpp"
 
 using CTensor = Tensor_<Complex>;
 

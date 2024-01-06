@@ -1,6 +1,6 @@
 #ifndef LINEARTRANSFORM_H
 #define LINEARTRANSFORM_H
-#include "image.hpp"
+#include "improcess_def.h"
 
 namespace imp {
 

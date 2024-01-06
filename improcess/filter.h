@@ -3,8 +3,8 @@
 #include <functional>
 #include "../basic/util.hpp"
 #include "../basic/ctensor.hpp"
-#include "../basic/complexnumber.h"
-#include "image.hpp"
+#include "../basic/complex.hpp"
+#include "improcess_def.h"
 
 namespace imp {
 

@@ -3,6 +3,7 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include "improcess_def.h"
 #include "jpegwrap.h"
 #include "bmp.hpp"
 #include "ppm.hpp"
@@ -13,11 +14,6 @@
 
 namespace imp {
 
-    enum InterplateType {
-        INTERPOLATE_NEAREST = 0,
-        INTERPOLATE_BILINEAR,
-        INTERPOLATE_CUBIC
-    };
 
     /* tensor shape: (h, w, c) */
     Tensor load(const std::string &fileName);

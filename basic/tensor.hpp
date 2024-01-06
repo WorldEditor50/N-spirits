@@ -139,6 +139,14 @@ public:
         return val;
     }
 
+    inline Tensor_& operator - ()
+    {
+        for (std::size_t i = 0; i < val.size(); i++) {
+            val[i] = -val[i];
+        }
+        return *this;
+    }
+
     inline T* ptr() noexcept { return val.data(); }
     inline const T* ptr() const noexcept { return val.data(); }
     inline bool empty() const {return totalSize == 0;}

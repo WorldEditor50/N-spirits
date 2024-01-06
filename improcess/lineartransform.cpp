@@ -3,7 +3,7 @@
 
 int imp::histogram1(OutTensor hist, InTensor gray)
 {
-    if (isGray(gray) == false) {
+    if (gray.shape[HWC_C] != 1) {
         return -1;
     }
     hist = Tensor(256);
@@ -11,7 +11,9 @@ int imp::histogram1(OutTensor hist, InTensor gray)
         int pixel = gray.val[i];
         hist[pixel]++;
     }
-    float s = area(gray);
+    float h = gray.shape[HWC_H];
+    float w = gray.shape[HWC_W];
+    float s = h*w;
     hist /= s;
     return 0;
 }
@@ -29,51 +31,53 @@ int imp::histogram3(OutTensor hist, InTensor rgb)
             hist(2, b)++;
         }
     }
-    float s = area(rgb);
+    float h = rgb.shape[HWC_H];
+    float w = rgb.shape[HWC_W];
+    float s = h*w;
     hist /= s;
     return 0;
 }
 
 int imp::linearTransform(OutTensor xo, InTensor xi, float alpha, float beta)
 {
-    if (imp::isGray(xi) == false) {
+    if (xi.shape[HWC_C] != 1) {
         return -1;
     }
     xo = Tensor(xi.shape);
     for (std::size_t i = 0; i < xi.totalSize; i++) {
-        xo.val[i] = clamp(xi.val[i]*alpha + beta, 0, 255);
+        xo.val[i] = bound(xi.val[i]*alpha + beta, 0, 255);
     }
     return 0;
 }
 
 int imp::logTransform(OutTensor xo, InTensor xi, float c)
 {
-    if (isGray(xi) == false) {
+    if (xi.shape[HWC_C] != 1) {
         return -1;
     }
     xo = Tensor(xi.shape);
     for (std::size_t i = 0; i < xi.totalSize; i++) {
-        xo.val[i] = clamp(c*std::log(xi.val[i] + 1), 0, 255);
+        xo.val[i] = bound(c*std::log(xi.val[i] + 1), 0, 255);
     }
     return 0;
 }
 
 int imp::gammaTransform(OutTensor xo, InTensor xi, float esp, float gamma)
 {
-    if (isGray(xi) == false) {
+    if (xi.shape[HWC_C] != 1) {
         return -1;
     }
     xo = Tensor(xi.shape);
     for (std::size_t i = 0; i < xi.totalSize; i++) {
         float p = std::pow((xi.val[i] + esp)/255, gamma)*255;
-        xo.val[i] = clamp(p, 0, 255);
+        xo.val[i] = bound(p, 0, 255);
     }
     return 0;
 }
 
 int imp::threshold(OutTensor xo, InTensor xi, float thres, float max_, float min_)
 {
-    if (isGray(xi) == false) {
+    if (xi.shape[HWC_C] != 1) {
         return -1;
     }
     xo = Tensor(xi.shape);
@@ -89,7 +93,7 @@ int imp::threshold(OutTensor xo, InTensor xi, float thres, float max_, float min
 
 int imp::histogramEqualize(OutTensor xo, InTensor xi)
 {
-    if (isGray(xi) == false) {
+    if (xi.shape[HWC_C] != 1) {
         return -1;
     }
     /*
@@ -112,7 +116,7 @@ int imp::histogramEqualize(OutTensor xo, InTensor xi)
         for (std::size_t j = 0; j < xi.val[i]; j++) {
             cdf += hist.val[j];
         }
-        xo.val[i] = clamp(cdf*255.0, 0, 255);
+        xo.val[i] = bound(cdf*255.0, 0, 255);
     }
     return 0;
 }

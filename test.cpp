@@ -4,7 +4,8 @@
 #include "basic/mats.hpp"
 #include "basic/linearalgebra.h"
 #include "basic/tensor.hpp"
-#include "basic/complexnumber.h"
+#include "basic/complex.hpp"
+#include "basic/quaternion.hpp"
 #include "basic/util.hpp"
 #include "basic/fft.h"
 #include "utils/csv.h"
@@ -463,7 +464,11 @@ void test_fft1d()
     return;
 }
 
-
+void test_quaternion()
+{
+    Quaternion q1, q2;
+    Quaternion q = Quaternion::slerp(q1, q2, 0.8);
+}
 int main()
 {
 #if 0
