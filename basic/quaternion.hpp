@@ -21,6 +21,8 @@ public:
         :x0(0),xi(0),xj(0),xk(0){}
     Quaternion(float x0_, float xi_, float xj_, float xk_)
         :x0(x0_),xi(xi_),xj(xj_),xk(xk_){}
+    Quaternion(float xi_, float xj_, float xk_)
+        :x0(0),xi(xi_),xj(xj_),xk(xk_){}
     Quaternion(const Quaternion& r)
         :x0(r.x0),xi(r.xi),xj(r.xj),xk(r.xk){}
     Quaternion& operator=(const Quaternion& r)
@@ -179,7 +181,7 @@ public:
 
     Quaternion inverse() const
     {
-        float r = norm2();
+        float r = x0*x0 + xi*xi + xj*xj + xk*xk;
         return Quaternion(x0/r, -xi/r, -xj/r, -xk/r);
     }
     static float dot(const Quaternion &q1, const Quaternion &q2)

@@ -91,7 +91,7 @@ void test_convert2gray()
 {
     /* load img(h, w, c) */
     Tensor img = imp::load("D:/home/picture/dota-2-official.jpg");
-    if (img.empty() == true) {
+    if (img.empty()) {
         std::cout<<"load jpeg failed."<<std::endl;
         return;
     }
@@ -110,16 +110,12 @@ void test_convert2gray()
 
 void test_bmp()
 {
-    std::shared_ptr<uint8_t[]> data = nullptr;
-    int w = 0;
-    int h = 0;
-    int ret = imp::BMP::load("D:/home/picture/dota-2-official.bmp", data, h, w);
-    if (ret != 0) {
-        std::cout<<"load error = "<<ret<<std::endl;
+    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
+    if (img.empty()) {
+        std::cout<<"load bmp failed."<<std::endl;
         return;
     }
-
-    ret = imp::BMP::save("dota2_write.bmp", data, h, w);
+    int ret = imp::save(img, "dota2_write.bmp");
     if (ret != 0) {
         std::cout<<"save error = "<<ret<<std::endl;
         return;
@@ -340,7 +336,7 @@ void test_bilinear_interpolation()
     }
     imp::Size size(img.shape[imp::HWC_H], img.shape[imp::HWC_W]);
     Tensor dst;
-    imp::bilinearInterpolate(dst, img, size/2);
+    imp::bilinearInterpolate(dst, img, size*4);
     imp::save(dst, "bilinear-interpolate.bmp");
     return;
 }
@@ -364,11 +360,27 @@ void noise_img()
     imp::save(dst, "dota2_noise.bmp");
     return;
 }
+
+void test_make_border()
+{
+    Tensor img = imp::load("D:/home/picture/dota-2-official.jpg");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor xo;
+    imp::copyMakeBorder(xo, img, 2);
+    imp::save(xo, "dota2_padding2.bmp");
+    return;
+}
 int main()
 {
+#if 1
+    test_bmp();
     noise_img();
     test_line();
     test_jpeg_to_tensor();
+    test_write_ppm();
     test_read_ppm();
     test_circle();
     test_polygon();
@@ -381,6 +393,9 @@ int main()
     test_prewitt();
     test_nearest_interpolation();
     test_bilinear_interpolation();
-    test_rotate();
+    //test_rotate();
+    test_make_border();
+#endif
+
 	return 0;
 }

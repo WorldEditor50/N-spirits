@@ -6,13 +6,7 @@ int imp::fromTensor(InTensor x, std::shared_ptr<uint8_t[]> &img)
         img = std::shared_ptr<uint8_t[]>(new uint8_t[x.totalSize]);
     }
     for (std::size_t i = 0; i < x.totalSize; i++) {
-        if (x.val[i] > 255) {
-            img[i] = 255;
-        } else if (x.val[i] < 0) {
-            img[i] = 0;
-        } else {
-            img[i] = x.val[i];
-        }
+        img[i] = imp::bound(x.val[i], 0, 255);
     }
     return 0;
 }
@@ -21,13 +15,7 @@ std::unique_ptr<uint8_t[]> imp::fromTensor(InTensor x)
 {
     std::unique_ptr<uint8_t[]> img(new uint8_t[x.totalSize]);
     for (std::size_t i = 0; i < x.totalSize; i++) {
-        if (x.val[i] > 255) {
-            img[i] = 255;
-        } else if (x.val[i] < 0) {
-            img[i] = 0;
-        } else {
-            img[i] = x.val[i];
-        }
+        img[i] = imp::bound(x.val[i], 0, 255);
     }
     return img;
 }
@@ -36,15 +24,26 @@ std::shared_ptr<uint8_t[]> imp::tensor2Rgb(InTensor x)
 {
     std::shared_ptr<uint8_t[]> img(new uint8_t[x.totalSize]);
     for (std::size_t i = 0; i < x.totalSize; i++) {
-        if (x.val[i] > 255) {
-            img[i] = 255;
-        } else if (x.val[i] < 0) {
-            img[i] = 0;
-        } else {
-            img[i] = x.val[i];
-        }
+        img[i] = imp::bound(x.val[i], 0, 255);
     }
     return img;
+}
+
+
+int imp::copyMakeBorder(OutTensor xo, InTensor xi, int padding)
+{
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    int c = xi.shape[HWC_C];
+    xo = Tensor(h + 2*padding, w + 2*padding, c);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            for (int k = 0; k < c; k++) {
+                xo(i + padding, j + padding, k) = xi(i, j, k);
+            }
+        }
+    }
+    return 0;
 }
 
 int imp::rgb2gray(OutTensor gray, InTensor rgb)
@@ -374,3 +373,4 @@ int imp::findConnectedRegion(InTensor x, OutTensor mask, int &labelCount)
 
     return 0;
 }
+

@@ -136,7 +136,7 @@ int imp::bilinearInterpolate(OutTensor xo, InTensor xi, const Size &size)
                 float y2 = xi(xRight, yRight, k)*(rx - xLeft) - xi(xLeft, yRight, k)*(rx -xLeft) + xi(xLeft, yRight, k);
                 float y3 = y2*(ry - yLeft) - y1*(ry - yLeft) + y1;
 
-                xo(i, j, k) = bound(y3, 255, 0);
+                xo(i, j, k) = imp::bound(y3, 0, 255);
             }
         }
     }

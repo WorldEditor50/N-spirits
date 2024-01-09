@@ -7,13 +7,13 @@
 
 namespace imp {
 #pragma pack(push, 1)
-    struct BmpHead {
-        uint16_t type;
-        uint32_t filesize;
-        uint16_t reserved1;
-        uint16_t reserved2;
-        uint32_t offset;
-    };
+struct BmpHead {
+    uint16_t type;
+    uint32_t filesize;
+    uint16_t reserved1;
+    uint16_t reserved2;
+    uint32_t offset;
+};
 #pragma pack(pop)
 
 #pragma pack(push 1)
@@ -159,7 +159,7 @@ public:
 
     static uint32_t size(int h, int w, int c) {return 54 + h * align4(w, 3);}
 
-    static int fromRGB24(std::shared_ptr<uint8_t[]> rgb, int h, int w,
+    static int rgb24ToBmp(std::shared_ptr<uint8_t[]> rgb, int h, int w,
                          std::shared_ptr<uint8_t[]> &bmp, uint32_t &totalsize)
     {
         if (rgb == nullptr) {
@@ -167,19 +167,18 @@ public:
         }
         /* allocate */
         int alignstep = align4(w, 3);
-        totalsize = 54 + h * alignstep;
+        totalsize = 54 + h*alignstep;
         bmp = std::shared_ptr<uint8_t[]>(new uint8_t[totalsize]);
         memset(bmp.get(), 0, totalsize);
-        return BMP::fromRGB24(rgb, h, w, bmp);
+        return BMP::rgb24ToBmp(rgb, h, w, bmp);
     }
 
-    static int fromRGB24(std::shared_ptr<uint8_t[]> rgb, int h, int w,
+    static int rgb24ToBmp(std::shared_ptr<uint8_t[]> rgb, int h, int w,
                          std::shared_ptr<uint8_t[]> &bmp)
     {
         if (rgb == nullptr || bmp == nullptr) {
             return -1;
         }
-        /* alignstep */
         int alignstep = align4(w, 3);
         /* write header */
         BmpHead head;
@@ -188,10 +187,10 @@ public:
         head.reserved1 = 0;
         head.reserved2 = 0;
         head.offset = 54;
-        writeHeader(bmp, head);
+        memcpy(bmp.get(), &head, sizeof(BmpHead));
         /* write info */
         BmpInformation info;
-        info.infosize = 40;
+        info.infosize = sizeof(BmpInformation);
         info.height = h;
         info.width  = w;
         info.planes = 1;
@@ -202,18 +201,15 @@ public:
         info.y = 5000;
         info.colorused      = 0;
         info.colorimportant = 0;
-        writeInfo(bmp, info);
-        /*
-            save image in little endian, RGB -> BGR
-            image shape: (h, w, 3)
-        */
-        uint8_t *p = bmp.get() + 54;
-        int rowstep = w * 3;
+        memcpy(bmp.get() + sizeof(BmpHead), &info, sizeof(BmpInformation));
+
+        uint8_t *img = bmp.get() + sizeof(BmpHead) + sizeof(BmpInformation);
+        int c = 3;
         for (int i = 0; i < h; i++) {
-            for (int j = 0; j < alignstep; j+=3) {
-                p[i*alignstep + j]     = rgb[(h - 1 - i)*rowstep + rowstep - j + 2];
-                p[i*alignstep + j + 1] = rgb[(h - 1 - i)*rowstep + rowstep - j + 1];
-                p[i*alignstep + j + 2] = rgb[(h - 1 - i)*rowstep + rowstep - j];
+            for (int j = 0; j < w; j++) {
+                img[i*alignstep + j*c]     = rgb[(h - 1 - i)*w*c + j*c + 2];
+                img[i*alignstep + j*c + 1] = rgb[(h - 1 - i)*w*c + j*c + 1];
+                img[i*alignstep + j*c + 2] = rgb[(h - 1 - i)*w*c + j*c];
             }
         }
         return 0;
@@ -227,13 +223,13 @@ public:
         if (rgb == nullptr) {
             return -2;
         }
-        std::ofstream file(fileName, std::ios::binary|std::ios::out);
+        std::fstream file(fileName, std::ios::binary|std::ios::out);
         if (file.is_open() == false) {
             return -3;
         }
         std::shared_ptr<uint8_t[]> bmp;
         uint32_t totalsize = 0;
-        fromRGB24(rgb, h, w, bmp, totalsize);
+        rgb24ToBmp(rgb, h, w, bmp, totalsize);
         file.write((char*)bmp.get(), totalsize);
         file.close();
         return 0;
@@ -253,7 +249,7 @@ public:
         if (file.is_open() == false) {
             return -3;
         }
-        fromRGB24(rgb, h, w, bmp);
+        rgb24ToBmp(rgb, h, w, bmp);
         file.write((char*)bmp.get(), totalsize);
         file.close();
         return 0;
@@ -264,45 +260,45 @@ public:
         if (fileName.empty()) {
             return -1;
         }
-        std::ifstream file(fileName, std::ifstream::binary);
+        std::fstream file(fileName, std::ios::in|std::ios::binary);
         if (file.is_open() == false) {
             return -2;
         }
         /* read header */
-        uint8_t head[54] = {0};
-        file.read((char*)head, 54);
-        /* chack format */
-        if (head[OFFSET_HEAD_TYPE] != 0x42 || head[OFFSET_HEAD_TYPE + 1] != 0x4d) {
-            std::cout<<"head0="<<(char)head[0]<<"head1="<<(char)head[1]<<std::endl;
+        BmpHead header;
+        file.read((char*)&header, sizeof (BmpHead));
+        /* check format */
+        if (header.type != 0x4d42) {
+            std::cout<<"invalid format"<<std::endl;
             return -3;
         }
         /* check depth */
-        uint16_t depth = fromByte(head[OFFSET_INFO_DEPTH], head[OFFSET_INFO_DEPTH + 1]);
-        if (depth != 24) {
+        BmpInformation info;
+        file.read((char*)&info, sizeof (BmpInformation));
+        if (info.depth != 24) {
+            std::cout<<"invalid depth"<<std::endl;
             return -4;
         }
         /* width */
-        w = fromByte(head[OFFSET_INFO_WIDTH], head[OFFSET_INFO_WIDTH + 1],
-                     head[OFFSET_INFO_WIDTH + 2], head[OFFSET_INFO_WIDTH + 3]);
-        w = align4(w, 3) / 3;
+        w = info.width;
         /* height */
-        h = fromByte(head[OFFSET_INFO_HEIGHT], head[OFFSET_INFO_HEIGHT + 1],
-                     head[OFFSET_INFO_HEIGHT + 2], head[OFFSET_INFO_HEIGHT + 3]);
+        h = info.height;
         /* totalsize */
-        uint32_t totalsize = fromByte(head[OFFSET_HEAD_FILEISZE], head[OFFSET_HEAD_FILEISZE + 1],
-                                      head[OFFSET_HEAD_FILEISZE + 2], head[OFFSET_HEAD_FILEISZE + 3]);
-        totalsize -= 54;
-        rgb = std::shared_ptr<uint8_t[]>(new uint8_t[totalsize]);
+        uint32_t totalsize = info.imagesize;
+        std::shared_ptr<uint8_t[]> img = std::shared_ptr<uint8_t[]>(new uint8_t[totalsize]);
         /* read img */
-        file.read((char*)rgb.get(), totalsize);
+        file.read((char*)img.get(), totalsize);
         file.close();
-
         /* reverse: B1G1R1B2G2R2 -> R2G2B2R1G1B1 */
-        std::size_t mid = totalsize/2;
-        for (std::size_t i = 0; i < totalsize/2; i++) {
-            uint8_t pixel = rgb[i];
-            rgb[i] = rgb[totalsize - 1 - i];
-            rgb[totalsize - 1 - i] = pixel;
+        int c = 3;
+        int alignstep = align4(w, c);
+        rgb = std::shared_ptr<uint8_t[]>(new uint8_t[alignstep*h]);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                rgb[(h - 1 - i)*w*c + j*c + 2] = img[i*alignstep + j*c];
+                rgb[(h - 1 - i)*w*c + j*c + 1] = img[i*alignstep + j*c + 1];
+                rgb[(h - 1 - i)*w*c + j*c]     = img[i*alignstep + j*c + 2];
+            }
         }
         return 0;
     }

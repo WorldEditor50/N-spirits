@@ -22,6 +22,8 @@ namespace imp {
     int fromTensor(InTensor x, std::shared_ptr<uint8_t[]> &img);
     std::unique_ptr<uint8_t[]> fromTensor(InTensor x);
     std::shared_ptr<uint8_t[]> tensor2Rgb(InTensor x);
+    /* padding */
+    int copyMakeBorder(OutTensor xo, InTensor xi, int padding);
     /* gray */
     int rgb2gray(OutTensor gray, InTensor rgb);
     int gray2rgb(OutTensor rgb, InTensor gray);
