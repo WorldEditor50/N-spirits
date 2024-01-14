@@ -14,7 +14,6 @@
 
 namespace imp {
 
-
     /* tensor shape: (h, w, c) */
     Tensor load(const std::string &fileName);
     int save(InTensor img, const std::string &fileName);
@@ -22,8 +21,9 @@ namespace imp {
     int fromTensor(InTensor x, std::shared_ptr<uint8_t[]> &img);
     std::unique_ptr<uint8_t[]> fromTensor(InTensor x);
     std::shared_ptr<uint8_t[]> tensor2Rgb(InTensor x);
-    /* padding */
+    /* copy */
     int copyMakeBorder(OutTensor xo, InTensor xi, int padding);
+    int copy(OutTensor &xo, InTensor xi, const Rect &rect);
     /* gray */
     int rgb2gray(OutTensor gray, InTensor rgb);
     int gray2rgb(OutTensor rgb, InTensor gray);
@@ -37,10 +37,24 @@ namespace imp {
     int erode(OutTensor xo, InTensor xi, InTensor kernel);
     /* dilate */
     int dilate(OutTensor xo, InTensor xi, InTensor kernel);
+    /* gray dilate */
+    int grayDilate(OutTensor xo, const Point2i &offset, InTensor xi, InTensor kernel);
+    /* gray erode */
+    int grayErode(OutTensor xo, const Point2i &offset, InTensor xi, InTensor kernel);
     /* trace boundary */
     int traceBoundary(OutTensor xo, InTensor xi, std::vector<Point2i> &boundary);
     /* connected region */
-    int findConnectedRegion(InTensor x, OutTensor mask, int &labelCount);
+    int findConnectedRegion(OutTensor mask, InTensor xi, int connectCount, int &labelCount);
+    /* threshold */
+    int threshold(OutTensor xo, InTensor xi, float thres, float max_, float min_);
+    /* detect threshold */
+    int detectThreshold(InTensor xi, int maxIter, int &thre, int &delta);
+    /* auto threshold */
+    int autoThreshold(OutTensor xo, InTensor xi, float max_, float min_);
+    /* region grow */
+    int regionGrow(OutTensor mask, float label, InTensor xi,  const Point2i &seed, uint8_t thres);
+    /* template match */
+    int templateMatch(InTensor xi, InTensor temp, Rect &rect);
 }
 
 

@@ -46,18 +46,33 @@ int imp::copyMakeBorder(OutTensor xo, InTensor xi, int padding)
     return 0;
 }
 
+
+int imp::copy(OutTensor &xo, InTensor xi, const imp::Rect &rect)
+{
+    int c = xi.shape[HWC_C];
+    xo = Tensor(rect.height, rect.width, c);
+    for (int i = 0; i < rect.height; i++) {
+        for (int j = 0; j < rect.width; j++) {
+            for (int k = 0; k < c; k++) {
+                xo(i, j, k) = xi(i + rect.height, j + rect.width, k);
+            }
+        }
+    }
+    return 0;
+}
+
 int imp::rgb2gray(OutTensor gray, InTensor rgb)
 {
     if (rgb.shape[HWC_C] != 3) {
         return -1;
     }
-    gray = Tensor(rgb.shape);
-    for (int i = 0; i < rgb.shape[0]; i++) {
-        for (int j = 0; j < rgb.shape[1]; j++) {
+    int h = rgb.shape[HWC_H];
+    int w = rgb.shape[HWC_W];
+    gray = Tensor(h, w, 1);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
             float avg = (rgb(i, j, 0) + rgb(i, j, 1) + rgb(i, j, 2))/3;
             gray(i, j, 0) = avg;
-            gray(i, j, 1) = avg;
-            gray(i, j, 2) = avg;
         }
     }
     return 0;
@@ -68,9 +83,11 @@ int imp::gray2rgb(OutTensor rgb, InTensor gray)
     if (gray.shape[HWC_C] != 1) {
         return -1;
     }
-    rgb = Tensor(gray.shape[HWC_H], gray.shape[HWC_W], 3);
-    for (int i = 0; i < rgb.shape[0]; i++) {
-        for (int j = 0; j < rgb.shape[1]; j++) {
+    int h = gray.shape[HWC_H];
+    int w = gray.shape[HWC_W];
+    rgb = Tensor(h, w, 3);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
             float pixel = gray(i, j, 0);
             rgb(i, j, 0) = pixel;
             rgb(i, j, 1) = pixel;
@@ -245,6 +262,9 @@ int imp::resize(OutTensor xo, InTensor xi, const imp::Size &size, int type)
 */
 int imp::erode(OutTensor xo, InTensor xi, InTensor kernel)
 {
+    if (xi.shape[HWC_C] != 1) {
+        return -1;
+    }
     int width = xi.shape[HWC_W];
     int height = xi.shape[HWC_H];
     int kernelSize = kernel.shape[HWC_H];
@@ -258,12 +278,12 @@ int imp::erode(OutTensor xo, InTensor xi, InTensor kernel)
                         continue;
                     }
                     if (kernel(h, k) == 1) {
-                        if (xi(i - 1 + h, j - 1 + k) != 0) {
+                        if (xi(i - 1 + h, j - 1 + k, 0) != 0) {
                             matched = false;
                             break;
                         }
                     } else if (kernel(h, k) == 0) {
-                        if (xi(i - 1 + h, j - 1 + k) != 255) {
+                        if (xi(i - 1 + h, j - 1 + k, 0) != 255) {
                             matched = false;
                             break;
                         }
@@ -281,6 +301,9 @@ int imp::erode(OutTensor xo, InTensor xi, InTensor kernel)
 */
 int imp::dilate(OutTensor xo, InTensor xi, InTensor kernel)
 {
+    if (xi.shape[HWC_C] != 1) {
+        return -1;
+    }
     int width = xi.shape[HWC_W];
     int height = xi.shape[HWC_H];
     int kernelSize = kernel.shape[HWC_H];
@@ -301,6 +324,58 @@ int imp::dilate(OutTensor xo, InTensor xi, InTensor kernel)
                     }
                 }
             }
+        }
+    }
+    return 0;
+}
+
+int imp::grayDilate(OutTensor xo, const Point2i &offset, InTensor xi, InTensor kernel)
+{
+    int w = xi.shape[HWC_W];
+    int h = xi.shape[HWC_H];
+    int kh = kernel.shape[0];
+    int kw = kernel.shape[1];
+    xo = Tensor(xi.shape);
+    for (int i = offset.x; i < h - kh + offset.x + 1; i++) {
+        for (int j = offset.y; j < w - kw + offset.y + 1; j++) {
+            float maxVal = 0;
+            for (int u = 0; u < kh; u++) {
+                for (int v = 0; v < kw; v++) {
+                    if (kernel(u, v) == 1) {
+                        float gray = xi(i - offset.x + u, j - offset.y + v);
+                        if (gray > maxVal) {
+                            maxVal = gray;
+                        }
+                    }
+                }
+            }
+            xo(i, j) = maxVal;
+        }
+    }
+    return 0;
+}
+
+int imp::grayErode(OutTensor xo, const Point2i &offset, InTensor xi, InTensor kernel)
+{
+    int w = xi.shape[HWC_W];
+    int h = xi.shape[HWC_H];
+    int kh = kernel.shape[0];
+    int kw = kernel.shape[1];
+    xo = Tensor(xi.shape);
+    for (int i = offset.x; i < h - kh + offset.x + 1; i++) {
+        for (int j = offset.y; j < w - kw + offset.y + 1; j++) {
+            float minVal = 255.0;
+            for (int u = 0; u < kh; u++) {
+                for (int v = 0; v < kw; v++) {
+                    if (kernel(u, v) == 1) {
+                        float gray = xi(i - offset.x + u, j - offset.y + v);
+                        if (gray < minVal) {
+                            minVal = gray;
+                        }
+                    }
+                }
+            }
+            xo(i, j) = minVal;
         }
     }
     return 0;
@@ -364,13 +439,218 @@ int imp::traceBoundary(OutTensor xo, InTensor xi, std::vector<Point2i> &boundary
     return 0;
 }
 
-
-int imp::findConnectedRegion(InTensor x, OutTensor mask, int &labelCount)
+int imp::findConnectedRegion(OutTensor mask, InTensor xi, int connectCount, int &labelCount)
 {
-    int width = x.shape[HWC_W];
-    int height = x.shape[HWC_H];
+    Tensor gray(xi);
+    Tensor kernel(3, 3);
+    kernel.fill(1);
+    int w = gray.shape[HWC_W];
+    int h = gray.shape[HWC_H];
+    /* boundary */
+    for (int i = 0; i < h; i++) {
+        gray(i, 0) = 255;
+        gray(i, w - 1) = 255;
+    }
+    for (int i = 0; i < w; i++) {
+        gray(0, i) = 255;
+        gray(h - 1, i) = 255;;
+    }
+    Tensor SE({3, 3}, {
+        1, 1, 1,
+        1, 1, 1,
+        1, 1, 1
+    });
+    if (connectCount == 4) {
+        SE(0, 0) = -1;
+        SE(0, 2) = -1;
+        SE(2, 0) = -1;
+        SE(2, 2) = -1;
+    }
+    int label;
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            if (gray(i, j) != 0) {
+                continue;
+            }
 
+            for (int u = 0; u < h; u++) {
+                for (int v = 0; v < w; v++) {
+                    if (mask(u, v) == 0) {
+                        mask(u, v) = label;
+                    }
+                }
+            }
+            label++;
+        }
+    }
+    return 0;
+}
 
+int imp::threshold(OutTensor xo, InTensor xi, float thres, float max_, float min_)
+{
+    if (xi.shape[HWC_C] != 1) {
+        std::cout<<"invalid channel"<<std::endl;
+        return -1;
+    }
+    xo = Tensor(xi.shape);
+    for (std::size_t i = 0; i < xi.totalSize; i++) {
+        if (xi.val[i] < thres) {
+            xo.val[i] = min_;
+        } else {
+            xo.val[i] = max_;
+        }
+    }
+    return 0;
+}
+
+int imp::detectThreshold(InTensor xi, int maxIter, int &thres, int &delta)
+{
+    if (xi.shape[HWC_C] != 1) {
+        return -1;
+    }
+    int histogram[256] = {0};
+    int maxVal = 0;
+    int minVal = 255;
+    /* histogram */
+    for (std::size_t i = 0; i < xi.totalSize; i++) {
+        int val = xi[i];
+        if (val > maxVal) {
+            maxVal = val;
+        }
+        if (val < minVal) {
+            minVal = val;
+        }
+        histogram[val]++;
+    }
+    int newThreshold = (maxVal + minVal)/2;
+    delta = maxVal - minVal;
+    if (maxVal == minVal) {
+        thres = newThreshold;
+    } else {
+        thres = 0;
+        int t = maxIter;
+        while (thres != newThreshold && t > 0) {
+            thres = newThreshold;
+            int totalGray = 0;
+            int totalPixel = 0;
+            for (int i = minVal; i < thres; i++) {
+                totalGray += histogram[i]*i;
+                totalPixel += histogram[i];
+            }
+            int mean1Gray = totalGray/totalPixel;
+            totalGray = 0;
+            totalPixel = 0;
+            for (int i = thres; i <= maxVal; i++) {
+                totalGray += histogram[i]*i;
+                totalPixel += histogram[i];
+            }
+            int mean2Gray = totalGray/totalPixel;
+            newThreshold = (mean1Gray + mean2Gray)/2;
+            delta = std::abs(mean2Gray - mean1Gray);
+            t--;
+        }
+    }
+    return 0;
+}
+
+int imp::autoThreshold(OutTensor xo, InTensor xi, float max_, float min_)
+{
+    int thres = 0;
+    int delta = 0;
+    int ret = detectThreshold(xi, 100, thres, delta);
+    if (ret != 0) {
+        std::cout<<"detectThreshold failed"<<std::endl;
+        return -1;
+    }
+    return threshold(xo, xi, thres, max_, min_);
+}
+
+int imp::regionGrow(OutTensor mask, float label, InTensor xi, const Point2i &seed, uint8_t thres)
+{
+    if (xi.shape[HWC_C] != 1 || mask.shape[HWC_C] != 1) {
+        return -1;
+    }
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    if (seed.x < 0 || seed.x > h ||
+            seed.y < 0 || seed.y > w) {
+        return -2;
+    }
+    float seedVal = xi(seed.x, seed.y);
+    float s = seedVal;
+    int total = 1;
+    int count = 1;
+    while (count > 0) {
+        count = 0;
+        for (int i = 1; i < h - 1; i++) {
+            for (int j = 1; j < w - 1; j++) {
+                if (xi(i, j) != 255.0) {
+                    continue;
+                }
+                /* 8 neighbourhood */
+                for (int u = i - 1; u < i + 1; u++) {
+                    for (int v = j - 1; v < j + 1; v++) {
+                        float delta = std::abs(xi(u, v) - seedVal);
+                        if (mask(u, v) == 0 && delta <= thres) {
+                            mask(u, v) = label;
+                            count++;
+                            s += xi(u, v);
+                        }
+                    }
+                }
+            }
+        }
+        total += count;
+        seedVal = s/total;
+    }
+
+    return 0;
+}
+
+int imp::templateMatch(InTensor xi, InTensor temp, Rect &rect)
+{
+    /*
+        cosθ = <xi, temp>/(||xi||*||temp||)
+    */
+    Tensor grayi;
+    if (xi.shape[HWC_C] != 1) {
+        rgb2gray(grayi, xi);
+    } else {
+        grayi = xi;
+    }
+    Tensor grayTemp;
+    if (temp.shape[HWC_C] != 1) {
+        rgb2gray(grayTemp, temp);
+    } else {
+        grayTemp = temp;
+    }
+    rect.height = temp.shape[HWC_H];
+    rect.width = temp.shape[HWC_W];
+    float tempNorm = grayTemp.norm2();
+    int h = grayi.shape[HWC_H];
+    int w = grayi.shape[HWC_W];
+    /* find maximum cosθ */
+    float maxCosTheta = 0;
+    for (int i = 0; i < h - rect.height + 1; i++) {
+        for (int j = 0; j < w - rect.width + 1; j++) {
+            float innerProduct = 0;
+            float xNorm = 0;
+            for (int u = 0; u < rect.height; u++) {
+                for (int v = 0; v < rect.width; v++) {
+                    float x = grayi(i + u, j + v);
+                    xNorm += x*x;
+                    innerProduct += x*grayTemp(u, v);
+                }
+            }
+            xNorm = std::sqrt(xNorm);
+            float cosTheta = innerProduct/(xNorm*tempNorm);
+            if (cosTheta > maxCosTheta) {
+                rect.x = i;
+                rect.y = j;
+                maxCosTheta = cosTheta;
+            }
+        }
+    }
     return 0;
 }
 

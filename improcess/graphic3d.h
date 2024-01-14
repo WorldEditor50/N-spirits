@@ -2,7 +2,7 @@
 #define GRAPHIC3D_H
 
 
-namespace graphic3D {
+namespace imp {
 
 class Camera
 {
@@ -25,6 +25,6 @@ public:
 
 }; // camera
 
-};// graphic3d
+}
 
 #endif // GRAPHIC3D_H

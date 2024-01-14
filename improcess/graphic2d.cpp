@@ -10,7 +10,7 @@
         V y
 
 */
-int imp::graphic2D::line(Tensor &img, const Point2i &p1, const Point2i &p2, imp::Color3 color, float thick)
+int imp::line(Tensor &img, const Point2i &p1, const Point2i &p2, imp::Color3 color, float thick)
 {
     /*
         (y - y2)/(x - x2) = (y2 - y1)/(x2 - x1) = k
@@ -54,7 +54,7 @@ int imp::graphic2D::line(Tensor &img, const Point2i &p1, const Point2i &p2, imp:
     return 0;
 }
 
-int imp::graphic2D::polygon(Tensor &img, const std::vector<Point2i> &p, imp::Color3 color, float thick)
+int imp::polygon(Tensor &img, const std::vector<Point2i> &p, imp::Color3 color, float thick)
 {
     std::size_t i = 0;
     for (; i < p.size() - 1; i++) {
@@ -64,7 +64,7 @@ int imp::graphic2D::polygon(Tensor &img, const std::vector<Point2i> &p, imp::Col
     return 0;
 }
 
-int imp::graphic2D::circle(Tensor &img, const Point2i &center, float radius, imp::Color3 color, float thick)
+int imp::circle(Tensor &img, const Point2i &center, float radius, imp::Color3 color, float thick)
 {
     int x0 = center.x;
     int y0 = center.y;
@@ -83,7 +83,7 @@ int imp::graphic2D::circle(Tensor &img, const Point2i &center, float radius, imp
     return 0;
 }
 
-int imp::graphic2D::rectangle(Tensor &img, const Point2i &pos, const Point2i &size, imp::Color3 color, float thick)
+int imp::rectangle(Tensor &img, const Point2i &pos, const Point2i &size, imp::Color3 color, float thick)
 {
     /* top left */
     int xL = pos.x;
@@ -92,14 +92,14 @@ int imp::graphic2D::rectangle(Tensor &img, const Point2i &pos, const Point2i &si
     int xR = pos.x + size.x;
     int yR = pos.y + size.y;
     /* thick */
-    int xLL = constraint(xL - thick, 0, img.shape[1]);
-    int yLL = constraint(yL - thick, 0, img.shape[0]);
-    int xLU = constraint(xL + thick, 0, img.shape[1]);
-    int yLU = constraint(yL + thick, 0, img.shape[0]);
-    int xRL = constraint(xR - thick, 0, img.shape[1]);
-    int yRL = constraint(yR - thick, 0, img.shape[0]);
-    int xRU = constraint(xR + thick, 0, img.shape[1]);
-    int yRU = constraint(yR + thick, 0, img.shape[0]);
+    int xLL = bound(xL - thick, 0, img.shape[1]);
+    int yLL = bound(yL - thick, 0, img.shape[0]);
+    int xLU = bound(xL + thick, 0, img.shape[1]);
+    int yLU = bound(yL + thick, 0, img.shape[0]);
+    int xRL = bound(xR - thick, 0, img.shape[1]);
+    int yRL = bound(yR - thick, 0, img.shape[0]);
+    int xRU = bound(xR + thick, 0, img.shape[1]);
+    int yRU = bound(yR + thick, 0, img.shape[0]);
     for (int x = 0; x < img.shape[1]; x++) {
         /* vertical border */
         for (int y = 0; y < img.shape[0]; y++) {

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "../basic/util.hpp"
 #include "../basic/tensor.hpp"
+#include "../utils/clock.hpp"
 #include "../improcess/image.hpp"
 #include "../improcess/jpegwrap.h"
 #include "../improcess/improcess.h"
@@ -98,8 +99,10 @@ void test_convert2gray()
     /* convert to gray image */
     Tensor gray;
     int ret = imp::rgb2gray(gray, img);
+    Tensor rgb;
+    imp::gray2rgb(rgb, gray);
     /* save img */
-    ret = imp::save(gray, "data2_gray.jpg");
+    ret = imp::save(rgb, "data2_gray.jpg");
     if (ret < 0) {
         std::cout<<"save jpeg failed., ret = "<<ret<<std::endl;
         return;
@@ -168,9 +171,9 @@ void test_read_ppm()
 void test_line()
 {
     Tensor img(480, 640, 3);
-    imp::graphic2D::line(img, {100, 100}, {320, 240}, imp::Color3(0, 255, 0), 1);
+    imp::line(img, {100, 100}, {320, 240}, imp::Color3(0, 255, 0), 1);
 
-    imp::graphic2D::line(img, {320, 0}, {0, 240}, imp::Color3(255, 0, 0), 1);
+    imp::line(img, {320, 0}, {0, 240}, imp::Color3(255, 0, 0), 1);
     imp::save(img, "line.bmp");
     return;
 }
@@ -178,7 +181,7 @@ void test_line()
 void test_polygon()
 {
     Tensor img(480, 640, 3);
-    imp::graphic2D::polygon(img, {{200, 100}, {400, 100}, {450, 200},
+    imp::polygon(img, {{200, 100}, {400, 100}, {450, 200},
                                       {400, 300}, {200, 300}, {150, 200}},
                                 imp::Color3(0, 255, 0), 1);
     imp::save(img, "polygon.bmp");
@@ -188,7 +191,7 @@ void test_polygon()
 void test_circle()
 {
     Tensor img(480, 640, 3);
-    imp::graphic2D::circle(img, {320, 240}, 200, imp::Color3(0, 255, 0), 10);
+    imp::circle(img, {320, 240}, 200, imp::Color3(0, 255, 0), 10);
     imp::save(img, "circle.bmp");
     return;
 }
@@ -196,7 +199,7 @@ void test_circle()
 void test_rect()
 {
     Tensor img(480, 640, 3);
-    imp::graphic2D::rectangle(img, {100, 100}, {300, 200}, imp::Color3(0, 255, 0), 10);
+    imp::rectangle(img, {100, 100}, {300, 200}, imp::Color3(0, 255, 0), 10);
     imp::save(img, "rect.bmp");
     return;
 }
@@ -262,7 +265,7 @@ void test_medianBlur()
 
 void test_sobel()
 {
-    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
+    Tensor img = imp::load("D:/home/picture/dota2.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -290,7 +293,7 @@ void test_laplacian()
 
 void test_prewitt()
 {
-    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
+    Tensor img = imp::load("D:/home/picture/dota2.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -313,6 +316,7 @@ void test_rotate()
     imp::save(dst, "rotate_45.bmp");
     return;
 }
+
 void test_nearest_interpolation()
 {
     Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
@@ -373,9 +377,88 @@ void test_make_border()
     imp::save(xo, "dota2_padding2.bmp");
     return;
 }
+
+void test_cut()
+{
+    Tensor img = imp::load("D:/home/picture/dota2.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor xo;
+    imp::Rect rect(100, 100, 200, 200);
+    imp::copy(xo, img, rect);
+    imp::save(xo, "dota2_cut.bmp");
+    return;
+}
+
+void test_autoThreshold()
+{
+    Tensor img = imp::load("D:/home/picture/dota2.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    imp::rgb2gray(gray, img);
+    Tensor xo;
+    imp::autoThreshold(xo, gray, 0, 255);
+    if (xo.empty()) {
+        std::cout<<"empty"<<std::endl;
+        return;
+    }
+    Tensor rgb;
+    imp::gray2rgb(rgb, xo);
+    imp::save(rgb, "dota2_autoThreshold.bmp");
+    return;
+}
+
+void test_templateMatch()
+{
+    /*
+        data2: (1920, 1080, 3)
+        CrystalMaiden: (329, 315, 3)
+        cost time: 165.36s
+        resize:
+            data2: (480, 270, 3)
+            CrystalMaiden: (82, 79, 3)
+            cost time: 0.657489s
+    */
+    Tensor img = imp::load("D:/home/picture/dota2.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor temp = imp::load("D:/home/picture/CrystalMaiden.bmp");
+    if (temp.empty()) {
+        std::cout<<"failed to load temp image."<<std::endl;
+        return;
+    }
+    /* resize */
+    Tensor dota2;
+    imp::resize(dota2, img, imp::imageSize(img)/4);
+    Tensor crystalMaiden;
+    imp::resize(crystalMaiden, temp, imp::imageSize(temp)/4);
+    auto t1 = Clock::tiktok();
+    /* template match */
+    imp::Rect rect;
+    imp::templateMatch(dota2, crystalMaiden, rect);
+    auto t2 = Clock::tiktok();
+    rect *= 4;
+    std::cout<<"templateMatch cost time:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
+    std::cout<<"x:"<<rect.x<<",y:"<<rect.y
+            <<", width:"<<rect.width<<",height:"<<rect.height<<std::endl;
+    Tensor target;
+
+    imp::copy(target, img, rect);
+
+    imp::save(target, "data2_CrystalMaiden.bmp");
+    return;
+}
+
 int main()
 {
-#if 1
+#if 0
     test_bmp();
     noise_img();
     test_line();
@@ -395,7 +478,9 @@ int main()
     test_bilinear_interpolation();
     //test_rotate();
     test_make_border();
+    test_cut();
+    test_autoThreshold();
 #endif
-
+    test_templateMatch();
 	return 0;
 }

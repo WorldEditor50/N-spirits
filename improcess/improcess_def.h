@@ -31,6 +31,62 @@ enum InterplateType {
     INTERPOLATE_CUBIC
 };
 
+template <typename T>
+class Rect_
+{
+public:
+    T x;
+    T y;
+    T width;
+    T height;
+public:
+    Rect_():x(0),y(0),width(0),height(0){}
+    Rect_(T x_, T y_, T width_, T height_)
+        :x(x_),y(y_),width(width_),height(height_){}
+    Rect_& operator*=(T r)
+    {
+        x *= r;
+        y *= r;
+        width *= r;
+        height *= r;
+        return *this;
+    }
+    Rect_& operator/=(T r)
+    {
+        x /= r;
+        y /= r;
+        width /= r;
+        height /= r;
+        return *this;
+    }
+    Rect_ operator*(T r)
+    {
+        Rect_ rect;
+        rect.x = x*r;
+        rect.y = y*r;
+        rect.width = width*r;
+        rect.height = height*r;
+        return rect;
+    }
+    Rect_ operator/(T r)
+    {
+        Rect_ rect;
+        rect.x = x/r;
+        rect.y = y/r;
+        rect.width = width/r;
+        rect.height = height/r;
+        return rect;
+    }
+};
+
+using Rect = Rect_<int>;
+using Rectf = Rect_<float>;
+
+inline static Size imageSize(const Tensor &x)
+{
+    return Size(x.shape[HWC_H], x.shape[HWC_W]);
+}
+
 inline static double bound(double x, double min_, double max_)
 {
     double value = x < min_ ? min_ : x;

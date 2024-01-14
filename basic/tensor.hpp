@@ -752,6 +752,15 @@ public:
         return;
     }
 
+    T norm2() const
+    {
+        T s = 0;
+        for (std::size_t i = 0; i < totalSize; i++) {
+            s += val[i]*val[i];
+        }
+        return std::sqrt(s);
+    }
+
     struct Mul {
         static void ikkj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {

@@ -18,24 +18,27 @@ inline void conv2d(OutTensor y, InTensor kernel, InTensor x, int stride=1, int p
         kernel: (h, w)
         (h, w, c) -> (h, w, c)
     */
-    int ho = std::floor((x.shape[0] - kernel.shape[0] + 2*padding)/stride) + 1;
-    int wo = std::floor((x.shape[1] - kernel.shape[1] + 2*padding)/stride) + 1;
-    y = Tensor(ho, wo, x.shape[2]);
-    for (int i = 0; i < y.shape[0]; i++) {
-        for (int j = 0; j < y.shape[1]; j++) {
+    int hi = x.shape[HWC_H];
+    int wi = x.shape[HWC_W];
+    int ci = x.shape[HWC_C];
+    int hk = kernel.shape[0];
+    int wk = kernel.shape[1];
+    int ho = std::floor((hi - hk + 2*padding)/stride) + 1;
+    int wo = std::floor((wi - wk + 2*padding)/stride) + 1;
+    y = Tensor(ho, wo, ci);
+    for (int i = 0; i < ho; i++) {
+        for (int j = 0; j < wo; j++) {
             /* kernels */
-            for (int h = 0; h < kernel.shape[0]; h++) {
-                for (int k = 0; k < kernel.shape[1]; k++) {
+            for (int u = 0; u < hk; u++) {
+                for (int v = 0; v < wk; v++) {
                     /* map to input  */
-                    int row = h + i*stride - padding;
-                    int col = k + j*stride - padding;
-                    if (row < 0 || row >= x.shape[0] ||
-                            col < 0 || col >= x.shape[1]) {
+                    int row = u + i*stride - padding;
+                    int col = v + j*stride - padding;
+                    if (row < 0 || row >= hi || col < 0 || col >= wi) {
                         continue;
                     }
-                    for (int c = 0; c < y.shape[2]; c++) {
-                        y(i, wo - j - 1, c) += kernel(h, k)*x(row, col, c);
-                        //y(i, j, c) += kernel(h, k)*x(row, wo - col - 1, c);
+                    for (int c = 0; c < ci; c++) {
+                        y(i, wo - j - 1, c) += kernel(u, v)*x(row, wo - col - 1, c);
                     }
                 }
             }

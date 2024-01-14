@@ -55,7 +55,7 @@ int imp::medianFilter(OutTensor xo, InTensor xi, const imp::Size &size)
                                 col < 0 || col >= xi.shape[1]) {
                             continue;
                         }
-                        box(h, k) = xi(row, col, c);
+                        box(h, k) = xi(row, wo - col - 1, c);
                     }
                 }
                 /* sort and find middle value */
@@ -81,7 +81,8 @@ int imp::sobel3x3(OutTensor xo, InTensor xi)
                             -1, -2, -1});
     Tensor grady;
     imp::conv2d(grady, kernely, xi, 1);
-    xo = util::sqrt(gradx*gradx + grady*grady);
+    xo = util::sqrt(gradx*gradx + grady*grady)/2;
+    //xo = gradx + grady;
     return 0;
 }
 
@@ -101,7 +102,6 @@ int imp::sobel5x5(OutTensor xo, InTensor xi)
                            -5,  -8, -10,  -8, -5});
     Tensor grady;
     imp::conv2d(grady, kernely, xi, 1);
-    //dst = sqrt(gradx*gradx + grady*grady);
     xo = util::sqrt(gradx*gradx + grady*grady);
     return 0;
 }
@@ -118,17 +118,33 @@ int imp::laplacian3x3(OutTensor xo, InTensor xi)
 
 int imp::prewitt3x3(OutTensor xo, InTensor xi)
 {
-    Tensor kernelx({3, 3}, {-1, 0,  1,
-                            -1, 0,  1,
-                            -1, 0,  1});
-    Tensor gradx;
-    imp::conv2d(gradx, kernelx, xi, 1);
-    Tensor kernely({3, 3}, { 1,  1,  1,
+    Tensor kernel0({3, 3}, { 1,  1,  1,
                              0,  0,  0,
                             -1, -1, -1});
-    Tensor grady;
-    imp::conv2d(grady, kernely, xi, 1);
-    xo = util::sqrt(gradx*gradx + grady*grady);
+
+    Tensor grad0;
+    imp::conv2d(grad0, kernel0, xi, 1);
+    Tensor kernel45({3, 3}, {-1, -1,  0,
+                             -1,  0,  1,
+                              0,  1,  1});
+
+    Tensor grad45;
+    imp::conv2d(grad45, kernel45, xi, 1);
+
+    Tensor kernel90({3, 3}, {-1, 0,  1,
+                             -1, 0,  1,
+                             -1, 0,  1});
+
+    Tensor grad90;
+    imp::conv2d(grad90, kernel90, xi, 1);
+
+    Tensor kernel135({3, 3}, { 0,  1,  1,
+                              -1,  0,  1,
+                              -1, -1,  0});
+
+    Tensor grad135;
+    imp::conv2d(grad135, kernel135, xi, 1);
+    xo = util::sqrt(grad0*grad0 + grad45*grad45 + grad90*grad90 + grad135*grad135);
     return 0;
 }
 
