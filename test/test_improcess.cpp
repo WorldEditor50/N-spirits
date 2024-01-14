@@ -214,20 +214,23 @@ void test_conv()
     }
     /* conv2d */
     Tensor y;
-#if 0
-    Tensor kernel({3, 3}, {1, 0, -1,
-                           0, 1,  0,
-                          -1, 0,  1});
 
-    Tensor kernel({3, 3}, {-1, 0, -1,
-                            0, 4,  0,
-                           -1, 0, -1});
-#endif
-    Tensor kernel({3, 3}, {-3,  0, 3,
-                           -10, 0, 10,
-                           -3,  0, 3});
-    imp::conv2d(y, kernel, img, 1);
-    imp::save(y, "filter.bmp");
+    Tensor kernel1({3, 3}, {1, 0, -1,
+                            0, 1,  0,
+                           -1, 0,  1});
+
+
+    Tensor kernel2({3, 3}, {-1,  0, 1,
+                             2,  0, -2,
+                            -1,  0, 1});
+
+    Tensor kernel3({3, 3}, {-1, 0, -1,
+                             0, 4,  0,
+                            -1, 0, -1});
+    imp::conv2d(y, kernel3, img, 1);
+    Tensor out = util::abs(y);
+    imp::bound(out, 0, 255);
+    imp::save(out, "conv.bmp");
     return;
 }
 
@@ -458,7 +461,7 @@ void test_templateMatch()
 
 int main()
 {
-#if 0
+#if 1
     test_bmp();
     noise_img();
     test_line();

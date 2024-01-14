@@ -54,7 +54,7 @@ namespace imp {
     /* region grow */
     int regionGrow(OutTensor mask, float label, InTensor xi,  const Point2i &seed, uint8_t thres);
     /* template match */
-    int templateMatch(InTensor xi, InTensor temp, Rect &rect);
+    int templateMatch(InTensor xi, InTensor xt, Rect &rect);
 }
 
 

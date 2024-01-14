@@ -607,10 +607,10 @@ int imp::regionGrow(OutTensor mask, float label, InTensor xi, const Point2i &see
     return 0;
 }
 
-int imp::templateMatch(InTensor xi, InTensor temp, Rect &rect)
+int imp::templateMatch(InTensor xi, InTensor xt, Rect &rect)
 {
     /*
-        cosθ = <xi, temp>/(||xi||*||temp||)
+        cosθ = <xi, xt>/(||xi||*||xt||)
     */
     Tensor grayi;
     if (xi.shape[HWC_C] != 1) {
@@ -618,15 +618,15 @@ int imp::templateMatch(InTensor xi, InTensor temp, Rect &rect)
     } else {
         grayi = xi;
     }
-    Tensor grayTemp;
-    if (temp.shape[HWC_C] != 1) {
-        rgb2gray(grayTemp, temp);
+    Tensor grayt;
+    if (xt.shape[HWC_C] != 1) {
+        rgb2gray(grayt, xt);
     } else {
-        grayTemp = temp;
+        grayt = xt;
     }
-    rect.height = temp.shape[HWC_H];
-    rect.width = temp.shape[HWC_W];
-    float tempNorm = grayTemp.norm2();
+    rect.height = xt.shape[HWC_H];
+    rect.width = xt.shape[HWC_W];
+    float xtNorm = xt.norm2();
     int h = grayi.shape[HWC_H];
     int w = grayi.shape[HWC_W];
     /* find maximum cosθ */
@@ -639,11 +639,11 @@ int imp::templateMatch(InTensor xi, InTensor temp, Rect &rect)
                 for (int v = 0; v < rect.width; v++) {
                     float x = grayi(i + u, j + v);
                     xNorm += x*x;
-                    innerProduct += x*grayTemp(u, v);
+                    innerProduct += x*grayt(u, v);
                 }
             }
             xNorm = std::sqrt(xNorm);
-            float cosTheta = innerProduct/(xNorm*tempNorm);
+            float cosTheta = innerProduct/(xNorm*xtNorm);
             if (cosTheta > maxCosTheta) {
                 rect.x = i;
                 rect.y = j;

@@ -5,6 +5,15 @@
 
 namespace util {
 static std::default_random_engine engine;
+template<typename T>
+inline T abs(const T &x)
+{
+    T y(x);
+    for (std::size_t i = 0; i < x.totalSize; i++) {
+        y.val[i] = x.val[i] > 0 ? x.val[i] : -x.val[i];
+    }
+    return y;
+}
 
 template<typename T>
 inline void sqrt(const T &x, T &y)

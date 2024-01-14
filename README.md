@@ -3,7 +3,7 @@ fun with cpp
 
 ## Features
 
-- expression template
+- expression template 
 - simd (support SSE2, AVX2)
 - matrix
 - tensor
@@ -127,6 +127,61 @@ ffmpeg -i ./cylinder_%d.bmp -vcodec libx264 cylinder.avi
 
 - http://yangwc.com/2020/06/24/LBM/
 - https://forum.taichi-lang.cn/t/homework0/506
+
+
+
+### 3. image process 
+
+#### 3.1 sobel3x3
+
+```c++
+Tensor img = imp::load("D:/home/picture/dota2.bmp");
+if (img.empty()) {
+    std::cout<<"failed to load image."<<std::endl;
+    return;
+}
+Tensor dst;
+imp::sobel3x3(dst, img);
+imp::save(dst, "sobel3x3.bmp");
+```
+
+
+
+#### 3.2 template match
+
+```c++
+Tensor img = imp::load("D:/home/picture/dota2.bmp");
+if (img.empty()) {
+    std::cout<<"failed to load image."<<std::endl;
+    return;
+}
+Tensor temp = imp::load("D:/home/picture/CrystalMaiden.bmp");
+if (temp.empty()) {
+    std::cout<<"failed to load temp image."<<std::endl;
+    return;
+}
+/* resize */
+Tensor dota2;
+imp::resize(dota2, img, imp::imageSize(img)/4);
+Tensor crystalMaiden;
+imp::resize(crystalMaiden, temp, imp::imageSize(temp)/4);
+auto t1 = Clock::tiktok();
+/* template match */
+imp::Rect rect;
+imp::templateMatch(dota2, crystalMaiden, rect);
+auto t2 = Clock::tiktok();
+rect *= 4;
+std::cout<<"templateMatch cost time:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
+std::cout<<"x:"<<rect.x<<",y:"<<rect.y
+    <<", width:"<<rect.width<<",height:"<<rect.height<<std::endl;
+Tensor target;
+
+imp::copy(target, img, rect);
+
+imp::save(target, "data2_CrystalMaiden.bmp");
+```
+
+
 
 ## Dataset
 

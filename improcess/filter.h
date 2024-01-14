@@ -38,7 +38,8 @@ inline void conv2d(OutTensor y, InTensor kernel, InTensor x, int stride=1, int p
                         continue;
                     }
                     for (int c = 0; c < ci; c++) {
-                        y(i, wo - j - 1, c) += kernel(u, v)*x(row, wo - col - 1, c);
+                        //y(i, wo - j - 1, c) += kernel(u, v)*x(row, wo - col - 1, c);
+                        y(i, j, c) += kernel(u, v)*x(row, col, c);
                     }
                 }
             }
