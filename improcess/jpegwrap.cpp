@@ -1,5 +1,5 @@
 #include "jpegwrap.h"
-
+#ifdef ENABLE_JPEG
 void imp::Jpeg::errorNotify(j_common_ptr cinfo)
 {
     imp::Jpeg::Error *error = (imp::Jpeg::Error*) cinfo->err;
@@ -332,3 +332,4 @@ int imp::Jpeg::save(const char *filename, uint8_t *img, int h, int w, int c, int
     /* And we're done! */
     return 0;
 }
+#endif

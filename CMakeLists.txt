@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # load option
 option(ENABLE_SIMCL "ENABLE CL" OFF)
-option(ENABLE_IMPROCESS "ENABLE IMPROCESS" ON)
+option(USE_JPEG "USE JPEG" OFF)
 # compiler option
 if (MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -43,25 +43,36 @@ if (ENABLE_SIMCL)
     target_link_libraries(test_simcl SIMCL ${OpenCL_LIBRARIES})
 endif()
 # improcess
-if (ENABLE_IMPROCESS)
-    if (MSVC)
-        #set(JPEG_ROOT "D:/home/3rdparty/libjpeg")
-        set(JPEG_INCLUDE_DIR "D:/home/3rdparty/libjpeg/include")
-        set(JPEG_LIBRARIES "D:/home/3rdparty/libjpeg/lib/jpeg-static.lib")
+file(GLOB IMPROCESS_3RDPARTY "")
+if (USE_JPEG)
+    find_package(JPEG QUIET)
+    if (JPEG_FOUND)
         include_directories(${JPEG_INCLUDE_DIR})
+        message(STATUS "JPEG_INCLUDE_DIR=${JPEG_INCLUDE_DIR}")
+        message(STATUS "JPEG_LIBRARIES=${JPEG_LIBRARIES}")
     else()
-        find_package(JPEG REQUIRED)
-        if (JPEG_FOUND)
+        if (MSVC)
+            #set(JPEG_ROOT "D:/home/3rdparty/libjpeg")
+            set(JPEG_INCLUDE_DIR "D:/home/3rdparty/libjpeg/include")
+            set(JPEG_LIBRARIES "D:/home/3rdparty/libjpeg/lib/jpeg-static.lib")
             include_directories(${JPEG_INCLUDE_DIR})
-            message(STATUS "JPEG_INCLUDE_DIR=${JPEG_INCLUDE_DIR}")
-            message(STATUS "JPEG_LIBRARIES=${JPEG_LIBRARIES}")
         endif()
     endif()
-    add_subdirectory(${PROJECT_SOURCE_DIR}/improcess)
-    # test improcess
-    add_executable(test_improcess test/test_improcess.cpp)
-    target_link_libraries(test_improcess IMPROCESS BASIC ${JPEG_LIBRARIES})
+    list(APPEND IMPROCESS_3RDPARTY ${JPEG_LIBRARIES})
+    add_definitions(-DENABLE_JPEG)
+    message(STATUS "ENABLE USE JPEG")
 endif()
+add_subdirectory(${PROJECT_SOURCE_DIR}/improcess)
+# test improcess
+add_executable(test_improcess test/test_improcess.cpp)
+target_link_libraries(test_improcess IMPROCESS BASIC ${IMPROCESS_3RDPARTY})
+
+# copy images
+add_custom_command(TARGET test_improcess
+                   POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/images" "${CMAKE_CURRENT_BINARY_DIR}/images"
+                   COMMENT "COPY IMAGES")
+
 # fluid
 add_subdirectory(${PROJECT_SOURCE_DIR}/fluid)
 # test
@@ -78,7 +89,7 @@ add_executable(test_simd test/test_simd.cpp)
 target_link_libraries(test_simd BASIC)
 # test fluid
 add_executable(test_fluid test/test_lbm.cpp)
-target_link_libraries(test_fluid FLUID IMPROCESS BASIC ${JPEG_LIBRARIES})
+target_link_libraries(test_fluid FLUID IMPROCESS BASIC ${IMPROCESS_3RDPARTY})
 # test cpp
 add_executable(test_cpp test/testcpp.cpp)
 target_link_libraries(test_cpp BASIC)

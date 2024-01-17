@@ -55,7 +55,7 @@ int imp::histogramEqualize(OutTensor xo, InTensor xi)
     xo = Tensor(xi.shape);
     /* 1. histogram */
     Tensor hist;
-    histogram(hist, xi);
+    uniformHistogram(hist, xi);
     /* 2. equalize */
     for (std::size_t i = 0; i < xi.totalSize; i++) {
         float cdf = 0;
@@ -75,7 +75,7 @@ int imp::histogramStandardize(OutTensor xo, InTensor xi)
     xo = Tensor(xi.shape);
     /* histogram */
     Tensor hist;
-    histogram(hist, xi);
+    uniformHistogram(hist, xi);
 
     /* equalize */
     int histStd[256] = {-1};

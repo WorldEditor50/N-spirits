@@ -11,37 +11,105 @@ int imp::histogram(OutTensor hist, InTensor gray)
         int pixel = gray.val[i];
         hist[pixel]++;
     }
-    hist /= gray.totalSize;
     return 0;
 }
 
-int imp::mean(InTensor hist, float &m)
+int imp::uniformHistogram(OutTensor hist, InTensor gray)
 {
-    m = 0;
+    int ret = histogram(hist, gray);
+    int h = gray.shape[HWC_H];
+    int w = gray.shape[HWC_W];
+    hist /= (h*w);
+    return ret;
+}
+
+int imp::moment0(OutTensor m0, InTensor hist)
+{
+    m0 = Tensor(256);
+    float s = 0;
     for (std::size_t i = 0; i < 256; i++) {
-        m += i*hist[i];
+        s += hist[i];
+        m0[i] = s;
     }
     return 0;
 }
 
-int imp::moment(InTensor hist, float m, int n, float &mu)
+int imp::moment1(OutTensor m1, InTensor hist)
 {
-    mu = 0;
+    m1 = Tensor(256);
+    float s = 0;
     for (std::size_t i = 0; i < 256; i++) {
-        mu += std::pow(i - m, n)*hist[i];
+        s += i*hist[i];
+        m1[i] = s;
     }
     return 0;
 }
 
-
-int imp::entropy(InTensor hist, float &e)
+int imp::entropy(InTensor img, int &thres)
 {
-    e = 0;
-    for (std::size_t i = 0; i < 256; i++) {
-        e += -hist[i]*std::log(hist[i]);
+    if (img.shape[HWC_C] != 1) {
+        return -1;
     }
+    /* histogram */
+    Tensor hist;
+    uniformHistogram(hist, img);
+    /* moment0 */
+    Tensor m0;
+    moment0(m0, hist);
+    /* f = f1 + f2 */
+    Tensor f(256);
+    for (std::size_t t = 0; t < 256; t++) {
+        float f1 = 0;
+        for (std::size_t i = 0; i < t + 1; i++) {
+            if (std::abs(m0[i]) < 1e-6) {
+                f1 = 0;
+            } else {
+                f1 += -(hist[i]/m0[i])*std::log(hist[i]/m0[i] + 1e-6);
+            }
+        }
+        float f2 = 0;
+        for (std::size_t i = t + 1; i < 256; i++) {
+            if (std::abs(1 - m0[i]) < 1e-6) {
+                f2 = 0;
+            } else {
+                f1 += -(hist[i]/(1 - m0[i]))*std::log(hist[i]/(1 - m0[i]) + 1e-6);
+            }
+        }
+
+        f[t] = f1 + f2;
+        //std::cout<<f[t]<<std::endl;
+    }
+    thres = f.argmax();
     return 0;
 }
+int imp::otsu(InTensor img, int &thres)
+{
+    if (img.shape[HWC_C] != 1) {
+        return -1;
+    }
+    /* histogram */
+    Tensor hist;
+    uniformHistogram(hist, img);
+    /* moment0 */
+    Tensor m0;
+    moment0(m0, hist);
+    /* moment1 */
+    Tensor m1;
+    moment1(m1, hist);
+    float u = m1[255];
+    /* variance */
+    Tensor sigma(256);
+    for (int i = 0; i < 256; i++) {
+        if (m0[i] == 0 || m0[i] == 1) {
+            sigma[i] = 0;
+            continue;
+        }
+        sigma[i] = (u*m0[i] - m1[i])*(u*m0[i] - m1[i])/(m0[i]*(1 - m0[i]));
+    }
+    thres = sigma.argmax();
+    return 0;
+}
+
 
 int imp::grayConjugateMatrix(OutTensor xo, InTensor xi, const Point2i &p1, const Point2i &p2)
 {
@@ -69,4 +137,24 @@ int imp::grayConjugateMatrix(OutTensor xo, InTensor xi, const Point2i &p1, const
     return 0;
 }
 
+int imp::barycenter(InTensor img, Point2i &center)
+{
+    if (img.shape[HWC_C] != 1) {
+        return -1;
+    }
+    float s = img.sum();
+    int w = img.shape[HWC_W];
+    int h = img.shape[HWC_H];
+    float x = 0;
+    float y = 0;
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            int pixel = img(i, j);
+            x += pixel*i;
+            y += pixel*j;
+        }
+    }
+    center = Point2i(x/s, y/s);
+    return 0;
+}
 

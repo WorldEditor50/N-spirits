@@ -170,18 +170,23 @@ Tensor imp::load(const std::string &fileName)
     int h = 0;
     int w = 0;
     int c = 0;
-    if (fileName.find(".jpg") != std::string::npos) {
-        int ret = imp::Jpeg::load(fileName.c_str(), data, h, w, c);
-        if (ret < 0) {
-            return img;
-        }
-    } else if (fileName.find(".bmp") != std::string::npos) {
+    if (fileName.find(".bmp") != std::string::npos) {
         c = 3;
         int ret = imp::BMP::load(fileName.c_str(), data, h, w);
         if (ret < 0) {
             return img;
         }
-    } else if (fileName.find(".ppm") != std::string::npos) {
+    } else if (fileName.find(".jpg") != std::string::npos) {
+#ifdef ENABLE_JPEG
+        int ret = imp::Jpeg::load(fileName.c_str(), data, h, w, c);
+        if (ret < 0) {
+            return img;
+        }
+#else
+        std::cout<<"please enanle USE_JPEG."<<std::endl;
+#endif
+    }
+    else if (fileName.find(".ppm") != std::string::npos) {
         c = 3;
         int ret = imp::PPM::load(fileName.c_str(), data, h, w);
         if (ret < 0) {
@@ -214,10 +219,15 @@ int imp::save(InTensor img, const std::string &fileName)
     std::shared_ptr<uint8_t[]> data = tensor2Rgb(img);
     /* save */
     if (fileName.find(".jpg") != std::string::npos) {
+#ifdef ENABLE_JPEG
         int ret = imp::Jpeg::save(fileName.c_str(), data.get(), h, w, c);
         if (ret < 0) {
             return -3;
         }
+#else
+        std::cout<<"please enanle USE_JPEG."<<std::endl;
+        return -4;
+#endif
     } else if (fileName.find(".bmp") != std::string::npos) {
         int ret = imp::BMP::save(fileName, data, h, w);
         if (ret < 0) {
@@ -562,6 +572,31 @@ int imp::autoThreshold(OutTensor xo, InTensor xi, float max_, float min_)
         std::cout<<"detectThreshold failed"<<std::endl;
         return -1;
     }
+    std::cout<<"auto thres:"<<thres<<std::endl;
+    return threshold(xo, xi, thres, max_, min_);
+}
+
+
+int imp::otsuThreshold(OutTensor xo, InTensor xi, float max_, float min_)
+{
+    int thres = 0;
+    int ret = otsu(xi, thres);
+    std::cout<<"otsu thres:"<<thres<<std::endl;
+    if (ret != 0) {
+        std::cout<<"otsu failed"<<std::endl;
+        return -1;
+    }
+    return threshold(xo, xi, thres, max_, min_);
+}
+
+int imp::entropyThreshold(OutTensor xo, InTensor xi, float max_, float min_)
+{
+    int thres = 0;
+    int ret = entropy(xi, thres);
+    std::cout<<"entropy thres:"<<thres<<std::endl;
+    if (ret != 0) {
+        return -1;
+    }
     return threshold(xo, xi, thres, max_, min_);
 }
 
@@ -653,4 +688,3 @@ int imp::templateMatch(InTensor xi, InTensor xt, Rect &rect)
     }
     return 0;
 }
-

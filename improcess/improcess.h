@@ -4,14 +4,16 @@
 #include <memory>
 #include <functional>
 #include "improcess_def.h"
-#include "jpegwrap.h"
 #include "bmp.hpp"
 #include "ppm.hpp"
 #include "image.hpp"
 #include "graphic2d.h"
 #include "geometrytransform.h"
 #include "filter.h"
-
+#include "features.h"
+#ifdef ENABLE_JPEG
+#include "jpegwrap.h"
+#endif
 namespace imp {
 
     /* tensor shape: (h, w, c) */
@@ -51,6 +53,10 @@ namespace imp {
     int detectThreshold(InTensor xi, int maxIter, int &thre, int &delta);
     /* auto threshold */
     int autoThreshold(OutTensor xo, InTensor xi, float max_, float min_);
+    /* otsu threshold */
+    int otsuThreshold(OutTensor xo, InTensor xi, float max_, float min_);
+    /* entropy threshold */
+    int entropyThreshold(OutTensor xo, InTensor xi, float max_, float min_);
     /* region grow */
     int regionGrow(OutTensor mask, float label, InTensor xi,  const Point2i &seed, uint8_t thres);
     /* template match */

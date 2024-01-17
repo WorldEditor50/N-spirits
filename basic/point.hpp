@@ -36,6 +36,7 @@ public:
     Point2& operator -= (T c) {x -= c; y -= c; return *this;}
     Point2& operator *= (T c) {x *= c; y *= c; return *this;}
     Point2& operator /= (T c) {x /= c; y /= c; return *this;}
+    Point2 yx() const {return Point2(y, x);}
 };
 
 template <typename T>

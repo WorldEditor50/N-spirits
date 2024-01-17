@@ -7,9 +7,10 @@
 #include "../basic/tensor.hpp"
 #include "../utils/clock.hpp"
 #include "../improcess/image.hpp"
-#include "../improcess/jpegwrap.h"
 #include "../improcess/improcess.h"
 #include "../improcess/bmp.hpp"
+#ifdef ENABLE_JPEG
+#include "../improcess/jpegwrap.h"
 
 void test_jpeg()
 {
@@ -17,7 +18,7 @@ void test_jpeg()
     int w = 0;
     int h = 0;
     int c = 0;
-    int ret = imp::Jpeg::load("D:/home/picture/dota-2-official.jpg", data, h, w, c);
+    int ret = imp::Jpeg::load("./images/dota-2-official.jpg", data, h, w, c);
     if (ret < 0) {
         std::cout<<"load jpeg failed."<<std::endl;
         return;
@@ -35,7 +36,7 @@ void test_jpeg()
 void test_jpeg_to_tensor()
 {
     /* load img(h, w, c) */
-    Tensor img = imp::load("D:/home/picture/dota-2-official.jpg");
+    Tensor img = imp::load("./images/dota-2-official.jpg");
     if (img.empty() == true) {
         std::cout<<"load jpeg failed."<<std::endl;
         return;
@@ -87,13 +88,14 @@ void test_jpeg_to_tensor()
     std::cout<<"finished."<<std::endl;
     return;
 }
+#endif
 
 void test_convert2gray()
 {
     /* load img(h, w, c) */
-    Tensor img = imp::load("D:/home/picture/dota-2-official.jpg");
+    Tensor img = imp::load("./images/dota-2-official.bmp");
     if (img.empty()) {
-        std::cout<<"load jpeg failed."<<std::endl;
+        std::cout<<"load bmp failed."<<std::endl;
         return;
     }
     /* convert to gray image */
@@ -102,9 +104,9 @@ void test_convert2gray()
     Tensor rgb;
     imp::gray2rgb(rgb, gray);
     /* save img */
-    ret = imp::save(rgb, "data2_gray.jpg");
+    ret = imp::save(rgb, "data2_gray.bmp");
     if (ret < 0) {
-        std::cout<<"save jpeg failed., ret = "<<ret<<std::endl;
+        std::cout<<"save bmp failed., ret = "<<ret<<std::endl;
         return;
     }
     std::cout<<"finished."<<std::endl;
@@ -113,7 +115,7 @@ void test_convert2gray()
 
 void test_bmp()
 {
-    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
+    Tensor img = imp::load("./images/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"load bmp failed."<<std::endl;
         return;
@@ -132,10 +134,9 @@ void test_write_ppm()
     std::shared_ptr<uint8_t[]> data = nullptr;
     int w = 0;
     int h = 0;
-    int c = 0;
-    int ret = imp::Jpeg::load("D:/home/picture/dota-2-official.jpg", data, h, w, c);
+    int ret = imp::BMP::load("./images/dota-2-official.bmp", data, h, w);
     if (ret < 0) {
-        std::cout<<"load jpeg failed."<<std::endl;
+        std::cout<<"load bmp failed."<<std::endl;
         return;
     }
     /* write ppm */
@@ -207,7 +208,7 @@ void test_rect()
 void test_conv()
 {
     /* load image */
-    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
+    Tensor img = imp::load("./images/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -237,7 +238,7 @@ void test_conv()
 void test_averageBlur()
 {
     /* load image */
-    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
+    Tensor img = imp::load("./images/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -253,7 +254,7 @@ void test_averageBlur()
 void test_medianBlur()
 {
     /* load image */
-    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
+    Tensor img = imp::load("./images/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -268,7 +269,7 @@ void test_medianBlur()
 
 void test_sobel()
 {
-    Tensor img = imp::load("D:/home/picture/dota2.bmp");
+    Tensor img = imp::load("./images/dota2.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -281,7 +282,7 @@ void test_sobel()
 
 void test_laplacian()
 {
-    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
+    Tensor img = imp::load("./images/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -290,13 +291,13 @@ void test_laplacian()
     imp::gaussianFilter3x3(blur, img);
     Tensor dst;
     imp::laplacian3x3(dst, blur);
-    imp::save(dst, "laplacian3x3.bmp");
+    imp::save(util::abs(dst), "laplacian3x3.bmp");
     return;
 }
 
 void test_prewitt()
 {
-    Tensor img = imp::load("D:/home/picture/dota2.bmp");
+    Tensor img = imp::load("./images/dota2.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -309,7 +310,7 @@ void test_prewitt()
 
 void test_rotate()
 {
-    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
+    Tensor img = imp::load("./images/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -322,7 +323,7 @@ void test_rotate()
 
 void test_nearest_interpolation()
 {
-    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
+    Tensor img = imp::load("./images/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -336,7 +337,7 @@ void test_nearest_interpolation()
 
 void test_bilinear_interpolation()
 {
-    Tensor img = imp::load("D:/home/picture/dota-2-official.bmp");
+    Tensor img = imp::load("./images/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -348,14 +349,9 @@ void test_bilinear_interpolation()
     return;
 }
 
-void test_dilate()
-{
-
-}
-
 void noise_img()
 {
-    Tensor img = imp::load("dota-2-official.bmp");
+    Tensor img = imp::load("./images/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -370,7 +366,7 @@ void noise_img()
 
 void test_make_border()
 {
-    Tensor img = imp::load("D:/home/picture/dota-2-official.jpg");
+    Tensor img = imp::load("./images/dota2.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -383,7 +379,7 @@ void test_make_border()
 
 void test_cut()
 {
-    Tensor img = imp::load("D:/home/picture/dota2.bmp");
+    Tensor img = imp::load("./images/dota2.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -397,7 +393,7 @@ void test_cut()
 
 void test_autoThreshold()
 {
-    Tensor img = imp::load("D:/home/picture/dota2.bmp");
+    Tensor img = imp::load("./images/dota2.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -416,6 +412,47 @@ void test_autoThreshold()
     return;
 }
 
+void test_otsuThreshold()
+{
+    Tensor img = imp::load("./images/dota2.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    imp::rgb2gray(gray, img);
+    Tensor xo;
+    imp::otsuThreshold(xo, gray, 0, 255);
+    if (xo.empty()) {
+        std::cout<<"empty"<<std::endl;
+        return;
+    }
+    Tensor rgb;
+    imp::gray2rgb(rgb, xo);
+    imp::save(rgb, "dota2_otsu.bmp");
+    return;
+}
+
+void test_entropyThreshold()
+{
+    Tensor img = imp::load("./images/dota2.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    imp::rgb2gray(gray, img);
+    Tensor xo;
+    imp::entropyThreshold(xo, gray, 0, 255);
+    if (xo.empty()) {
+        std::cout<<"empty"<<std::endl;
+        return;
+    }
+    Tensor rgb;
+    imp::gray2rgb(rgb, xo);
+    imp::save(rgb, "dota2_entropy.bmp");
+    return;
+}
 void test_templateMatch()
 {
     /*
@@ -427,12 +464,12 @@ void test_templateMatch()
             CrystalMaiden: (82, 79, 3)
             cost time: 0.657489s
     */
-    Tensor img = imp::load("D:/home/picture/dota2.bmp");
+    Tensor img = imp::load("./images/dota2.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
     }
-    Tensor temp = imp::load("D:/home/picture/CrystalMaiden.bmp");
+    Tensor temp = imp::load("./images/crystalmaiden.bmp");
     if (temp.empty()) {
         std::cout<<"failed to load temp image."<<std::endl;
         return;
@@ -455,17 +492,38 @@ void test_templateMatch()
 
     imp::copy(target, img, rect);
 
-    imp::save(target, "data2_CrystalMaiden.bmp");
+    imp::save(target, "data2_crystalmaiden.bmp");
+    return;
+}
+
+void test_barycenter()
+{
+    Tensor img = imp::load("./images/dota2.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    imp::rgb2gray(gray, img);
+    Point2i center;
+    imp::barycenter(gray, center);
+    center = center.yx();
+    std::cout<<"x:"<<center.x<<", y:"<<center.y<<std::endl;
+    imp::circle(img, center, 8, imp::Color3(0, 255, 0));
+    imp::save(img, "data2_barycenter.bmp");
     return;
 }
 
 int main()
 {
+
+#ifdef ENABLE_JPEG
+    test_jpeg_to_tensor();
+#endif
 #if 1
     test_bmp();
     noise_img();
     test_line();
-    test_jpeg_to_tensor();
     test_write_ppm();
     test_read_ppm();
     test_circle();
@@ -483,7 +541,11 @@ int main()
     test_make_border();
     test_cut();
     test_autoThreshold();
-#endif
     test_templateMatch();
+    test_barycenter();
+#endif
+    test_autoThreshold();
+    test_otsuThreshold();
+    test_entropyThreshold();
 	return 0;
 }
