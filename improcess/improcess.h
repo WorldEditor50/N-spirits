@@ -12,7 +12,10 @@
 #include "filter.h"
 #include "features.h"
 #ifdef ENABLE_JPEG
-#include "jpegwrap.h"
+#include "jpegwrap/jpegwrap.h"
+#endif
+#ifdef WIN32
+#include "platform/windows/viewpage.h"
 #endif
 namespace imp {
 
@@ -22,7 +25,10 @@ namespace imp {
     Tensor toTensor(int h, int w, int c, std::shared_ptr<uint8_t[]> &img);
     int fromTensor(InTensor x, std::shared_ptr<uint8_t[]> &img);
     std::unique_ptr<uint8_t[]> fromTensor(InTensor x);
-    std::shared_ptr<uint8_t[]> tensor2Rgb(InTensor x);
+    std::shared_ptr<uint8_t[]> tensor2Image(InTensor x);
+    /* show image */
+    void show(InTensor x);
+    void show(const std::string &fileName);
     /* copy */
     int copyMakeBorder(OutTensor xo, InTensor xi, int padding);
     int copy(OutTensor &xo, InTensor xi, const Rect &rect);

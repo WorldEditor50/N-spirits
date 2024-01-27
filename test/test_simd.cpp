@@ -5,7 +5,7 @@
 #include "../basic/util.hpp"
 #include "../utils/clock.hpp"
 
-double correct(const Tensor &x1, const Tensor &x2)
+double correct(const Tensorsi &x1, const Tensorsi &x2)
 {
     double N = x1.totalSize;
     double n = 0;
@@ -33,23 +33,23 @@ void test_simd_matmul()
 
     */
     int N = 2048;
-    Tensor x(N, N);
-    Tensor x1(N, N);
-    Tensor x2(N, N);
+    Tensorsi x(N, N);
+    Tensorsi x1(N, N);
+    Tensorsi x2(N, N);
     util::uniform(x1, -9, 9);
     util::uniform(x2, -9, 9);
     /* trivial matmul */
     {
         x.zero();
-        Tensorf x3(N, N);
-        Tensorf xt1(N, N);
-        Tensorf xt2(N, N);
+        Tensorsi x3(N, N);
+        Tensorsi xt1(N, N);
+        Tensorsi xt2(N, N);
         for (std::size_t i = 0; i < x1.totalSize; i++) {
             xt1[i] = x1[i];
             xt2[i] = x2[i];
         }
         auto t1 = Clock::tiktok();
-        Tensorf::Mul::ikkj(x3, xt1, xt2);
+        Tensorsi::Mul::ikkj(x3, xt1, xt2);
         auto t2 = Clock::tiktok();
         double cost = Clock::duration(t2, t1);
         std::cout<<"trivial matmul cost:"<<cost<<"s"<<std::endl;
@@ -61,7 +61,7 @@ void test_simd_matmul()
     /* simd matmul */
     /* 8-channel */
     {
-        Tensor x3(N, N);
+        Tensorsi x3(N, N);
         auto t1 = Clock::tiktok();
         simd::AVX2::matMul(x3.ptr(), x3.shape[0], x3.shape[1],
                            x1.ptr(), x1.shape[0], x1.shape[1],
@@ -75,7 +75,7 @@ void test_simd_matmul()
 
     /* 64 channel */
     {
-        Tensor x3(N, N);
+        Tensorsi x3(N, N);
         auto t1 = Clock::tiktok();
         simd::AVX2::matMul64(x3.ptr(), x3.shape[0], x3.shape[1],
                              x1.ptr(), x1.shape[0], x1.shape[1],
@@ -89,7 +89,7 @@ void test_simd_matmul()
 
     /* 8-channel wrapper */
     {
-        Tensor x3(N, N);
+        Tensorsi x3(N, N);
         auto t1 = Clock::tiktok();
         simd::wrap<float, simd::AVX>::matMul(x3.ptr(), x3.shape[0], x3.shape[1],
                                              x1.ptr(), x1.shape[0], x1.shape[1],
@@ -116,7 +116,7 @@ void test_simd()
         std::cout<<"horizontal sum double = "<<s2<<std::endl;
     }
     /* max */
-    Tensor x(100);
+    Tensorsi x(100);
     util::uniform(x, 0, 100);
     x[50] = 101;
     x.printValue();
@@ -139,22 +139,22 @@ void test_simd()
     }
     /* exp */
     {
-        Tensor y1(100);
+        Tensorsi y1(100);
         x.fill(3);
         simd::AVX2::exp(y1.ptr(), x.ptr(), x.totalSize);
         std::cout<<"simd exp:"<<std::endl;
         y1.printValue();
         std::cout<<"cmath exp:"<<std::endl;
-        Tensor y2(100);
+        Tensorsi y2(100);
         util::exp(x, y2);
         y2.printValue();
     }
     /* sqrt */
     {
-        Tensor x1 = Tensor::ones(16, 16, 16);
-        Tensor x2 = Tensor::ones(16, 16, 16);
+        Tensorsi x1 = Tensorsi::ones(16, 16, 16);
+        Tensorsi x2 = Tensorsi::ones(16, 16, 16);
         x1 += x2;
-        Tensor x3 = Tensor::ones(16, 16, 16);
+        Tensorsi x3 = Tensorsi::ones(16, 16, 16);
         simd::AVX2::sqrt(x3.ptr(), x1.ptr(), x1.totalSize);
         x3.printValue();
     }
@@ -167,8 +167,8 @@ void test_simd_transpose()
 #if defined(__AVX2__)
     int N = 4096;
     {
-        Tensor_<double> x(N, N);
-        Tensor_<double> y(N, N);
+        Tensorsi x(N, N);
+        Tensorsi y(N, N);
         util::uniform(x, 0, 9);
         auto t1 = Clock::tiktok();
         simd::AVX2::transpose(y.ptr(), N, N,
@@ -176,14 +176,14 @@ void test_simd_transpose()
         auto t2 = Clock::tiktok();
         std::cout<<"avx2 transpose cost:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
         t1 = Clock::tiktok();
-        Tensor_<double> x1 = x.tr();
+        Tensorsi x1 = x.tr();
         t2 = Clock::tiktok();
         std::cout<<"trivial transpose cost:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
     }
     if (0)
     {
-        Tensor x(16, 16);
-        Tensor y(16, 16);
+        Tensorsi x(16, 16);
+        Tensorsi y(16, 16);
         util::uniform(x, 0, 9);
         simd::AVX2::transpose(y.ptr(), 16, 16,
                               x.ptr(), 16, 16);
@@ -201,17 +201,17 @@ int main()
     //test_simd_matmul();
     //test_simd_transpose();
     int N = 128;
-    Tensor x(1, N);
-    Tensor x1(N, N);
-    Tensor x2(N, 1);
+    Tensorsi x(N, N);
+    Tensorsi x1(N, N);
+    Tensorsi x2(N, N);
     util::uniform(x1, -9, 9);
     util::uniform(x2, -9, 9);
     for (std::size_t i = 0; i < 4; i++) {
         x.zero();
-        Tensor::Mul::ikkj(x, x1, x2);
+        Tensorsi::Mul::ikkj(x, x1, x2);
     }
-    Tensor x3(N, N);
-    Tensor::Mul::ikkj(x3, x1, x2);
+    Tensorsi x3(N, N);
+    Tensorsi::Mul::ikkj(x3, x1, x2);
     std::cout<<"correct rate:"<<correct(x, x3)<<std::endl;
     //x.printValue();
     //x3.printValue();

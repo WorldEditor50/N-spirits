@@ -4,7 +4,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <memory>
-#ifdef ENABLE_JPEG
 #include <jerror.h>
 #include <jpeglib.h>
 #include <setjmp.h>
@@ -47,5 +46,5 @@ namespace Jpeg {
 }
 
 }
-#endif
+
 #endif // JPEGWRAP_H

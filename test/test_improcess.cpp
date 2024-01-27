@@ -10,7 +10,7 @@
 #include "../improcess/improcess.h"
 #include "../improcess/bmp.hpp"
 #ifdef ENABLE_JPEG
-#include "../improcess/jpegwrap.h"
+#include "../improcess/jpegwrap/jpegwrap.h"
 
 void test_jpeg()
 {
@@ -514,13 +514,22 @@ void test_barycenter()
     return;
 }
 
+void test_show()
+{
+    Tensor img = imp::load("./images/dota2.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    imp::show(img);
+    return;
+}
 int main()
 {
-
 #ifdef ENABLE_JPEG
     test_jpeg_to_tensor();
 #endif
-#if 1
+#if 0
     test_bmp();
     noise_img();
     test_line();
@@ -543,9 +552,11 @@ int main()
     test_autoThreshold();
     test_templateMatch();
     test_barycenter();
-#endif
+
     test_autoThreshold();
     test_otsuThreshold();
     test_entropyThreshold();
+#endif
+    test_show();
 	return 0;
 }

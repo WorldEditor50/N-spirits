@@ -20,7 +20,7 @@ std::unique_ptr<uint8_t[]> imp::fromTensor(InTensor x)
     return img;
 }
 
-std::shared_ptr<uint8_t[]> imp::tensor2Rgb(InTensor x)
+std::shared_ptr<uint8_t[]> imp::tensor2Image(InTensor x)
 {
     std::shared_ptr<uint8_t[]> img(new uint8_t[x.totalSize]);
     for (std::size_t i = 0; i < x.totalSize; i++) {
@@ -29,6 +29,26 @@ std::shared_ptr<uint8_t[]> imp::tensor2Rgb(InTensor x)
     return img;
 }
 
+void imp::show(InTensor xi)
+{
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    int c = xi.shape[HWC_C];
+    std::shared_ptr<uint8_t[]> img = tensor2Image(xi);
+    ViewPage view;
+    view.display(h, w, c, img.get());
+    return;
+}
+
+void imp::show(const std::string &fileName)
+{
+    Tensor img = load(fileName);
+    if (img.empty()) {
+        return;
+    }
+    show(img);
+    return;
+}
 
 int imp::copyMakeBorder(OutTensor xo, InTensor xi, int padding)
 {
@@ -216,7 +236,7 @@ int imp::save(InTensor img, const std::string &fileName)
         return -2;
     }
     /* clamp */
-    std::shared_ptr<uint8_t[]> data = tensor2Rgb(img);
+    std::shared_ptr<uint8_t[]> data = tensor2Image(img);
     /* save */
     if (fileName.find(".jpg") != std::string::npos) {
 #ifdef ENABLE_JPEG

@@ -60,7 +60,16 @@ private:
 public:
     /* default construct */
     Tensor_():totalSize(0){}
-
+    static std::vector<int> sizesOf(const std::vector<int> &shape)
+    {
+        std::vector<int> sizes(shape.size(), 1);
+        for (std::size_t i = 0; i < shape.size() - 1; i++) {
+            for (std::size_t j = i + 1; j < shape.size(); j++) {
+                 sizes[i] *= shape[j];
+            }
+        }
+        return sizes;
+    }
     static void initParams(const Shape &shape, Size &sizes, std::size_t &totalsize)
     {
         totalsize = 1;
@@ -173,8 +182,8 @@ public:
 
     void zero(){val.assign(totalSize, 0);}
     void fill(T value){val.assign(totalSize, value);}
-    inline T &operator[](std::size_t i) {return val[i];}
-    inline T operator[](std::size_t i) const {return val[i];}
+    inline T &operator[](int i) {return val[i];}
+    inline T operator[](int i) const {return val[i];}
 
     /* assign operator */
     inline Tensor_& operator=(const Tensor_ &r)
@@ -255,6 +264,23 @@ public:
         return y;
     }
 
+    Tensor_ block(const std::vector<int> &indexs, const std::vector<int> &s) const
+    {
+        Tensor_ y(s);
+        std::size_t pos = posOf(indexs);
+        std::vector<int> oindexs(shape.size(), 0);
+        for (std::size_t i = 0; i < y.totalSize; i++) {
+            /* local offset */
+            y.indexOf(i, oindexs);
+            for (int j = 0; j < oindexs.size(); j++) {
+                oindexs[j] += indexs[j];
+            }
+            int o = posOf(oindexs);
+            y.val[i] = val[o];
+        }
+        return y;
+    }
+
     template<typename ...Index>
     void slice(Tensor_ &y, Index ...index) const
     {
@@ -295,6 +321,15 @@ public:
         return pos;
     }
 
+    inline static std::size_t posOf(const std::vector<int> &indexs, const std::vector<int> &shape)
+    {
+        std::vector<int> sizes = sizesOf(shape);
+        std::size_t pos = 0;
+        for (std::size_t i = 0; i < sizes.size(); i++) {
+            pos += sizes[i]*indexs[i];
+        }
+        return pos;
+    }
     inline void indexOf(int pos, std::vector<int> &indexs) const
     {
         /*

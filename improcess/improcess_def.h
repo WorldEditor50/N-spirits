@@ -7,6 +7,7 @@
 namespace imp {
 constexpr static float pi = 3.1415926;
 using Size = Point2i;
+using uint8ptr = std::shared_ptr<uint8_t[]>;
 
 enum HWC {
     HWC_H = 0,

@@ -8,20 +8,18 @@ namespace imp {
 class Image
 {
 public:
-    using Pointer = uint8_t*;
-public:
     uint32_t height;
     uint32_t width;
-    uint8_t channel;
+    uint32_t channel;
     uint32_t widthstep;
     uint64_t totalsize;
-    Pointer data;
+    uint8_t* data;
 public:
     Image():height(0),width(0),channel(0),widthstep(0),totalsize(0),data(nullptr){}
-    explicit Image(uint32_t h, uint32_t w, uint8_t c, Pointer ptr)
-        :height(h),width(w),channel(c),widthstep(w*c),totalsize(h*w*c),data(ptr){}
+    explicit Image(uint32_t h, uint32_t w, uint32_t c, uint8_t* d)
+        :height(h),width(w),channel(c),widthstep(w*c),totalsize(h*w*c),data(d){}
 
-    explicit Image(uint32_t h, uint32_t w, uint8_t c)
+    explicit Image(uint32_t h, uint32_t w, uint32_t c)
         :height(h),width(w),channel(c),widthstep(w*c),totalsize(h*w*c)
     {
         data = new uint8_t[totalsize];

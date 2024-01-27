@@ -226,6 +226,8 @@ void test_static_matrix()
 
 void test_tensor()
 {
+    /* get sub space */
+    std::cout<<"get sub space:"<<std::endl;
     {
         Tensori x(2, 3, 3);
         for (std::size_t i = 0; i < x.sizes.size(); i++) {
@@ -258,6 +260,7 @@ void test_tensor()
         x2.printValue();
     }
     /* assign sub space */
+    std::cout<<"assign sub space:"<<std::endl;
     {
         Tensor x({3, 3, 3}, {1, 2, 3,
                              4, 5, 6,
@@ -276,6 +279,7 @@ void test_tensor()
         x.printValue();
     }
     /* reshpae */
+    std::cout<<"reshpae:"<<std::endl;
     {
         Tensor x({2, 3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9,
                              0, 0, 1, 1, 1, 1, 1, 1, 1});
@@ -284,6 +288,7 @@ void test_tensor()
         x1.printValue();
     }
     /* sum of sub space */
+    std::cout<<"sum of sub space:"<<std::endl;
     {
         Tensor x(2, 3, 3);
         x = 7;
@@ -294,6 +299,7 @@ void test_tensor()
         std::cout<<"sum = "<<x.sum()<<std::endl;
     }
     /* max */
+    std::cout<<"max:"<<std::endl;
     {
         Tensor x({3, 3, 3}, {1, 2, 3,
                              4, 5, 6,
@@ -315,6 +321,7 @@ void test_tensor()
         std::cout<<"(1, 1, 1) = "<<x(1, 1, 1)<<std::endl;
     }
     /* row and column */
+    std::cout<<"row and column:"<<std::endl;
     {
         Tensor x({3, 3}, {1, 2, 3,
                           4, 5, 6,
@@ -325,6 +332,18 @@ void test_tensor()
         std::cout<<"col:";
         Tensor c = x.column(1);
         c.printValue();
+    }
+    /* block */
+    std::cout<<"block:"<<std::endl;
+    {
+        Tensor x({6, 6}, {1, 2, 3, 4, 5, 6,
+                          7, 8, 9, 6, 1, 2,
+                          2, 6, 4, 5, 9, 3,
+                          4, 1, 5, 7, 8, 4,
+                          3, 7, 2, 8, 4, 9,
+                          9, 0, 1, 3, 2, 5});
+        Tensor y = x.block({2, 2}, {3, 3});
+        y.printValue();
     }
     return;
 }
@@ -480,13 +499,13 @@ int main()
     test_conv();
     test_permute();
 #endif
-    //test_tensor();
+    test_tensor();
     //getchar();
     //std::cout<<"size of tensor = "<<sizeof (Tensor)<<std::endl;
 
     //test_dft1d();
     //test_fft1d();
-    test_dft2d();
+    //test_dft2d();
     return 0;
 }
 
