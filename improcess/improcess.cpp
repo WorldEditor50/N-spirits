@@ -35,7 +35,7 @@ void imp::show(InTensor xi)
     int w = xi.shape[HWC_W];
     int c = xi.shape[HWC_C];
     std::shared_ptr<uint8_t[]> img = tensor2Image(xi);
-    ViewPage view;
+    View2D view;
     view.display(h, w, c, img.get());
     return;
 }

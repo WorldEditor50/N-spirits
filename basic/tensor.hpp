@@ -264,18 +264,17 @@ public:
         return y;
     }
 
-    Tensor_ block(const std::vector<int> &indexs, const std::vector<int> &s) const
+    Tensor_ block(const std::vector<int> &offset, const std::vector<int> &blockShape) const
     {
-        Tensor_ y(s);
-        std::size_t pos = posOf(indexs);
-        std::vector<int> oindexs(shape.size(), 0);
+        Tensor_ y(blockShape);
+        std::vector<int> indexs(shape.size(), 0);
         for (std::size_t i = 0; i < y.totalSize; i++) {
             /* local offset */
-            y.indexOf(i, oindexs);
-            for (int j = 0; j < oindexs.size(); j++) {
-                oindexs[j] += indexs[j];
+            y.indexOf(i, indexs);
+            for (int j = 0; j < indexs.size(); j++) {
+                indexs[j] += offset[j];
             }
-            int o = posOf(oindexs);
+            int o = posOf(indexs);
             y.val[i] = val[o];
         }
         return y;

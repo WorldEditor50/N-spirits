@@ -2,13 +2,18 @@
 #include <assert.h>
 #include <iostream>
 
-#pragma comment(lib, "Msimg32.lib")
 
-LRESULT imp::ViewPage::onResize(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT imp::View2D::onResize(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     std::cout<<"onResize"<<std::endl;
-    width = (SHORT)LOWORD(lParam);
-    height = (SHORT)HIWORD(lParam);
+    int w = (SHORT)LOWORD(lParam);
+    int h = (SHORT)HIWORD(lParam);
+    std::cout<<"w:"<<w<<",width:"<<width<<",h:"<<h<<",height:"<<height<<std::endl;
+    if (w == width && h == height) {
+        return 0;
+    }
+    width = w;
+    height = h;
     /* resize page bitmap */
     if (pageBitmap != NULL) {
         DeleteObject(pageBitmap);
@@ -27,7 +32,7 @@ LRESULT imp::ViewPage::onResize(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
     return 0;
 }
 
-LRESULT imp::ViewPage::onPaint(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT imp::View2D::onPaint(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     std::cout<<"onPaint"<<std::endl;
     BITMAP pageBmp;
@@ -40,36 +45,29 @@ LRESULT imp::ViewPage::onPaint(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
     HRGN pageRgn = CreateRectRgnIndirect(&pageRect);
     SelectClipRgn(pageMem, pageRgn);
     SetBkMode(pageMem, TRANSPARENT);
-    //SetBkColor(pageMem, RGB(255, 0, 0));
     ExtTextOutW(pageMem, 0, 0, ETO_OPAQUE, &pageRect, NULL, 0, NULL);
-
     /* paint image */
     BITMAP canvas;
     GetObject(canvasBitmap, sizeof(BITMAP), &canvas);
-    HDC canvasMem = CreateCompatibleDC(hdc);
+    HDC canvasMem = CreateCompatibleDC(pageMem);
     HBITMAP oldCanvasBitmap = (HBITMAP)SelectObject(canvasMem, canvasBitmap);
-    BLENDFUNCTION blendFunc;
-    blendFunc.BlendOp = AC_SRC_OVER;
-    blendFunc.BlendFlags = 0;
-    blendFunc.SourceConstantAlpha = 255;
-    blendFunc.AlphaFormat = AC_SRC_ALPHA;
-    AlphaBlend(pageMem, 0, 0, pageBmp.bmWidth, pageBmp.bmHeight,
-               canvasMem, 0, 0, canvas.bmWidth, canvas.bmHeight,
-               blendFunc);
-    SelectObject(canvasMem, oldCanvasBitmap);
-    DeleteDC(canvasMem);
     /* display */
     BitBlt(hdc, 0, 0, pageBmp.bmWidth, pageBmp.bmHeight,
-           pageMem, 0, 0, SRCCOPY);
+           canvasMem, 0, 0, SRCCOPY);
+    /* delete canvas */
+    SelectObject(canvasMem, oldCanvasBitmap);
+    DeleteDC(canvasMem);
+    /* delete page rgn */
     SelectClipRgn(pageMem, NULL);
     DeleteObject(pageRgn);
+    /* delete page */
     SelectObject(pageMem, oldPageBitmap);
     DeleteDC(pageMem);
     ReleaseDC(hWnd, hdc);
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::ViewPage::onClose(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT imp::View2D::onClose(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if (canvasBitmap != NULL) {
         DeleteObject(canvasBitmap);
@@ -78,18 +76,18 @@ LRESULT imp::ViewPage::onClose(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
     return NaivePage::onClose(hWnd, msg, wParam, lParam);
 }
 
-imp::ViewPage::ViewPage()
+imp::View2D::View2D()
     :canvasBitmap(NULL)
 {
 
 }
 
-imp::ViewPage::~ViewPage()
+imp::View2D::~View2D()
 {
 
 }
 
-void imp::ViewPage::updateImage(int h, int w, int c, uint8_t *data)
+void imp::View2D::updateImage(int h, int w, int c, uint8_t *data)
 {
     BITMAP canvas;
     GetObject(canvasBitmap, sizeof(BITMAP), &canvas);
@@ -123,19 +121,20 @@ void imp::ViewPage::updateImage(int h, int w, int c, uint8_t *data)
             }
         }
     }
-    HDC hdc = GetDC(pageHWND);
-    BITMAP pageBmp;
-    GetObject(pageBitmap, sizeof(BITMAP), &pageBmp);
-    HDC canvasMem = CreateCompatibleDC(hdc);
-    HBITMAP oldCanvasBitmap = (HBITMAP)SelectObject(canvasMem, canvasBitmap);
-    BitBlt(hdc, 0, 0, pageBmp.bmWidth, pageBmp.bmHeight,
-           canvasMem, 0, 0, SRCCOPY);
-    SelectObject(canvasMem, oldCanvasBitmap);
-    DeleteDC(canvasMem);
+    //HDC hdc = GetDC(pageHWND);
+    //BITMAP pageBmp;
+    //GetObject(pageBitmap, sizeof(BITMAP), &pageBmp);
+    //HDC canvasMem = CreateCompatibleDC(hdc);
+    //HBITMAP oldCanvasBitmap = (HBITMAP)SelectObject(canvasMem, canvasBitmap);
+    //BitBlt(hdc, 0, 0, pageBmp.bmWidth, pageBmp.bmHeight,
+    //       canvasMem, 0, 0, SRCCOPY);
+    //SelectObject(canvasMem, oldCanvasBitmap);
+    //DeleteDC(canvasMem);
+    ::PostMessageW(pageHWND, WM_PAINT, 0, 0);
     return;
 }
 
-void imp::ViewPage::display(int h, int w, int c, uint8_t *data)
+void imp::View2D::display(int h, int w, int c, uint8_t *data)
 {
     /* create window */
     int x = (GetSystemMetrics(SM_CXSCREEN) - w)/2;

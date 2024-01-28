@@ -3,7 +3,7 @@
 #include "naivepage.h"
 namespace imp {
 
-class ViewPage : public NaivePage
+class View2D : public NaivePage
 {
 protected:
     HBITMAP canvasBitmap;
@@ -13,8 +13,8 @@ protected:
     virtual LRESULT onPaint(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) override;
     virtual LRESULT onClose(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) override;
 public:
-    ViewPage();
-    virtual ~ViewPage();
+    View2D();
+    virtual ~View2D();
     void updateImage(int h, int w, int c, uint8_t* data);
     void display(int h, int w, int c, uint8_t* data);
 };
