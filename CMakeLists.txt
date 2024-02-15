@@ -14,10 +14,18 @@ if (MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+endif()
+
+if (MSVC)
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/bigobj>")
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/bigobj>")
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/arch:AVX2>")
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>")
+endif()
+
+if (UNIX)
+    add_compile_options(-march=native)
+    set(CMAKE_CXX_FLAGS "-msse2")
 endif()
 # test simd
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -DNDEBUG")
@@ -72,7 +80,6 @@ add_custom_command(TARGET test_improcess
                    POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/images" "${CMAKE_CURRENT_BINARY_DIR}/images"
                    COMMENT "COPY IMAGES")
-
 # fluid
 add_subdirectory(${PROJECT_SOURCE_DIR}/fluid)
 # test

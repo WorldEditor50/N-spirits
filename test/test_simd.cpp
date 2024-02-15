@@ -1,14 +1,14 @@
 #include <iostream>
-#include "../basic/tensor.hpp"
+#include "../basic/tensorsi.hpp"
 #include "../basic/simd.hpp"
 #include "../basic/avx2func.hpp"
 #include "../basic/util.hpp"
 #include "../utils/clock.hpp"
 
-double correct(const Tensorsi &x1, const Tensorsi &x2)
+float correct(const Tensorsi &x1, const Tensorsi &x2)
 {
-    double N = x1.totalSize;
-    double n = 0;
+    float N = x1.totalSize;
+    float n = 0;
     for (std::size_t i = 0; i < N; i++) {
         if (std::abs(x1[i] - x2[i]) < 1e-2) {
             n++;
@@ -18,6 +18,7 @@ double correct(const Tensorsi &x1, const Tensorsi &x2)
     }
     return n/N*100;
 }
+
 void test_simd_matmul()
 {
 #if defined(__AVX2__)
@@ -197,9 +198,17 @@ void test_simd_transpose()
 
 int main()
 {
+#if defined(__SSE2__)
+    std::cout<<"__m128/float:"<<sizeof (__m128)/sizeof (float)<<std::endl;
+    std::cout<<"__m128d/double:"<<sizeof (__m128d)/sizeof (double)<<std::endl;
+#elif defined (__AVX2__)
+    std::cout<<"__m256/float:"<<sizeof (__m256)/sizeof (float)<<std::endl;
+    std::cout<<"__m256d/double:"<<sizeof (__m256d)/sizeof (double)<<std::endl;
+#endif
     //test_simd();
     //test_simd_matmul();
     //test_simd_transpose();
+#if 1
     int N = 128;
     Tensorsi x(N, N);
     Tensorsi x1(N, N);
@@ -213,7 +222,8 @@ int main()
     Tensorsi x3(N, N);
     Tensorsi::Mul::ikkj(x3, x1, x2);
     std::cout<<"correct rate:"<<correct(x, x3)<<std::endl;
-    //x.printValue();
-    //x3.printValue();
+    x.printValue();
+    x3.printValue();
+#endif
 	return 0;
 }

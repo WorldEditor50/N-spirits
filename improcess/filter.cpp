@@ -1,4 +1,5 @@
 #include "filter.h"
+#include <algorithm>
 
 int imp::averageFilter(OutTensor xo, InTensor xi, const imp::Size &size)
 {

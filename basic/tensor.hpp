@@ -1,11 +1,12 @@
 #ifndef TENSOR_H
 #define TENSOR_H
+#include <cmath>
 #include <vector>
 #include <functional>
 #include <iostream>
 #include <assert.h>
 #include "alignallocator.hpp"
-#include "simd.hpp"
+
 
 template<typename T, template<typename Ti> class Alloc=std::allocator>
 class Tensor_
@@ -288,6 +289,25 @@ public:
             y.val[i] = val[i + pos];
         }
         return;
+    }
+
+    std::vector<Tensor_> vectorlize() const
+    {
+        std::vector<Tensor_> vec;
+        for (std::size_t i = 0; shape[0]; i++) {
+            vec.push_back(sub(i));
+        }
+        return vec;
+    }
+
+    static Tensor_ fromVector(const std::vector<Tensor_> &vec)
+    {
+        std::vector<int> shape;
+        shape.push_back(vec.size());
+        std::copy(vec[0].begin(), vec[0].end(), shape.begin() + 1);
+        Tensor_ x(shape);
+
+        return x;
     }
 
     template<typename ...Index>
@@ -708,7 +728,6 @@ public:
         return value;
     }
 
-
     template<typename ...Index>
     std::size_t argmax(Index ...index) const
     {
@@ -796,51 +815,54 @@ public:
     }
 
     struct Mul {
-        static void ikkj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
+        inline static void ikkj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
             for (std::size_t i = 0; i < x.shape[0]; i++) {
                 for (std::size_t k = 0; k < x1.shape[1]; k++) {
                     for (std::size_t j = 0; j < x.shape[1]; j++) {
-                        /* (i, j) = (i, k) * (k, j) */
+                        /* x(i, j) = x1(i, k) * x2(k, j) */
                         x.val[i*x.shape[1] + j] += x1.val[i*x1.shape[1] + k]*x2.val[k*x2.shape[1] + j];
                     }
                 }
             }
             return;
         }
-        static void kikj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
+
+        inline static void kikj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
             /* transpose x1 */
             for (std::size_t i = 0; i < x.shape[0]; i++) {
                 for (std::size_t k = 0; k < x1.shape[0]; k++) {
                     for (std::size_t j = 0; j < x.shape[1]; j++) {
-                        /* (i, j) = (k, i)^T * (k, j) */
+                        /* x(i, j) = x1(k, i)^T * x2(k, j) */
                         x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i]*x2.val[k*x2.shape[1] + j];
                     }
                 }
             }
             return;
         }
-        static void ikjk(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
+
+        inline static void ikjk(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
             /* transpose x2 */
             for (std::size_t i = 0; i < x.shape[0]; i++) {
                 for (std::size_t k = 0; k < x1.shape[1]; k++) {
                     for (std::size_t j = 0; j < x.shape[1]; j++) {
-                        /* (i, j) = (i, k) * (j, k)^T */
+                        /* x(i, j) = x1(i, k) * x2(j, k)^T */
                         x.val[i*x.shape[1] + j] += x1.val[i*x1.shape[1] + k]*x2.val[j*x2.shape[1] + k];
                     }
                 }
             }
             return;
         }
-        static void kijk(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
+
+        inline static void kijk(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
             /* transpose x1, x2 */
             for (std::size_t i = 0; i < x.shape[0]; i++) {
                 for (std::size_t k = 0; k < x1.shape[0]; k++) {
                     for (std::size_t j = 0; j < x.shape[1]; j++) {
-                        /* (i, j) = (k, i)^T * (j, k)^T */
+                        /* x(i, j) = x1(k, i)^T * x2(j, k)^T */
                         x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i] * x2.val[j*x2.shape[1] + k];
                     }
                 }
@@ -848,6 +870,23 @@ public:
             return;
         }
     };
+
+    inline static Tensor_ product2D(const Tensor_& x1, const Tensor_& x2)
+    {
+        int r = x1.shape[0]*x2.shape[0];
+        int c = x1.shape[1]*x2.shape[1];
+        Tensor_ y(r, c);
+        for (int i = 0; i < x1.shape[0]; i++) {
+            for (int j = 0; j < x1.shape[1]; j++) {
+                for (int h = 0; h < x2.shape[0]; h++) {
+                    for (int k = 0; k < x2.shape[1]; k++) {
+                        y(h + i*x1.shape[0], k + j*x1.shape[1]) = x1(i, j)*x2(h, k);
+                    }
+                }
+            }
+        }
+        return y;
+    }
 
     /* display */
     template<typename ...Index>
@@ -890,421 +929,15 @@ public:
         }
         std::cout<<")"<<std::endl;
         return;
-    }
-
-    inline static Tensor_ product2D(const Tensor_& x1, const Tensor_& x2)
-    {
-        int r = x1.shape[0]*x2.shape[0];
-        int c = x1.shape[1]*x2.shape[1];
-        Tensor_ y(r, c);
-        for (int i = 0; i < x1.shape[0]; i++) {
-            for (int j = 0; j < x1.shape[1]; j++) {
-                for (int h = 0; h < x2.shape[0]; h++) {
-                    for (int k = 0; k < x2.shape[1]; k++) {
-                        y(h + i*x1.shape[0], k + j*x1.shape[1]) = x1(i, j)*x2(h, k);
-                    }
-                }
-            }
-        }
-        return y;
-    }
-
-
+    }  
 };
 
-template<typename T , typename Simd, template<typename Ti> class Alloc=AlignAllocator32>
-class Tensorsi_ : public Tensor_<T, Alloc>
-{
-public:
-    using instruct = Simd;
-    using __Tensor = Tensor_<T, Alloc>;
-    using __Tensor::totalSize;
-    using __Tensor::val;
-    using __Tensor::shape;
-    using __Tensor::sizes;
-    using Shape = typename __Tensor::Shape;
-    constexpr static std::size_t unit = Simd::template Selector<T>::value*Simd::template Selector<T>::value;
-public:
-    Tensorsi_(){}
-    /* contruct with shape */
-    explicit Tensorsi_(const std::vector<int> &shape_):__Tensor(shape_){}
-    explicit Tensorsi_(const std::vector<int> &shape_, const __Tensor &val_)
-        :__Tensor(shape_, val_){}
-    explicit Tensorsi_(const std::initializer_list<int> &shape_, const std::initializer_list<T> &val_)
-        :__Tensor(shape_, val_){}
-    /* construct with shape */
-    template<typename ...Dim>
-    explicit Tensorsi_(Dim ...dim):__Tensor(dim...){}
-    /* copy construct */
-    Tensorsi_(const __Tensor &r):__Tensor (r){}
-    Tensorsi_(const Tensorsi_ &r):__Tensor(r.shape, r.val){}
-    /* assign operator */
-    Tensorsi_ &operator=(const Tensorsi_ &r)
-    {
-        if (this == &r) {
-            return *this;
-        }
-        __Tensor::operator=(r);
-        return *this;
-    }
-    Tensorsi_ &operator=(const __Tensor &r)
-    {
-        if (this == &r) {
-            return *this;
-        }
-        __Tensor::operator=(r);
-        return *this;
-    }
-
-    Tensorsi_ &operator=(T value)
-    {
-        __Tensor::operator=(value);
-        return *this;
-    }
-
-    void zero()
-    {
-        if (totalSize < unit) {
-            return __Tensor::zero();
-        }
-        instruct::fill(__Tensor::ptr(), 0, totalSize);
-        return;
-    }
-    void fill(T value)
-    {
-        if (totalSize < unit) {
-            return __Tensor::fill(value);
-        }
-        instruct::fill(__Tensor::ptr(), value, totalSize);
-        return;
-    }
-
-    static Tensorsi_ zeros(Shape &shape)
-    {
-        Tensorsi_ x(shape);
-        return x;
-    }
-
-    template<typename ...Dim>
-    static Tensorsi_ zeros(Dim ...dim)
-    {
-        Tensorsi_ x(dim...);
-        return x;
-    }
-
-    static Tensorsi_ ones(Shape &shape)
-    {
-        Tensorsi_ x(shape);
-        if (totalSize < unit) {
-            return __Tensor::fill(1);
-        }
-        instruct::fill(__Tensor::ptr(), 1, totalSize);
-        return x;
-    }
-
-    template<typename ...Index>
-    static Tensorsi_ ones(Index ...index)
-    {
-        Tensorsi_ x(index...);
-        instruct::fill(x.ptr(), 1, x.totalSize);
-        return x;
-    }
-
-    /* operator */
-    Tensorsi_ operator +(const Tensorsi_ &x) const
-    {
-        Tensorsi_ y(shape);
-        if (x.totalSize < unit) {
-            return __Tensor::operator+(x);
-        }
-        instruct::add(y.ptr(), __Tensor::ptr(), x.ptr(), totalSize);
-        return y;
-    }
-
-    Tensorsi_ operator -(const Tensorsi_ &x) const
-    {
-        Tensorsi_ y(shape);
-        if (x.totalSize < unit) {
-            return __Tensor::operator-(x);
-        }
-        instruct::sub(y.ptr(), __Tensor::ptr(), x.ptr(), totalSize);
-        return y;
-    }
-
-    Tensorsi_ operator *(const Tensorsi_ &x) const
-    {
-        Tensorsi_ y(shape);
-        if (x.totalSize < unit) {
-            return __Tensor::operator*(x);
-        }
-        instruct::mul(y.ptr(), __Tensor::ptr(), x.ptr(), totalSize);
-        return y;
-    }
-
-    Tensorsi_ operator /(const Tensorsi_ &x) const
-    {
-        Tensorsi_ y(shape);
-        if (totalSize < unit) {
-            return __Tensor::operator/(x);
-        }
-        instruct::div(y.ptr(), __Tensor::ptr(), x.ptr(), totalSize);
-        return y;
-    }
-
-    Tensorsi_ operator +(T x) const
-    {
-        Tensorsi_ y(shape);
-        if (totalSize < unit) {
-            return __Tensor::operator+(x);
-        }
-        instruct::add(y.ptr(), __Tensor::ptr(), x, totalSize);
-        return y;
-    }
-
-    Tensorsi_ operator -(T x) const
-    {
-        Tensorsi_ y(shape);
-        if (totalSize < unit) {
-            return __Tensor::operator-(x);
-        }
-        instruct::sub(y.ptr(), __Tensor::ptr(), x, totalSize);
-        return y;
-    }
-
-    Tensorsi_ operator *(T x) const
-    {
-        Tensorsi_ y(shape);
-        if (totalSize < unit) {
-            return __Tensor::operator*(x);
-        }
-        instruct::mul(y.ptr(), __Tensor::ptr(), x, totalSize);
-        return y;
-    }
-
-    Tensorsi_ operator /(T x) const
-    {
-        Tensorsi_ y(shape);
-        if (totalSize < unit) {
-            return __Tensor::operator/(x);
-        }
-        instruct::div(y.ptr(), __Tensor::ptr(), x, totalSize);
-        return y;
-    }
-
-    Tensorsi_ &operator +=(const Tensorsi_& x)
-    {
-        if (totalSize < unit) {
-            __Tensor::operator+=(x);
-            return *this;
-        }
-        instruct::add(__Tensor::ptr(), __Tensor::ptr(), x.ptr(), totalSize);
-        return *this;
-    }
-
-    Tensorsi_ &operator -=(const Tensorsi_& x)
-    {
-        if (totalSize < unit) {
-            __Tensor::operator-=(x);
-            return *this;
-        }
-        instruct::sub(__Tensor::ptr(), __Tensor::ptr(), x.ptr(), totalSize);
-        return *this;
-    }
-
-    Tensorsi_ &operator *=(const Tensorsi_& x)
-    {
-        if (totalSize < unit) {
-            __Tensor::operator*=(x);
-            return *this;
-        }
-        instruct::mul(__Tensor::ptr(), __Tensor::ptr(), x.ptr(), totalSize);
-        return *this;
-    }
-
-    Tensorsi_ &operator /=(const Tensorsi_& x)
-    {
-        if (totalSize < unit) {
-            __Tensor::operator/=(x);
-            return *this;
-        }
-        instruct::div(__Tensor::ptr(), __Tensor::ptr(), x.ptr(), totalSize);
-        return *this;
-    }
-
-    Tensorsi_ &operator +=(T x)
-    {
-        if (totalSize < unit) {
-            __Tensor::operator+=(x);
-            return *this;
-        }
-        instruct::add(__Tensor::ptr(), __Tensor::ptr(), x, totalSize);
-        return *this;
-    }
-
-    Tensorsi_ &operator -=(T x)
-    {
-        if (totalSize < unit) {
-            __Tensor::operator-=(x);
-            return *this;
-        }
-        instruct::sub(__Tensor::ptr(), __Tensor::ptr(), x, totalSize);
-        return *this;
-    }
-
-    Tensorsi_ &operator *=(T x)
-    {
-        if (totalSize < unit) {
-            __Tensor::operator*=(x);
-            return *this;
-        }
-        instruct::mul(__Tensor::ptr(), __Tensor::ptr(), x, totalSize);
-        return *this;
-    }
-
-    Tensorsi_ &operator /=(T x)
-    {
-        if (totalSize < unit) {
-            __Tensor::operator/=(x);
-            return *this;
-        }
-        instruct::div(__Tensor::ptr(), __Tensor::ptr(), x, totalSize);
-        return *this;
-    }
-    /* statistics */
-    template<typename ...Index>
-    T sum(Index ...index) const
-    {
-        return __Tensor::sum(index...);
-    }
-
-    T sum() const
-    {
-        if (totalSize < unit) {
-            return __Tensor::sum();
-        }
-        return instruct::sum(__Tensor::ptr(), totalSize);
-    }
-
-    template<typename ...Index>
-    T mean(Index ...index) const
-    {
-        return __Tensor::mean(index...);
-    }
-
-    T mean() const{ return sum()/T(totalSize);}
-
-    template<typename ...Index>
-    T variance(T u, Index ...index) const
-    {
-        return __Tensor::variance(u, index...);
-    }
-
-    T variance(T u) const
-    {
-        if (totalSize < unit) {
-            return __Tensor::variance(u);
-        }
-        return instruct::variance(__Tensor::ptr(), u, totalSize);
-    }
-
-    template<typename ...Index>
-    T max(Index ...index) const
-    {
-        return __Tensor::max(index...);
-    }
-
-    T max() const
-    {
-        if (totalSize < unit) {
-            return __Tensor::max();
-        }
-        return instruct::max(__Tensor::ptr(), totalSize);
-    }
-
-    template<typename ...Index>
-    T min(Index ...index) const
-    {
-        return __Tensor::min(index...);
-    }
-
-    T min() const
-    {
-        if (totalSize < unit) {
-            return __Tensor::min();
-        }
-        return instruct::min(__Tensor::ptr(), totalSize);
-    }
-
-    /* matrix operation */
-    struct Mul {
-        static void ikkj(Tensorsi_ &x, const Tensorsi_ &x1, const Tensorsi_ &x2)
-        {
-            /* x = x1 * x2 */
-//            if (x1.shape[0] < unit || x1.shape[1] < unit || x2.shape[1] < unit) {
-//                return __Tensor::Mul::ikkj(x, x1, x2);
-//            }
-            instruct::MatMul::ikkj(x.ptr(), x.shape[0], x.shape[1],
-                                   x1.ptr(), x1.shape[0], x1.shape[1],
-                                   x2.ptr(), x2.shape[0], x2.shape[1]);
-            return;
-        }
-        static void kikj(Tensorsi_ &x, const Tensorsi_ &x1, const Tensorsi_ &x2)
-        {
-            /* x = x1^T * x2 */
-            if (x1.shape[0] < unit || x1.shape[1] < unit || x2.shape[1] < unit) {
-                return __Tensor::Mul::kikj(x, x1, x2);
-            }
-            /* transpose x1 */
-            instruct::MatMul::kikj(x.ptr(), x.shape[0], x.shape[1],
-                                   x1.ptr(), x1.shape[0], x1.shape[1],
-                                   x2.ptr(), x2.shape[0], x2.shape[1]);
-            return;
-        }
-        static void ikjk(Tensorsi_ &x, const Tensorsi_ &x1, const Tensorsi_ &x2)
-        {
-            /* x = x1 * x2^T */
-            if (x1.shape[0] < unit || x1.shape[1] < unit || x2.shape[0] < unit) {
-                return __Tensor::Mul::ikjk(x, x1, x2);
-            }
-            /* transpose x2 */
-            instruct::MatMul::ikjk(x.ptr(), x.shape[0], x.shape[1],
-                                   x1.ptr(), x1.shape[0], x1.shape[1],
-                                   x2.ptr(), x2.shape[0], x2.shape[1]);
-            return;
-        }
-        static void kijk(Tensorsi_ &x, const Tensorsi_ &x1, const Tensorsi_ &x2)
-        {
-            /* x = x1^T * x2^T */
-            if (x1.shape[0] < unit || x1.shape[1] < unit || x2.shape[0] < unit) {
-                return __Tensor::Mul::kijk(x, x1, x2);
-            }
-            /* transpose x1, x2 */
-            instruct::MatMul::kijk(x.ptr(), x.shape[0], x.shape[1],
-                                   x1.ptr(), x1.shape[0], x1.shape[1],
-                                   x2.ptr(), x2.shape[0], x2.shape[1]);
-            return;
-        }
-
-    };
-
-};
 using Tensorc  = Tensor_<char>;
 using Tensoru8 = Tensor_<unsigned char>;
 using Tensori  = Tensor_<int>;
 using Tensorf  = Tensor_<float>;
 using Tensord  = Tensor_<double>;
-
-#if defined(__AVX2__)
-using Tensorsi = Tensorsi_<float, simd::AVX2, AlignAllocator32>;
-//using Tensorsi = Tensorsi_<float, simd::AVX2, std::allocator>;
-#endif
-
-#if 0
-    using Tensor = Tensorsi;
-#else
-    using Tensor = Tensorf;
-    using InTensor = const Tensor&;
-    using OutTensor = Tensor&;
-#endif
-
+using Tensor   = Tensorf;
+using InTensor  = const Tensor&;
+using OutTensor = Tensor&;
 #endif // TENSOR_H

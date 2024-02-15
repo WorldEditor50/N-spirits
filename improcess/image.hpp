@@ -1,9 +1,9 @@
 #ifndef IMAGE_DEF_H
 #define IMAGE_DEF_H
 #include "improcess_def.h"
+#include <string.h>
 
 namespace imp {
-
 
 class Image
 {

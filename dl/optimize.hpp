@@ -7,10 +7,10 @@ namespace Optimize {
 class SGD
 {
 public:
-    static float decay;
+    float decay;
 public:
-    SGD(){}
-    explicit SGD(const std::vector<int> &){}
+    SGD():decay(0){}
+    explicit SGD(const std::vector<int> &):decay(0){}
     inline void operator()(Tensor& w, Tensor& dw, float learningRate)
     {
         for (std::size_t i = 0; i < w.totalSize; i++) {
@@ -20,17 +20,17 @@ public:
         return;
     }
 };
-float SGD::decay = 0.0f;
 
 class RMSProp
 {
 public:
-    static float decay;
-    static float rho;
+    float decay;
+    float rho;
     Tensor s;
 public:
-    RMSProp(){}
+    RMSProp():decay(0.0f),rho(0.9f){}
     explicit RMSProp(const std::vector<int> &shape)
+        :decay(0.0f),rho(0.9f)
     {
         s = Tensor(shape);
     }
@@ -44,23 +44,21 @@ public:
         return;
     }
 };
-float RMSProp::decay = 0.0f;
-float RMSProp::rho = 0.9f;
 
 class Adam
 {
 public:
-    static float decay;
-    static float alpha;
-    static float beta;
+    float decay;
+    float alpha;
+    float beta;
     float alpha_;
     float beta_;
     Tensor s;
     Tensor v;
 public:
-    Adam(){}
+    Adam():decay(0),alpha(0.9f),beta(0.99f){}
     explicit Adam(const std::vector<int> &shape)
-        :alpha_(1),beta_(1)
+        :decay(0),alpha(0.9f),beta(0.99f),alpha_(1),beta_(1)
     {
         s = Tensor(shape);
         v = Tensor(shape);
@@ -80,8 +78,6 @@ public:
         return;
     }
 };
-float Adam::decay = 0;
-float Adam::alpha = 0.9f;
-float Adam::beta = 0.99f;
+
 }
 #endif // OPTIMIZE_H

@@ -7,25 +7,21 @@
 #include "basic_def.h"
 
 namespace simd {
-
+#if defined(__AVX2__)
+template<typename T>
+struct Step {
+    constexpr static std::size_t value = 0;
+};
+template<>
+struct Step<double> {
+    constexpr static std::size_t value = sizeof (__m256d)/sizeof (double);
+};
+template<>
+struct Step<float> {
+    constexpr static std::size_t value = sizeof (__m256)/sizeof (float);
+};
 struct AVX2 {
 
-
-
-#if defined(__AVX2__)
-
-    template<typename T>
-    struct Selector {
-        constexpr static std::size_t value = 0;
-    };
-    template<>
-    struct Selector<double> {
-        constexpr static std::size_t value = sizeof (__m256d)/sizeof (double);
-    };
-    template<>
-    struct Selector<float> {
-        constexpr static std::size_t value = sizeof (__m256)/sizeof (float);
-    };
     inline static float reduce(__m256& ymm)
     {
         float result[8];
@@ -1635,9 +1631,8 @@ struct AVX2 {
 
     };
 
-#endif // AVX2
 };
 
-
+#endif // AVX2
 }
 #endif // AVX2FUNC_HPP

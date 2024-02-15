@@ -11,7 +11,7 @@ namespace simd {
 
 #if defined(__SSE2__)
 
-struct SSE2 {
+struct SSE {
 
 struct M128d {
 
@@ -200,8 +200,7 @@ FORCE_INLINE float VECTORCALL reduce(const float * const adr)
 }
 
 };
-#endif // SSE2
-
+#endif // SSE
 
 
 } // simd

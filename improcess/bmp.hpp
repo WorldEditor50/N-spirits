@@ -4,6 +4,7 @@
 #include <memory>
 #include <fstream>
 #include <iostream>
+#include <string.h>
 
 namespace imp {
 #pragma pack(push, 1)

@@ -305,49 +305,47 @@ void test_mnist()
 void test_lstm()
 {
     using LSTMNET = Net<LSTM,
-                        FcLayer, LayerNorm,
-                        FcLayer>;
-    LSTMNET lstm(LSTM(4, 16, 16),
+                        FcLayer, FcLayer>;
+    LSTMNET lstm(LSTM(1, 16, 16),
                  FcLayer(16, 16, true, ACTIVE_TANH),
-                 LayerNorm(16, 16, true, ACTIVE_SIGMOID),
                  FcLayer(16, 1, true, ACTIVE_LINEAR));
 
-    Optimizer<LSTMNET, Optimize::RMSProp> optimizer(lstm, 1e-3);
+    Optimizer<LSTMNET, Optimize::RMSProp> optimizer(lstm, 1e-4);
     /* data */
-    std::size_t N = 1000;
-    std::vector<Tensor> x(N, Tensor(4, 1));
-    std::vector<Tensor> yt(N, Tensor(1, 1));
+    std::size_t N = 10000;
+    std::vector<Tensor> x(N, Tensor(1, 1));
+    float value = -500;
     for (std::size_t i = 0; i < N; i++) {
-        util::uniform(x[i], -1, 1);
-        /* f(x1, x2, x3, x4) = exp((x1+x2+x3+x4)^2) * sin((x1+x2+x3+x4)^2) */
-        float s = x[i].sum();
-        yt[i][0] = std::exp(s)*std::sin(s);
-        //yt[i][0] = x[i][0]*x[i][0] + x[i][1]*x[i][1] + x[i][2]*x[i][2] + x[i][3]*x[i][3];
+        x[i][0] = std::sin(value);
+        value += 0.1;
     }
     /* train */
     std::random_device device;
     std::default_random_engine engine(device());
-    std::uniform_int_distribution<int> distribution(0, N - 1);
-    for (std::size_t epoch = 0; epoch < 5000; epoch++) {
-        for (std::size_t i = 0; i < 16; i++) {
+    std::uniform_int_distribution<int> distribution(0, N - 9);
+    for (std::size_t epoch = 0; epoch < 10000; epoch++) {
+        int k = distribution(engine);
+        std::get<0>(lstm.layers).reset();
+        for (std::size_t i = 0; i < 8; i++) {
             /* forward */
-            int k = distribution(engine);
-            Tensor& y = lstm(x[k]);
+            Tensor& y = lstm(x[k + i]);
             /* loss */
-            Tensor loss = Loss::MSE(y, yt[k]);
+            Tensor loss = Loss::MSE(y, x[k + 8]);
             /* optimize */
-            optimizer.backward(loss, x[k]);
+            optimizer.backward(loss, x[k + i]);
         }
         /* update */
         optimizer.update();
     }
     /* predict */
-    std::get<0>(lstm.layers).reset();
-    for (std::size_t i = 0; i < 16; i++) {
+    for (std::size_t i = 0; i < 4; i++) {
+        std::get<0>(lstm.layers).reset();
         int k = distribution(engine);
-        Tensor& y = lstm(x[k]);
-        float error = util::Norm::l2(y, yt[k]);
-        std::cout<<"target="<<yt[k][0]<<", predict="<<y[0]<<", error="<<error<<std::endl;
+        for (std::size_t j = 0; j < 8; j++) {
+            Tensor& y = lstm(x[k + i]);
+            float error = util::Norm::l2(y, x[k + 8]);
+            std::cout<<"target="<<x[k + 8][0]<<", predict="<<y[0]<<", error="<<error<<std::endl;
+        }
     }
     return;
 }
@@ -459,14 +457,14 @@ void test_conv1d()
 int main()
 {
 #if 0
+    test_conv1d();
     test_bpnn();
     test_lenet5();
     test_lstm();
+    test_mnist();
+    test_alexnet();
+    test_vgg16();
 #endif
-    //test_bpnn();
-    //test_mnist();
-    //test_alexnet();
-    //test_vgg16();
-    test_conv1d();
+    test_vgg16();
 	return 0;
 }

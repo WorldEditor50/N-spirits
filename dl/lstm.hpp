@@ -134,6 +134,23 @@ public:
         i(Tensor(hiddenDim, 1)),f(Tensor(hiddenDim, 1)),g(Tensor(hiddenDim, 1)),
         o(Tensor(hiddenDim, 1)),c(Tensor(hiddenDim, 1)),h(Tensor(hiddenDim, 1)),
         y(Tensor(outputDim, 1)){}
+    State(const State &r):
+        i(r.i),f(r.f),g(r.g),
+        o(r.o),c(r.c),h(r.h),y(r.y){}
+    State& operator = (const State &r)
+    {
+        if (this == &r) {
+            return *this;
+        }
+        i = r.i;
+        f = r.f;
+        g = r.g;
+        o = r.o;
+        c = r.c;
+        h = r.h;
+        y = r.y;
+        return *this;
+    }
     void zero()
     {
         i.zero(); f.zero(); g.zero(); o.zero();
@@ -170,15 +187,19 @@ public:
         void backwardThroughTime(LSTM &lstm)
         {
             State delta_(hiddenDim, outputDim);
-            for (int t = lstm.states.size() - 1; t >= 0; t--) {
+            std::vector<State>& states = lstm.states;
+            int te = lstm.states.size() - 1;
+            for (int t = te; t >= 0; t--) {
                 State delta(hiddenDim, outputDim);
                 /* δh = W^T * E */
                 Tensor::Mul::kikj(delta.h, lstm.W, loss[t]);
-                /* δh += U * delta_ */
-                Tensor::Mul::ikkj(delta.h, lstm.Uf, delta_.i);
-                Tensor::Mul::ikkj(delta.h, lstm.Ui, delta_.f);
-                Tensor::Mul::ikkj(delta.h, lstm.Ug, delta_.g);
-                Tensor::Mul::ikkj(delta.h, lstm.Uo, delta_.o);
+                if (t < te) {
+                    /* δh += U^T * delta_ */
+                    Tensor::Mul::kikj(delta.h, lstm.Uf, delta_.i);
+                    Tensor::Mul::kikj(delta.h, lstm.Ui, delta_.f);
+                    Tensor::Mul::kikj(delta.h, lstm.Ug, delta_.g);
+                    Tensor::Mul::kikj(delta.h, lstm.Uo, delta_.o);
+                }
                 /*
                     δht = E + δht+1
                     δct = δht ⊙ ot ⊙ dtanh(ct) + δct+1 ⊙ ft+1
@@ -191,8 +212,7 @@ public:
                                 A_ -> At+1
                                 _A -> At-1
                 */
-                auto& states = lstm.states;
-                Tensor f_ = t < states.size() - 1 ? states[t + 1].f : Tensor(hiddenDim, 1);
+                Tensor f_ = t < te ? states[t + 1].f : Tensor(hiddenDim, 1);
                 Tensor _c = t > 0 ? states[t - 1].c : Tensor(hiddenDim, 1);
                 for (std::size_t i = 0; i < delta.o.totalSize; i++) {
                     delta.c[i] = delta.h[i] * states[t].o[i] * Tanh::df(states[t].c[i]) + delta_.c[i] * f_[i];
@@ -202,14 +222,7 @@ public:
                     delta.f[i] = delta.c[i] * _c[i] * Sigmoid::df(states[t].f[i]);
                 }
                 /* gradient */
-                /*
-                    dw:(outputDim, hiddenDim)
-                    E: (outputDim, 1)
-                    h: (hiddenDim, 1)
-                    dw = E * h^T
-                */
-                Tensor::Mul::ikjk(d.W, loss[t], states[t].h);
-                Tensor::Mul::ikjk(d.B, loss[t], states[t].y);
+
                 /*
                     dw:    (hiddenDim, inputDim)
                     delta: (hiddenDim, 1)
@@ -237,10 +250,17 @@ public:
                 d.Bf += delta.f;
                 d.Bg += delta.g;
                 d.Bo += delta.o;
+                /*
+                    dw:(outputDim, hiddenDim)
+                    E: (outputDim, 1)
+                    h: (hiddenDim, 1)
+                    dw = E * h^T
+                */
+                Tensor::Mul::ikjk(d.W, loss[t], states[t].h);
+                d.B += loss[t];
                 /* next */
                 delta_ = delta;
             }
-
             /* clear */
             loss.clear();
             x.clear();
@@ -254,58 +274,58 @@ public:
     class OptimizeBlock
     {
     public:
-        Optimizer Wi;
-        Optimizer Ui;
-        Optimizer Bi;
-        Optimizer Wg;
-        Optimizer Ug;
-        Optimizer Bg;
-        Optimizer Wf;
-        Optimizer Uf;
-        Optimizer Bf;
-        Optimizer Wo;
-        Optimizer Uo;
-        Optimizer Bo;
-        Optimizer W;
-        Optimizer B;
+        Optimizer optWi;
+        Optimizer optUi;
+        Optimizer optBi;
+        Optimizer optWg;
+        Optimizer optUg;
+        Optimizer optBg;
+        Optimizer optWf;
+        Optimizer optUf;
+        Optimizer optBf;
+        Optimizer optWo;
+        Optimizer optUo;
+        Optimizer optBo;
+        Optimizer optW;
+        Optimizer optB;
     public:
         OptimizeBlock(){}
         explicit OptimizeBlock(const LSTM &layer)
         {
-            Wi = Optimizer(layer.Wi.shape);
-            Ui = Optimizer(layer.Ui.shape);
-            Bi = Optimizer(layer.Bi.shape);
-            Wg = Optimizer(layer.Wg.shape);
-            Ug = Optimizer(layer.Ug.shape);
-            Bg = Optimizer(layer.Bi.shape);
-            Wf = Optimizer(layer.Wf.shape);
-            Uf = Optimizer(layer.Uf.shape);
-            Bf = Optimizer(layer.Bf.shape);
-            Wo = Optimizer(layer.Wo.shape);
-            Uo = Optimizer(layer.Uo.shape);
-            Bo = Optimizer(layer.Bo.shape);
-            W  = Optimizer(layer.W.shape);
-            B  = Optimizer(layer.B.shape);
+            optWi = Optimizer(layer.Wi.shape);
+            optUi = Optimizer(layer.Ui.shape);
+            optBi = Optimizer(layer.Bi.shape);
+            optWg = Optimizer(layer.Wg.shape);
+            optUg = Optimizer(layer.Ug.shape);
+            optBg = Optimizer(layer.Bi.shape);
+            optWf = Optimizer(layer.Wf.shape);
+            optUf = Optimizer(layer.Uf.shape);
+            optBf = Optimizer(layer.Bf.shape);
+            optWo = Optimizer(layer.Wo.shape);
+            optUo = Optimizer(layer.Uo.shape);
+            optBo = Optimizer(layer.Bo.shape);
+            optW  = Optimizer(layer.W.shape);
+            optB  = Optimizer(layer.B.shape);
         }
         void operator()(LSTM& lstm, Grad& grad, float learningRate)
         {
             /* backward and eval */
             grad.backwardThroughTime(lstm);
             /* update */
-            Wi(lstm.Wi, grad.d.Wi, learningRate);
-            Ui(lstm.Ui, grad.d.Ui, learningRate);
-            Bi(lstm.Bi, grad.d.Bi, learningRate);
-            Wg(lstm.Wg, grad.d.Wg, learningRate);
-            Ug(lstm.Ug, grad.d.Ug, learningRate);
-            Bg(lstm.Bg, grad.d.Bg, learningRate);
-            Wf(lstm.Wf, grad.d.Wf, learningRate);
-            Uf(lstm.Uf, grad.d.Uf, learningRate);
-            Bf(lstm.Bf, grad.d.Bf, learningRate);
-            Wo(lstm.Wo, grad.d.Wo, learningRate);
-            Uo(lstm.Uo, grad.d.Uo, learningRate);
-            Bo(lstm.Bo, grad.d.Bo, learningRate);
-            W(lstm.W, grad.d.W, learningRate);
-            B(lstm.B, grad.d.B, learningRate);
+            optWi(lstm.Wi, grad.d.Wi, learningRate);
+            optUi(lstm.Ui, grad.d.Ui, learningRate);
+            optBi(lstm.Bi, grad.d.Bi, learningRate);
+            optWg(lstm.Wg, grad.d.Wg, learningRate);
+            optUg(lstm.Ug, grad.d.Ug, learningRate);
+            optBg(lstm.Bg, grad.d.Bg, learningRate);
+            optWf(lstm.Wf, grad.d.Wf, learningRate);
+            optUf(lstm.Uf, grad.d.Uf, learningRate);
+            optBf(lstm.Bf, grad.d.Bf, learningRate);
+            optWo(lstm.Wo, grad.d.Wo, learningRate);
+            optUo(lstm.Uo, grad.d.Uo, learningRate);
+            optBo(lstm.Bo, grad.d.Bo, learningRate);
+            optW(lstm.W, grad.d.W, learningRate);
+            optB(lstm.B, grad.d.B, learningRate);
             return;
         }
     };
@@ -343,7 +363,8 @@ public:
                                           c(t)               |
             c(t-1) -->--x-----------------+----------------------->-- c(t)
                         |                 |             |    |
-                        |                 |            tanh  |
+                        |                 |             V    ^
+                        ^                 ^            tanh  |
                         |                 |             |    |
                         |          -------x      -------x-----
                      f  |        i |      | g    | o    |
@@ -352,11 +373,13 @@ public:
                         |          |      |      |      |
             h(t-1) -->----------------------------      --------->--- h(t)
                         |
+                        ^
+                        |
                         x(t)
 
             ft = sigmoid(Wf*xt + Uf*ht-1 + bf);
             it = sigmoid(Wi*xt + Ui*ht-1 + bi);
-            gt = tanh(Wg*xt + Ug*ht-1 + bg);
+            gt =    tanh(Wg*xt + Ug*ht-1 + bg);
             ot = sigmoid(Wo*xt + Uo*ht-1 + bo);
             ct = ft ⊙ ct-1 + it ⊙ gt
             ht = ot ⊙ tanh(ct)
@@ -410,7 +433,6 @@ public:
         states.push_back(state);
         return y;
     }
-
 
 };
 

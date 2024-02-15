@@ -1,14 +1,13 @@
 #include "noise.h"
 
-
-Tensor Noise::uniform(int h, int w, float high, float low)
+Tensor imp::Noise::uniform(int h, int w, float high, float low)
 {
     Tensor x(h, w);
     util::uniform(x, high, low);
     return x;
 }
 
-Tensor Noise::gaussian(int h, int w, float sigma)
+Tensor imp::Noise::gaussian(int h, int w, float sigma)
 {
     Tensor x(h, w);
     std::default_random_engine engine;
@@ -21,7 +20,7 @@ Tensor Noise::gaussian(int h, int w, float sigma)
     return x;
 }
 
-Tensor Noise::rayleigh(int h, int w, float sigma)
+Tensor imp::Noise::rayleigh(int h, int w, float sigma)
 {
     Tensor x(h, w);
     std::default_random_engine engine;
@@ -36,7 +35,7 @@ Tensor Noise::rayleigh(int h, int w, float sigma)
     return x;
 }
 
-Tensor Noise::saltPepper(int h, int w)
+Tensor imp::Noise::saltPepper(int h, int w)
 {
     Tensor x(h, w);
     util::uniform(x, -255, 255);

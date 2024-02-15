@@ -383,6 +383,135 @@ struct wrap {
         return;
     }
 
+    struct MatMul {
+        inline static void ikkj(T* __restrict z, std::size_t zRow, std::size_t zCol,
+                                const T* __restrict x, std::size_t xRow, std::size_t xCol,
+                                const T* __restrict y, std::size_t yRow, std::size_t yCol)
+        {
+            const T *x_ = x;
+            const T *y_ = y;
+            T *z_ = z;
+            VectorType vecx;
+            VectorType vecy;
+            VectorType vecz;
+            std::size_t r = zCol%Vector::N;
+            for (std::size_t i = 0; i < zRow; i++) {
+                for (std::size_t k = 0; k < xCol; k++) {
+                    T xik = x_[i*xCol + k];
+                    vecx = Vector::Func::set1(xik);
+                    for (std::size_t j = 0; j < zCol - r; j+=Vector::N) {
+                        /* put float into m256 */
+                        vecy = Vector::Func::loadu(y_ + k*yCol + j);
+                        vecz = Vector::Func::loadu(z_ + i*xCol + j);
+                        /* _mm256_fmadd_ps(a, b, c): a*b + c */
+                        Vector::Func::fmadd(vecx, vecy, vecz);
+                        /* store result */
+                        Vector::Func::storeu(z_ + i*xCol + j, vecz);
+                    }
+                    for (std::size_t j = zCol - r; j < zCol; j++) {
+                        z_[i*zCol + j] += xik * y_[k*yCol + j];
+                    }
+                }
+            }
+            return;
+        }
+
+        inline static void ikjk(T* __restrict z, std::size_t zRow, std::size_t zCol,
+                                const T* __restrict x, std::size_t xRow, std::size_t xCol,
+                                const T* __restrict y, std::size_t yRow, std::size_t yCol)
+        {
+            const T *x_ = x;
+            const T *y_ = y;
+            T *z_ = z;
+            VectorType vecx;
+            VectorType vecy;
+            VectorType vecz;
+            std::size_t r = zCol%Vector::N;
+            for (std::size_t i = 0; i < zRow; i++) {
+                for (std::size_t k = 0; k < xCol; k++) {
+                    T xik = x_[i*xCol + k];
+                    vecx = Vector::Func::set1(xik);
+                    for (std::size_t j = 0; j < zCol - r; j+=Vector::N) {
+                        /* put float into m256 */
+                        vecy = Vector::Func::loadu(y_ + k*yCol + j);
+                        vecz = Vector::Func::loadu(z_ + i*xCol + j);
+                        /* _mm256_fmadd_ps(a, b, c): a*b + c */
+                        Vector::Func::fmadd(vecx, vecy, vecz);
+                        /* store result */
+                        Vector::Func::storeu(z_ + i*xCol + j, vecz);
+                    }
+                    for (std::size_t j = zCol - r; j < zCol; j++) {
+                        z_[i*zCol + j] += xik * y_[k*yCol + j];
+                    }
+                }
+            }
+            return;
+        }
+
+        inline static void kikj(T* __restrict z, std::size_t zRow, std::size_t zCol,
+                                const T* __restrict x, std::size_t xRow, std::size_t xCol,
+                                const T* __restrict y, std::size_t yRow, std::size_t yCol)
+        {
+            const T *x_ = x;
+            const T *y_ = y;
+            T *z_ = z;
+            VectorType vecx;
+            VectorType vecy;
+            VectorType vecz;
+            std::size_t r = zCol%Vector::N;
+            for (std::size_t i = 0; i < zRow; i++) {
+                for (std::size_t k = 0; k < xCol; k++) {
+                    T xik = x_[i*xCol + k];
+                    vecx = Vector::Func::set1(xik);
+                    for (std::size_t j = 0; j < zCol - r; j+=Vector::N) {
+                        /* put float into m256 */
+                        vecy = Vector::Func::loadu(y_ + k*yCol + j);
+                        vecz = Vector::Func::loadu(z_ + i*xCol + j);
+                        /* _mm256_fmadd_ps(a, b, c): a*b + c */
+                        Vector::Func::fmadd(vecx, vecy, vecz);
+                        /* store result */
+                        Vector::Func::storeu(z_ + i*xCol + j, vecz);
+                    }
+                    for (std::size_t j = zCol - r; j < zCol; j++) {
+                        z_[i*zCol + j] += xik * y_[k*yCol + j];
+                    }
+                }
+            }
+
+            return;
+        }
+        inline static void kijk(T* __restrict z, std::size_t zRow, std::size_t zCol,
+                                const T* __restrict x, std::size_t xRow, std::size_t xCol,
+                                const T* __restrict y, std::size_t yRow, std::size_t yCol)
+        {
+            const T *x_ = x;
+            const T *y_ = y;
+            T *z_ = z;
+            VectorType vecx;
+            VectorType vecy;
+            VectorType vecz;
+            std::size_t r = zCol%Vector::N;
+            for (std::size_t i = 0; i < zRow; i++) {
+                for (std::size_t k = 0; k < xCol; k++) {
+                    T xik = x_[i*xCol + k];
+                    vecx = Vector::Func::set1(xik);
+                    for (std::size_t j = 0; j < zCol - r; j+=Vector::N) {
+                        /* put float into m256 */
+                        vecy = Vector::Func::loadu(y_ + k*yCol + j);
+                        vecz = Vector::Func::loadu(z_ + i*xCol + j);
+                        /* _mm256_fmadd_ps(a, b, c): a*b + c */
+                        Vector::Func::fmadd(vecx, vecy, vecz);
+                        /* store result */
+                        Vector::Func::storeu(z_ + i*xCol + j, vecz);
+                    }
+                    for (std::size_t j = zCol - r; j < zCol; j++) {
+                        z_[i*zCol + j] += xik * y_[k*yCol + j];
+                    }
+                }
+            }
+            return;
+        }
+    };
 };
 
 }

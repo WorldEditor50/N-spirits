@@ -1,4 +1,5 @@
 #include "color.h"
+#include <cmath>
 
 int imp::RGB2CMY(OutTensor xo, InTensor xi)
 {

@@ -209,18 +209,4 @@ public:
     }
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #endif // QUATERNION_HPP

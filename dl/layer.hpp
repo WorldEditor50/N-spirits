@@ -81,6 +81,7 @@ public:
                 db += dy;
             }
             delta.zero();
+            o.zero();
             return;
         }
 
@@ -287,7 +288,7 @@ public:
             :FcLayer::Grad(param){}
         void backward(const LayerNorm &layer, Tensor &delta_)
         {
-            delta_ *= layer.gamma;
+            delta *= layer.gamma;
             Tensor::Mul::kikj(delta_, layer.w, delta);
             return;
         }

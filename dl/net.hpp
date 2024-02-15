@@ -10,8 +10,6 @@
 #include "layerdef.h"
 #include "../basic/tensor.hpp"
 
-
-
 template<typename ...TLayer>
 class Net
 {

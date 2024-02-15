@@ -14,9 +14,15 @@
 #ifdef ENABLE_JPEG
 #include "jpegwrap/jpegwrap.h"
 #endif
+
 #ifdef WIN32
 #include "platform/windows/viewpage.h"
 #endif
+
+#ifdef __linux__
+#include "platform/linux/viewpage.h"
+#endif
+
 namespace imp {
 
     /* tensor shape: (h, w, c) */
