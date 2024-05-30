@@ -78,6 +78,9 @@ public:
         rect.height = height/r;
         return rect;
     }
+
+    Point2<T> topLeft() const {return Point2<T>(x, y);}
+    Point2<T> size() const {return Point2<T>(height, width);}
 };
 
 using Rect = Rect_<int>;

@@ -149,12 +149,13 @@ public:
         return val;
     }
 
-    inline Tensor_& operator - ()
+    inline Tensor_ operator - () const
     {
+        Tensor_ x(shape);
         for (std::size_t i = 0; i < val.size(); i++) {
-            val[i] = -val[i];
+            x.val[i] = -val[i];
         }
-        return *this;
+        return x;
     }
 
     inline T* ptr() noexcept { return val.data(); }
@@ -272,13 +273,27 @@ public:
         for (std::size_t i = 0; i < y.totalSize; i++) {
             /* local offset */
             y.indexOf(i, indexs);
-            for (int j = 0; j < indexs.size(); j++) {
+            for (std::size_t j = 0; j < indexs.size(); j++) {
                 indexs[j] += offset[j];
             }
-            int o = posOf(indexs);
+            std::size_t o = posOf(indexs);
             y.val[i] = val[o];
         }
         return y;
+    }
+
+    void setBlock(const std::vector<int> &offset, const Tensor_ &x)
+    {
+        std::vector<int> indexs(shape.size(), 0);
+        for (std::size_t i = 0; i < x.totalSize; i++) {
+            x.indexOf(i, indexs);
+            for (std::size_t j = 0; j < indexs.size(); j++) {
+                indexs[j] += offset[j];
+            }
+            std::size_t o = posOf(indexs);
+            val[o] = x.val[i];
+        }
+        return;
     }
 
     template<typename ...Index>
@@ -306,7 +321,13 @@ public:
         shape.push_back(vec.size());
         std::copy(vec[0].begin(), vec[0].end(), shape.begin() + 1);
         Tensor_ x(shape);
-
+        std::size_t offset = 0;
+        for (std::size_t i = 0; i < vec.size(); i++) {
+            for (std::size_t j = 0; j < vec[i].totalSize; j++) {
+                x.val[j + offset] = vec[i][j];
+            }
+            offset += vec[i].totalSize;
+        }
         return x;
     }
 
@@ -817,11 +838,16 @@ public:
     struct Mul {
         inline static void ikkj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
-            for (std::size_t i = 0; i < x.shape[0]; i++) {
-                for (std::size_t k = 0; k < x1.shape[1]; k++) {
-                    for (std::size_t j = 0; j < x.shape[1]; j++) {
+            std::size_t rows = x.shape[0];
+            std::size_t cols = x.shape[1];
+            std::size_t cols1 = x1.shape[1];
+            std::size_t cols2 = x2.shape[1];
+            for (std::size_t i = 0; i < rows; i++) {
+                for (std::size_t k = 0; k < cols1; k++) {
+                    float val1 = x1.val[i*cols1 + k];
+                    for (std::size_t j = 0; j < cols; j++) {
                         /* x(i, j) = x1(i, k) * x2(k, j) */
-                        x.val[i*x.shape[1] + j] += x1.val[i*x1.shape[1] + k]*x2.val[k*x2.shape[1] + j];
+                        x.val[i*cols + j] += val1*x2.val[k*cols2 + j];
                     }
                 }
             }
@@ -830,12 +856,18 @@ public:
 
         inline static void kikj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
+            std::size_t rows = x.shape[0];
+            std::size_t cols = x.shape[1];
+            std::size_t rows1 = x1.shape[0];
+            std::size_t cols1 = x1.shape[1];
+            std::size_t cols2 = x2.shape[1];
             /* transpose x1 */
-            for (std::size_t i = 0; i < x.shape[0]; i++) {
-                for (std::size_t k = 0; k < x1.shape[0]; k++) {
-                    for (std::size_t j = 0; j < x.shape[1]; j++) {
+            for (std::size_t i = 0; i < rows; i++) {
+                for (std::size_t k = 0; k < rows1; k++) {
+                    float val1 = x1.val[k*cols1 + i];
+                    for (std::size_t j = 0; j < cols; j++) {
                         /* x(i, j) = x1(k, i)^T * x2(k, j) */
-                        x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i]*x2.val[k*x2.shape[1] + j];
+                        x.val[i*cols + j] += val1*x2.val[k*cols2 + j];
                     }
                 }
             }
@@ -844,12 +876,17 @@ public:
 
         inline static void ikjk(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
+            std::size_t rows = x.shape[0];
+            std::size_t cols = x.shape[1];
+            std::size_t cols1 = x1.shape[1];
+            std::size_t rows2 = x2.shape[0];
             /* transpose x2 */
-            for (std::size_t i = 0; i < x.shape[0]; i++) {
-                for (std::size_t k = 0; k < x1.shape[1]; k++) {
-                    for (std::size_t j = 0; j < x.shape[1]; j++) {
+            for (std::size_t i = 0; i < rows; i++) {
+                for (std::size_t k = 0; k < cols1; k++) {
+                    float val1 = x1.val[i*cols1 + k];
+                    for (std::size_t j = 0; j < cols; j++) {
                         /* x(i, j) = x1(i, k) * x2(j, k)^T */
-                        x.val[i*x.shape[1] + j] += x1.val[i*x1.shape[1] + k]*x2.val[j*x2.shape[1] + k];
+                        x.val[i*cols + j] += val1*x2.val[k*rows2 + j];
                     }
                 }
             }
@@ -858,18 +895,53 @@ public:
 
         inline static void kijk(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
+            std::size_t rows = x.shape[0];
+            std::size_t cols = x.shape[1];
+            std::size_t rows1 = x1.shape[0];
+            std::size_t rows2 = x2.shape[0];
             /* transpose x1, x2 */
-            for (std::size_t i = 0; i < x.shape[0]; i++) {
-                for (std::size_t k = 0; k < x1.shape[0]; k++) {
-                    for (std::size_t j = 0; j < x.shape[1]; j++) {
+            for (std::size_t i = 0; i < rows; i++) {
+                for (std::size_t k = 0; k < rows1; k++) {
+                    float val1 = x1.val[i*rows1 + k];
+                    for (std::size_t j = 0; j < cols; j++) {
                         /* x(i, j) = x1(k, i)^T * x2(j, k)^T */
-                        x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i] * x2.val[j*x2.shape[1] + k];
+                        x.val[i*cols + j] += val1 * x2.val[k*rows2 + j];
                     }
                 }
             }
             return;
         }
     };
+
+    template<typename ...Arg>
+    inline static Tensor_ concat(int dim, const Arg & ...args)
+    {
+        std::vector<Tensor_> xi = {args...};
+        std::vector<int> newShape(xi[0].shape.size(), 0);
+        for (std::size_t i = 0; i < xi.size(); i++) {
+            newShape[dim] += xi[i].shape[dim];
+        }
+        for (std::size_t i = 0; i < xi[0].shape.size(); i++) {
+            if (i != dim) {
+                newShape[i] = xi[0].shape[i];
+            }
+        }
+        Tensor_ x = Tensor_(newShape);
+        int offset = 0;
+        for (std::size_t i = 0; i < xi.size(); i++) {
+            Tensor_ &x_ = xi[i];
+            /* set value */
+            std::vector<int> indexs(x.shape.size(), 0);
+            for (std::size_t j = 0; j < x_.totalSize; j++) {
+                x_.indexOf(j, indexs);
+                indexs[dim] += offset;
+                x(indexs) = x_[j];
+            }
+            /* set offset */
+            offset += x_.shape[dim];
+        }
+        return x;
+    }
 
     inline static Tensor_ product2D(const Tensor_& x1, const Tensor_& x2)
     {

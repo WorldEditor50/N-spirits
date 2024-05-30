@@ -16,15 +16,6 @@ inline T abs(const T &x)
 }
 
 template<typename T>
-inline void sqrt(const T &x, T &y)
-{
-    for (std::size_t i = 0; i < x.totalSize; i++) {
-        y.val[i] = std::sqrt(x.val[i]);
-    }
-    return;
-}
-
-template<typename T>
 inline T sqrt(const T &x)
 {
     T y(x);
@@ -35,26 +26,29 @@ inline T sqrt(const T &x)
 }
 
 template<typename T>
-inline void exp(const T &x, T &y)
+inline T exp(const T &x)
 {
+    T y(x);
     for (std::size_t i = 0; i < x.totalSize; i++) {
         y.val[i] = std::exp(x.val[i]);
     }
-    return;
+    return y;
 }
 
 template<typename T>
-inline void sin(const T &x, T &y)
+inline T sin(const T &x)
 {
+    T y(x);
     for (std::size_t i = 0; i < x.totalSize; i++) {
         y.val[i] = std::sin(x.val[i]);
     }
-    return;
+    return y;
 }
 
 template<typename T>
-inline void cos(const T &x, T &y)
+inline T cos(const T &x)
 {
+    T y(x);
     for (std::size_t i = 0; i < x.totalSize; i++) {
         y.val[i] = std::cos(x.val[i]);
     }
@@ -62,12 +56,13 @@ inline void cos(const T &x, T &y)
 }
 
 template<typename T>
-inline void tanh(const T &x, T &y)
+inline T tanh(const T &x)
 {
+    T y(x);
     for (std::size_t i = 0; i < x.totalSize; i++) {
         y.val[i] = std::tanh(x.val[i]);
     }
-    return;
+    return y;
 }
 
 template<typename T>

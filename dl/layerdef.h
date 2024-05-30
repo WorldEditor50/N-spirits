@@ -9,15 +9,15 @@ enum OperateType {
 };
 
 enum LayerType {
-    LAYER_FC = 0,
-    LAYER_DROPOUT,
-    LAYER_NORM,
-    LAYER_SOFTMAX,
-    LAYER_CONCAT,
-    LAYER_LSTM,
-    LAYER_CONV2D,
-    LAYER_MAXPOOLING,
-    LAYER_AVGPOOLING
+    Layer_FullyConnection = 0,
+    Layer_Dropout,
+    Layer_Norm,
+    Layer_Softmax,
+    Layer_Concat,
+    Layer_Lstm,
+    Layer_Conv2d,
+    Layer_MaxPooling2d,
+    Layer_AvgPooling2d
 };
 
 class FcLayer;

@@ -11,7 +11,6 @@ class Varibable
 public:
     float val;
     float dval;
-
 public:
     Varibable():val(0),dval(0){}
     Varibable(float val_, float dval_=1.0):val(val_),dval(dval_){}

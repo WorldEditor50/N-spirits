@@ -146,8 +146,7 @@ void test_simd()
         std::cout<<"simd exp:"<<std::endl;
         y1.printValue();
         std::cout<<"cmath exp:"<<std::endl;
-        Tensorsi y2(100);
-        util::exp(x, y2);
+        Tensorsi y2 = util::exp(x);
         y2.printValue();
     }
     /* sqrt */

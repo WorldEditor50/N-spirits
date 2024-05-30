@@ -69,15 +69,51 @@ public:
     Point3& operator *= (T c) {x *= c; y *= c; z *= c; return *this;}
     Point3& operator /= (T c) {x /= c; y /= c; z /= c; return *this;}
 };
-using Point2uc = Point2<unsigned char>;
+
+template <typename T>
+class Point4
+{
+public:
+    T x;
+    T y;
+    T z;
+    T t;
+public:
+    Point4():x(0),y(0),z(0),t(0){}
+    Point4(T x_, T y_, T z_, T t_):x(x_),y(y_),z(z_),t(t_){}
+    Point4 operator + (const Point4 &r) const {return Point4(x + r.x, y + r.y, z + r.z, t + r.t);}
+    Point4 operator - (const Point4 &r) const {return Point4(x - r.x, y - r.y, z - r.z, t - r.t);}
+    Point4 operator * (const Point4 &r) const {return Point4(x * r.x, y * r.y, z * r.z, t * r.t);}
+    Point4 operator / (const Point4 &r) const {return Point4(x / r.x, y / r.y, z / r.z, t / r.t);}
+
+    Point4& operator += (const Point4 &r) {x += r.x; y += r.y; z += r.z; t += r.t; return *this;}
+    Point4& operator -= (const Point4 &r) {x -= r.x; y -= r.y; z -= r.z; t -= r.t; return *this;}
+    Point4& operator *= (const Point4 &r) {x *= r.x; y *= r.y; z *= r.z; t *= r.t; return *this;}
+    Point4& operator /= (const Point4 &r) {x /= r.x; y /= r.y; z /= r.z; t /= r.t; return *this;}
+
+    Point4 operator + (T c) const {return Point4(x + c, y + c, z + c, t + c);}
+    Point4 operator - (T c) const {return Point4(x - c, y - c, z - c, t - c);}
+    Point4 operator * (T c) const {return Point4(x * c, y * c, z * c, t * c);}
+    Point4 operator / (T c) const {return Point4(x / c, y / c, z / c, t / c);}
+
+    Point4& operator += (T c) {x += c; y += c; z += c; t += c; return *this;}
+    Point4& operator -= (T c) {x -= c; y -= c; z -= c; t -= c; return *this;}
+    Point4& operator *= (T c) {x *= c; y *= c; z *= c; t *= c; return *this;}
+    Point4& operator /= (T c) {x /= c; y /= c; z /= c; t /= c; return *this;}
+};
+
 using Point2c = Point2<char>;
 using Point2i = Point2<int>;
 using Point2f = Point2<float>;
 using Point2d = Point2<double>;
 
-using Point3uc = Point3<unsigned char>;
+using Point3c = Point3<char>;
 using Point3i = Point3<int>;
 using Point3f = Point3<float>;
 using Point3d = Point3<double>;
 
+using Point4c = Point4<char>;
+using Point4i = Point4<int>;
+using Point4f = Point4<float>;
+using Point4d = Point4<double>;
 #endif // POINT_HPP

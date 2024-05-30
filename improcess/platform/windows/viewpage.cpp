@@ -5,10 +5,10 @@
 
 LRESULT imp::View2D::onResize(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    std::cout<<"onResize"<<std::endl;
+    //std::cout<<"onResize"<<std::endl;
     int w = (SHORT)LOWORD(lParam);
     int h = (SHORT)HIWORD(lParam);
-    std::cout<<"w:"<<w<<",width:"<<width<<",h:"<<h<<",height:"<<height<<std::endl;
+    //std::cout<<"w:"<<w<<",width:"<<width<<",h:"<<h<<",height:"<<height<<std::endl;
     if (w == width && h == height) {
         return 0;
     }
@@ -34,7 +34,7 @@ LRESULT imp::View2D::onResize(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 LRESULT imp::View2D::onPaint(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    std::cout<<"onPaint"<<std::endl;
+    //std::cout<<"onPaint"<<std::endl;
     BITMAP pageBmp;
     GetObject(pageBitmap, sizeof(BITMAP), &pageBmp);
     RECT pageRect = {0, 0, pageBmp.bmWidth, pageBmp.bmHeight};

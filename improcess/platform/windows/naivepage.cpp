@@ -153,7 +153,7 @@ LRESULT imp::NaivePage::onTimer(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 
 LRESULT imp::NaivePage::onClose(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    std::cout<<"onClose"<<std::endl;
+    //std::cout<<"onClose"<<std::endl;
     if (pageBitmap != NULL) {
         DeleteObject(pageBitmap);
         pageBitmap = NULL;
@@ -168,7 +168,7 @@ LRESULT imp::NaivePage::onClose(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 
 LRESULT imp::NaivePage::onDestroy(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    std::cout<<"onDestroy"<<std::endl;
+    //std::cout<<"onDestroy"<<std::endl;
 
     PostQuitMessage(0);
     return ::DefWindowProc(hWnd, msg, wParam, lParam);

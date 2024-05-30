@@ -4,24 +4,31 @@
 #include <map>
 #include "../basic/util.hpp"
 #include "../basic/tensor.hpp"
-
+enum ActiveType {
+    Active_Linear = 0,
+    Active_Sigmoid,
+    Active_Relu,
+    Active_LeakyRelu,
+    Active_Tanh,
+    Active_Gelu
+};
 struct Sigmoid {
     inline static float f(float x) {return 1/(1 + std::exp(-x));}
     inline static float df(float y) {return y*(1 - y);}
-    inline static void f(Tensor &x)
+    inline static Tensor& f(Tensor &x)
     {
         for (std::size_t i = 0; i < x.totalSize; i++) {
             x.val[i] = 1/(1 + std::exp(-x.val[i]));
         }
-        return;
+        return x;
     }
 
-    inline static void df(Tensor &y)
+    inline static Tensor& df(Tensor &y)
     {
         for (std::size_t i = 0; i < y.totalSize; i++) {
             y.val[i] = y.val[i]*(1 - y.val[i]);
         }
-        return;
+        return y;
     }
     inline static Tensor f(const Tensor &x)
     {
@@ -45,20 +52,20 @@ struct Sigmoid {
 struct Tanh {
     inline static float f(float x) {return std::tanh(x);}
     inline static float df(float y) {return 1 - y*y;}
-    inline static void f(Tensor &x)
+    inline static Tensor& f(Tensor &x)
     {
         for (std::size_t i = 0; i < x.totalSize; i++) {
             x.val[i] = std::tanh(x.val[i]);
         }
-        return;
+        return x;
     }
 
-    inline static void df(Tensor &y)
+    inline static Tensor& df(Tensor &y)
     {
         for (std::size_t i = 0; i < y.totalSize; i++) {
             y.val[i] = 1 - y.val[i]*y.val[i];
         }
-        return;
+        return y;
     }
 
     inline static Tensor f(const Tensor &x)
@@ -83,20 +90,20 @@ struct Tanh {
 struct Relu {
     inline static float f(float x) {return x > 0 ? x : 0;}
     inline static float df(float y) {return y > 0 ? 1 : 0;}
-    inline static void f(Tensor &x)
+    inline static Tensor& f(Tensor &x)
     {
         for (std::size_t i = 0; i < x.totalSize; i++) {
             x.val[i] = x.val[i] > 0 ? x.val[i] : 0;
         }
-        return;
+        return x;
     }
 
-    inline static void df(Tensor &y)
+    inline static Tensor& df(Tensor &y)
     {
         for (std::size_t i = 0; i < y.totalSize; i++) {
             y.val[i] = y.val[i] > 0 ? 1 : 0;
         }
-        return;
+        return y;
     }
 
     inline static Tensor f(const Tensor &x)
@@ -121,20 +128,20 @@ struct Relu {
 struct LeakyRelu {
     inline static float f(float x) {return x > 0 ? x : 0.01*x;}
     inline static float df(float y) {return y > 0 ? 1 : 0.01;}
-    inline static void f(Tensor &x)
+    inline static Tensor& f(Tensor &x)
     {
         for (std::size_t i = 0; i < x.totalSize; i++) {
             x.val[i] = x.val[i] > 0 ? x.val[i] : 0.01*x.val[i];
         }
-        return;
+        return x;
     }
 
-    inline static void df(Tensor &y)
+    inline static Tensor& df(Tensor &y)
     {
         for (std::size_t i = 0; i < y.totalSize; i++) {
             y.val[i] = y.val[i] > 0 ? 1 : 0.01;
         }
-        return;
+        return y;
     }
     inline static Tensor f(const Tensor &x)
     {
@@ -158,12 +165,12 @@ struct LeakyRelu {
 struct Linear {
     inline static float f(float x) {return x;}
     inline static float df(float) {return 1;}
-    inline static void f(Tensor &x){}
+    inline static Tensor& f(Tensor &x){return x;}
 
-    inline static void df(Tensor &y)
+    inline static Tensor& df(Tensor &y)
     {
         y.fill(1);
-        return;
+        return y;
     }
     inline static Tensor f(const Tensor &x)
     {
@@ -201,48 +208,118 @@ struct Gelu {
     }
 };
 
-struct Softmax_ {
 
-    inline static void f(Tensor& y, const Tensor &x)
+struct Fn {
+    inline static float f(int type, float x)
     {
-        util::exp(x, y);
-        float s = y.sum();
-        y /= s;
-        return;
+        switch (type) {
+        case Active_Linear:
+            return Linear::f(x);
+        case Active_Sigmoid:
+            return Sigmoid::f(x);
+        case Active_Relu:
+            return Relu::f(x);
+        case Active_LeakyRelu:
+            return LeakyRelu::f(x);
+        case Active_Tanh:
+            return Tanh::f(x);
+        default:
+            break;
+        }
+        return Sigmoid::f(x);
     }
-    inline static void df(Tensor &dy, const Tensor &y, const Tensor &yt)
+    inline static float df(int type, float y)
     {
-        util::sub(dy, y, yt);
-        return;
+        switch (type) {
+        case Active_Linear:
+            return Linear::df(y);
+        case Active_Sigmoid:
+            return Sigmoid::df(y);
+        case Active_Relu:
+            return Relu::df(y);
+        case Active_LeakyRelu:
+            return LeakyRelu::df(y);
+        case Active_Tanh:
+            return Tanh::df(y);
+        default:
+            break;
+        }
+        return Sigmoid::df(y);
     }
-};
+    inline static Tensor& f(int type, Tensor &x)
+    {
+        switch (type) {
+        case Active_Linear:
+            return Linear::f(x);
+        case Active_Sigmoid:
+            return Sigmoid::f(x);
+        case Active_Relu:
+            return Relu::f(x);
+        case Active_LeakyRelu:
+            return LeakyRelu::f(x);
+        case Active_Tanh:
+            return Tanh::f(x);
+        default:
+            break;
+        }
+        return Sigmoid::f(x);
+    }
 
-enum ActiveType {
-    ACTIVE_LINEAR = 0,
-    ACTIVE_SIGMOID,
-    ACTIVE_RELU,
-    ACTIVE_LEAKRELU,
-    ACTIVE_TANH,
-    ACTIVE_GELU
-};
+    inline static Tensor& df(int type, Tensor &y)
+    {
+        switch (type) {
+        case Active_Linear:
+            return Linear::df(y);
+        case Active_Sigmoid:
+            return Sigmoid::df(y);
+        case Active_Relu:
+            return Relu::df(y);
+        case Active_LeakyRelu:
+            return LeakyRelu::df(y);
+        case Active_Tanh:
+            return Tanh::df(y);
+        default:
+            break;
+        }
+        return Sigmoid::df(y);
+    }
+    inline static Tensor f(int type, const Tensor &x)
+    {
+        switch (type) {
+        case Active_Linear:
+            return Linear::f(x);
+        case Active_Sigmoid:
+            return Sigmoid::f(x);
+        case Active_Relu:
+            return Relu::f(x);
+        case Active_LeakyRelu:
+            return LeakyRelu::f(x);
+        case Active_Tanh:
+            return Tanh::f(x);
+        default:
+            break;
+        }
+        return Sigmoid::f(x);
+    }
 
-class Active
-{
-public:
-    struct Functor {
-        void(*f)(Tensor &x);
-        void(*df)(Tensor &y);
-    };
-public:
-    static std::map<int, Functor> func;
-};
-
-std::map<int, Active::Functor> Active::func = {
-    {ACTIVE_LINEAR, {&Linear::f, &Linear::df}},
-    {ACTIVE_SIGMOID, {&Sigmoid::f, &Sigmoid::df}},
-    {ACTIVE_RELU, {&Relu::f, &Relu::df}},
-    {ACTIVE_LEAKRELU, {&LeakyRelu::f, &LeakyRelu::df}},
-    {ACTIVE_TANH, {&Tanh::f, &Tanh::df}}
+    inline static Tensor df(int type, const Tensor &y)
+    {
+        switch (type) {
+        case Active_Linear:
+            return Linear::df(y);
+        case Active_Sigmoid:
+            return Sigmoid::df(y);
+        case Active_Relu:
+            return Relu::df(y);
+        case Active_LeakyRelu:
+            return LeakyRelu::df(y);
+        case Active_Tanh:
+            return Tanh::df(y);
+        default:
+            break;
+        }
+        return Sigmoid::df(y);
+    }
 };
 
 #endif // ACTIVATE_H

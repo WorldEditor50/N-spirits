@@ -68,10 +68,10 @@ public:
             auto& gradN1 = std::get<N - 1>(grads);
             auto& gradN2 = std::get<N - 2>(grads);
             /* backward */
-            gradN1.backward(layerN1, gradN2.delta);
+            gradN1.backward(layerN1, gradN2.e);
             /* evaluate */
             Tensor &x1 = std::get<N - 2>(layers).o;
-            gradN1.eval(x1, layerN1.o);
+            gradN1.eval(layerN1, x1);
             /* next */
             using LayerN3 = std::tuple_element_t<N - 3, Layers>;
             Backward<Layers, Grads, LayerN2, LayerN3, N - 1>::impl(grads, layers, x);
@@ -88,10 +88,10 @@ public:
             auto& layer1 = std::get<1>(layers);
             auto& grad1 = std::get<1>(grads);
             /* backward */
-            grad1.backward(layer1, grad0.delta);
+            grad1.backward(layer1, grad0.e);
             /* evaluate */
-            grad1.eval(layer0.o, layer1.o);
-            grad0.eval(x, layer0.o);
+            grad1.eval(layer1, layer0.o);
+            grad0.eval(layer0, x);
             return;
         }
     };
@@ -109,7 +109,7 @@ public:
             grad1.backward(layer1, loss);
             lstmGrad.cache(loss, x);
             /* evaluate */
-            grad1.eval(lstm.y, layer1.o);
+            grad1.eval(layer1, lstm.y);
             return;
         }
     };
@@ -125,11 +125,11 @@ public:
             auto& maxPooling2dGrad = std::get<N - 2>(grads);
             Tensor &o = maxPooling2d.o;
             /* backward */
-            Tensor delta(int(o.totalSize), 1);
-            fcGrad.backward(fcLayer, delta);
-            maxPooling2dGrad.delta.val = delta.val;
+            Tensor e(int(o.totalSize), 1);
+            fcGrad.backward(fcLayer, e);
+            maxPooling2dGrad.e.val = e.val;
             /* evaluate fcLayer */
-            fcGrad.eval(Tensor(std::vector<int>{int(o.totalSize), 1}, o.val), fcLayer.o);
+            fcGrad.eval(fcLayer, Tensor(std::vector<int>{int(o.totalSize), 1}, o.val));
             /* next */
             using LayerN3 = std::tuple_element_t<N - 3, Layers>;
             Backward<Layers, Grads, MaxPooling2d, LayerN3, N - 1>::impl(grads, layers, x);
@@ -172,7 +172,7 @@ public:
     void backward(const Tensor &loss, const Tensor &x)
     {
         auto &grad = std::get<Net::N - 1>(grads);
-        grad.delta = loss;
+        grad.e = loss;
         using LayerN1 = std::tuple_element_t<Net::N - 1, Layers>;
         using LayerN2 = std::tuple_element_t<Net::N - 2, Layers>;
         Backward<Layers, Grads, LayerN1, LayerN2, Net::N>::impl(grads, net.layers, x);
@@ -186,10 +186,10 @@ public:
         auto &layer1 = std::get<Net::N - 1>(net.layers);
         auto &layer2 = std::get<Net::N - 2>(net.layers);
         /* backward */
-        grad1.delta = loss;
-        grad1.backward(layer1, grad2.delta);
+        grad1.e = loss;
+        grad1.backward(layer1, grad2.e);
         /* evaluate gradient */
-        grad1.eval(layer2.o, layer1.o, yt);
+        grad1.eval(layer1, layer2.o, yt);
         /* next layer */
         using LayerN2 = std::tuple_element_t<Net::N - 2, Layers>;
         using LayerN3 = std::tuple_element_t<Net::N - 3, Layers>;

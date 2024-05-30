@@ -6,7 +6,7 @@
 #include "../basic/util.hpp"
 #include "../basic/tensor.hpp"
 #include "../utils/clock.hpp"
-#include "../improcess/image.hpp"
+#include "../improcess/improcess_def.h"
 #include "../improcess/improcess.h"
 #include "../improcess/bmp.hpp"
 #ifdef ENABLE_JPEG
@@ -182,9 +182,8 @@ void test_line()
 void test_polygon()
 {
     Tensor img(480, 640, 3);
-    imp::polygon(img, {{200, 100}, {400, 100}, {450, 200},
-                                      {400, 300}, {200, 300}, {150, 200}},
-                                imp::Color3(0, 255, 0), 1);
+    imp::polygon(img, {{200, 100}, {400, 100}, {450, 200}, {400, 300}, {200, 300}, {150, 200}},
+                 imp::Color3(0, 255, 0), 1);
     imp::save(img, "polygon.bmp");
     return;
 }
@@ -488,11 +487,13 @@ void test_templateMatch()
     std::cout<<"templateMatch cost time:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
     std::cout<<"x:"<<rect.x<<",y:"<<rect.y
             <<", width:"<<rect.width<<",height:"<<rect.height<<std::endl;
-    Tensor target;
 
-    imp::copy(target, img, rect);
-
-    imp::save(target, "data2_crystalmaiden.bmp");
+    imp::rectangle(img, Point2i(rect.y, rect.x), Point2i(rect.height, rect.width));
+    imp::show(img);
+    //Tensor target;
+    //imp::copy(target, img, rect);
+    //
+    //imp::save(target, "data2_crystalmaiden.bmp");
     return;
 }
 
@@ -522,6 +523,20 @@ void test_show()
         return;
     }
     imp::show(img);
+    return;
+}
+
+void test_concat()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load temp image."<<std::endl;
+        return;
+    }
+    Tensor x1 = Tensor::concat(imp::HWC_H, img, img, img);
+    imp::show(x1);
+    Tensor x2 = Tensor::concat(imp::HWC_W, img, img, img);
+    imp::show(x2);
     return;
 }
 int main()
@@ -556,7 +571,8 @@ int main()
     test_autoThreshold();
     test_otsuThreshold();
     test_entropyThreshold();
-#endif
     test_show();
+#endif
+    test_concat();
 	return 0;
 }

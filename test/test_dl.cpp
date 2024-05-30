@@ -131,11 +131,11 @@ void test_conv()
 void test_bpnn()
 {
     using BPNN = Net<FcLayer, LayerNorm, FcLayer, LayerNorm, FcLayer>;
-    BPNN bp(FcLayer(2, 32, true, ACTIVE_TANH),
-            LayerNorm(32, 32, true, ACTIVE_SIGMOID),
-            FcLayer(32, 32, true, ACTIVE_TANH),
-            LayerNorm(32, 32, true, ACTIVE_SIGMOID),
-            FcLayer(32, 1, true, ACTIVE_SIGMOID));
+    BPNN bp(FcLayer(2, 32, true, Active_Tanh),
+            LayerNorm(32, 32, true, Active_Sigmoid),
+            FcLayer(32, 32, true, Active_Tanh),
+            LayerNorm(32, 32, true, Active_Sigmoid),
+            FcLayer(32, 1, true, Active_Sigmoid));
     Optimizer<BPNN, Optimize::RMSProp> optimizer(bp, 1e-3);
     /* train xor */
     std::vector<Tensor> x = {Tensor({2, 1}, {1, 1}),
@@ -189,8 +189,8 @@ void test_lenet5()
                   MaxPooling2d(6, 28, 28, 2, 2),
                   Conv2d(6, 14, 14, 16, 5, 1, 0),
                   MaxPooling2d(16, 10, 10, 2, 2),
-                  FcLayer(16*5*5, 120, true, ACTIVE_SIGMOID),
-                  FcLayer(120, 84, true, ACTIVE_SIGMOID),
+                  FcLayer(16*5*5, 120, true, Active_Sigmoid),
+                  FcLayer(120, 84, true, Active_Sigmoid),
                   SoftmaxLayer(84, 10, true));
     Optimizer<LeNet5, Optimize::RMSProp> optimizer(lenet5, 1e-3);
     Tensor x(3, 32, 32);
@@ -242,15 +242,15 @@ void test_mnist()
     using LeNet5 = Net<Conv2d, NMS, MaxPooling2d,
                        Conv2d, NMS, MaxPooling2d,
                        FcLayer, LayerNorm, FcLayer>;
-    LeNet5 lenet5(Conv2d(1, 28, 28, 6, 5, 1, 0, false, ACTIVE_LEAKRELU),
+    LeNet5 lenet5(Conv2d(1, 28, 28, 6, 5, 1, 0, false, Active_LeakyRelu),
                   NMS(6, 24, 24),
                   MaxPooling2d(6, 24, 24, 2, 2),
-                  Conv2d(6, 12, 12, 16, 5, 1, 0, false, ACTIVE_LEAKRELU),
+                  Conv2d(6, 12, 12, 16, 5, 1, 0, false, Active_LeakyRelu),
                   NMS(16, 8, 8),
                   MaxPooling2d(16, 8, 8, 2, 2),
-                  FcLayer(16*4*4, 120, true, ACTIVE_TANH),
-                  LayerNorm(120, 84, true, ACTIVE_SIGMOID),
-                  FcLayer(84, 10, true, ACTIVE_SIGMOID));
+                  FcLayer(16*4*4, 120, true, Active_Tanh),
+                  LayerNorm(120, 84, true, Active_Sigmoid),
+                  FcLayer(84, 10, true, Active_Sigmoid));
     /* load data */
     MnistLoader mnist("./dataset/train-images.idx3-ubyte",
                       "./dataset/train-labels.idx1-ubyte");
@@ -307,8 +307,8 @@ void test_lstm()
     using LSTMNET = Net<LSTM,
                         FcLayer, FcLayer>;
     LSTMNET lstm(LSTM(1, 16, 16),
-                 FcLayer(16, 16, true, ACTIVE_TANH),
-                 FcLayer(16, 1, true, ACTIVE_LINEAR));
+                 FcLayer(16, 16, true, Active_Tanh),
+                 FcLayer(16, 1, true, Active_Linear));
 
     Optimizer<LSTMNET, Optimize::RMSProp> optimizer(lstm, 1e-4);
     /* data */
@@ -356,20 +356,20 @@ void test_alexnet()
                         Conv2d, MaxPooling2d,
                         Conv2d, Conv2d, Conv2d, MaxPooling2d,
                         FcLayer, FcLayer, FcLayer>;
-    AlexNet alexnet(Conv2d(3, 227, 227, 48, 11, 4, 2, false, ACTIVE_LEAKRELU),
+    AlexNet alexnet(Conv2d(3, 227, 227, 48, 11, 4, 2, false, Active_LeakyRelu),
                     MaxPooling2d(48, 56, 56, 3, 2),
 
-                    Conv2d(48, 27, 27, 128, 5, 1, 2, false, ACTIVE_LEAKRELU),
+                    Conv2d(48, 27, 27, 128, 5, 1, 2, false, Active_LeakyRelu),
                     MaxPooling2d(128, 27, 27, 3, 2),
 
-                    Conv2d(128, 13, 13, 192, 3, 1, 1, false, ACTIVE_LEAKRELU),
-                    Conv2d(192, 13, 13, 192, 3, 1, 1, false, ACTIVE_LEAKRELU),
-                    Conv2d(192, 13, 13, 128, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                    Conv2d(128, 13, 13, 192, 3, 1, 1, false, Active_LeakyRelu),
+                    Conv2d(192, 13, 13, 192, 3, 1, 1, false, Active_LeakyRelu),
+                    Conv2d(192, 13, 13, 128, 3, 1, 1, false, Active_LeakyRelu),
                     MaxPooling2d(128, 13, 13, 3, 2),
 
-                    FcLayer(128*6*6, 2048, true, ACTIVE_TANH),
-                    FcLayer(2048, 2048, true, ACTIVE_SIGMOID),
-                    FcLayer(2048, 1000, true, ACTIVE_SIGMOID));
+                    FcLayer(128*6*6, 2048, true, Active_Tanh),
+                    FcLayer(2048, 2048, true, Active_Sigmoid),
+                    FcLayer(2048, 1000, true, Active_Sigmoid));
 
     Tensor x(3, 227, 227);
     /* alexnet forward cost:3.24633s */
@@ -390,31 +390,31 @@ void test_vgg16()
                       Conv2d, Conv2d, Conv2d, MaxPooling2d,
                       FcLayer, FcLayer, FcLayer>;
     /* 16 conv2d */
-    VGG16 vgg16(Conv2d(3,  224, 224, 64, 3, 1, 1, false, ACTIVE_LEAKRELU),
-                Conv2d(64, 224, 224, 64, 3, 1, 1, false, ACTIVE_LEAKRELU),
+    VGG16 vgg16(Conv2d(3,  224, 224, 64, 3, 1, 1, false, Active_LeakyRelu),
+                Conv2d(64, 224, 224, 64, 3, 1, 1, false, Active_LeakyRelu),
                 MaxPooling2d(64, 224, 224, 2, 2),
 
-                Conv2d(64,  112, 112, 128, 3, 1, 1, false, ACTIVE_LEAKRELU),
-                Conv2d(128, 112, 112, 128, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                Conv2d(64,  112, 112, 128, 3, 1, 1, false, Active_LeakyRelu),
+                Conv2d(128, 112, 112, 128, 3, 1, 1, false, Active_LeakyRelu),
                 MaxPooling2d(128, 112, 112, 2, 2),
 
-                Conv2d(128, 56, 56, 256, 3, 1, 1, false, ACTIVE_LEAKRELU),
-                Conv2d(256, 56, 56, 256, 3, 1, 1, false, ACTIVE_LEAKRELU),
-                Conv2d(256, 56, 56, 256, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                Conv2d(128, 56, 56, 256, 3, 1, 1, false, Active_LeakyRelu),
+                Conv2d(256, 56, 56, 256, 3, 1, 1, false, Active_LeakyRelu),
+                Conv2d(256, 56, 56, 256, 3, 1, 1, false, Active_LeakyRelu),
                 MaxPooling2d(256, 56, 56, 2, 2),
 
-                Conv2d(256, 28, 28, 512, 3, 1, 1, false, ACTIVE_LEAKRELU),
-                Conv2d(512, 28, 28, 512, 3, 1, 1, false, ACTIVE_LEAKRELU),
-                Conv2d(512, 28, 28, 512, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                Conv2d(256, 28, 28, 512, 3, 1, 1, false, Active_LeakyRelu),
+                Conv2d(512, 28, 28, 512, 3, 1, 1, false, Active_LeakyRelu),
+                Conv2d(512, 28, 28, 512, 3, 1, 1, false, Active_LeakyRelu),
                 MaxPooling2d(512, 28, 28, 2, 2),
 
-                Conv2d(512, 14, 14, 512, 3, 1, 1, false, ACTIVE_LEAKRELU),
-                Conv2d(512, 14, 14, 512, 3, 1, 1, false, ACTIVE_LEAKRELU),
-                Conv2d(512, 14, 14, 512, 3, 1, 1, false, ACTIVE_LEAKRELU),
+                Conv2d(512, 14, 14, 512, 3, 1, 1, false, Active_LeakyRelu),
+                Conv2d(512, 14, 14, 512, 3, 1, 1, false, Active_LeakyRelu),
+                Conv2d(512, 14, 14, 512, 3, 1, 1, false, Active_LeakyRelu),
                 MaxPooling2d(512, 7, 7, 2, 2),
-                FcLayer(512*7*7, 4096, true, ACTIVE_TANH),
-                FcLayer(4096, 4096, true, ACTIVE_SIGMOID),
-                FcLayer(4096, 1000, true, ACTIVE_SIGMOID));
+                FcLayer(512*7*7, 4096, true, Active_Tanh),
+                FcLayer(4096, 4096, true, Active_Sigmoid),
+                FcLayer(4096, 1000, true, Active_Sigmoid));
 
     Optimizer<VGG16, Optimize::RMSProp> optimizer(vgg16, 1e-3);
 
@@ -465,6 +465,6 @@ int main()
     test_alexnet();
     test_vgg16();
 #endif
-    test_vgg16();
+    test_bpnn();
 	return 0;
 }

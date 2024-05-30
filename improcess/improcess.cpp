@@ -688,6 +688,11 @@ int imp::templateMatch(InTensor xi, InTensor xt, Rect &rect)
     float maxCosTheta = 0;
     for (int i = 0; i < h - rect.height + 1; i++) {
         for (int j = 0; j < w - rect.width + 1; j++) {
+#if 0
+            Tensor x = grayi.block({i, j, 0}, {rect.height, rect.width, 1});
+            float innerProduct = util::dot(x, grayt);
+            float xNorm = x.norm2();
+#else
             float innerProduct = 0;
             float xNorm = 0;
             for (int u = 0; u < rect.height; u++) {
@@ -698,6 +703,7 @@ int imp::templateMatch(InTensor xi, InTensor xt, Rect &rect)
                 }
             }
             xNorm = std::sqrt(xNorm);
+#endif
             float cosTheta = innerProduct/(xNorm*xtNorm);
             if (cosTheta > maxCosTheta) {
                 rect.x = i;

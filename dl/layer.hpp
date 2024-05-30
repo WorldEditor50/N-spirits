@@ -16,17 +16,17 @@ public:
     bool bias;
     /* type */
     int opType;
-    int activeType;
     int layerType;
+    int activeType;
 public:
     FcParam():inputDim(0),outputDim(0),bias(false),
-    opType(OP_FORWARD),activeType(ACTIVE_LINEAR),layerType(LAYER_FC){}
+    opType(OP_FORWARD),layerType(Layer_FullyConnection), activeType(Active_Sigmoid){}
     FcParam(int inDim_, int outDim_, bool bias_, int activeType_):
         inputDim(inDim_),outputDim(outDim_),bias(bias_),
-        opType(OP_FORWARD),activeType(activeType_),layerType(LAYER_FC){}
+        opType(OP_FORWARD),layerType(Layer_FullyConnection), activeType(Active_Sigmoid){}
     FcParam(const FcParam &param):
         inputDim(param.inputDim),outputDim(param.outputDim),bias(param.bias),
-        opType(param.opType),activeType(param.activeType),layerType(param.layerType){}
+        opType(param.opType),layerType(param.layerType), activeType(param.activeType){}
 };
 
 class FcLayer: public FcParam
@@ -38,7 +38,7 @@ public:
     public:
         Tensor dw;
         Tensor db;
-        Tensor delta;
+        Tensor e;
     public:
         Grad(){}
         explicit Grad(const FcParam &param)
@@ -48,10 +48,10 @@ public:
             if (bias == true) {
                 db = Tensor(outputDim, 1);
             }
-            delta = Tensor(outputDim, 1);
+            e = Tensor(outputDim, 1);
         }
-        inline Tensor& loss() {return delta;}
-        void backward(const FcLayer &layer, Tensor &delta_)
+        inline Tensor& loss() {return e;}
+        void backward(const FcLayer &layer, Tensor &ei)
         {
             /*
                 delta_: (inputDim, 1)
@@ -59,15 +59,12 @@ public:
                 delta:  (outputDim, 1)
                 delta_ = w^T * delta
             */
-            Tensor::Mul::kikj(delta_, layer.w, delta);
+            Tensor::Mul::kikj(ei, layer.w, e);
             return;
         }
 
-        void eval(const Tensor &x, Tensor &o)
+        void eval(FcLayer &layer, const Tensor &x)
         {
-            Tensor &dy = o;
-            Active::func[activeType].df(dy);
-            dy *= delta;
             /*
                 dw: (outputDim, inputDim)
                 dy: (outputDim, 1)
@@ -76,11 +73,14 @@ public:
                 dy = dActive(o)*delta
                 dw = dy * x^T
             */
+            Tensor &o = layer.o;
+            Tensor dy = Fn::df(activeType, o);
+            dy *= e;
             Tensor::Mul::ikjk(dw, dy, x);
             if (bias == true) {
                 db += dy;
             }
-            delta.zero();
+            e.zero();
             o.zero();
             return;
         }
@@ -145,7 +145,7 @@ public:
         if (bias == true) {
             o += b;
         }
-        Active::func[activeType].f(o);
+        Fn::f(activeType, o);
         return o;
     }
 
@@ -185,17 +185,18 @@ public:
     {
     public:
         Grad(){}
-        explicit Grad(const FcParam &param)
-            :FcLayer::Grad(param){}
-        void eval(const Tensor &x, const Tensor &o, const Tensor &yt)
+        explicit Grad(const FcParam &param):FcLayer::Grad(param){}
+        void eval(SoftmaxLayer &layer, const Tensor &x, const Tensor &yt)
         {
-            Tensor dy = o - yt;
+            Tensor &o = layer.o;
+            Tensor dy(o.shape);
+            dy = o - yt;
             /* dw = dy*x^T */
             Tensor::Mul::ikjk(dw, dy, x);
             if (bias == true) {
                 db += dy;
             }
-            delta.zero();
+            e.zero();
             return;
         }
     };
@@ -203,9 +204,9 @@ public:
     SoftmaxLayer(){}
     ~SoftmaxLayer(){}
     explicit SoftmaxLayer(int inputDim_, int outputDim_, bool bias_)
-        :FcLayer(inputDim_, outputDim_, bias_, ACTIVE_LINEAR)
+        :FcLayer(inputDim_, outputDim_, bias_, Active_Linear)
     {
-        layerType = LAYER_SOFTMAX;
+        layerType = Layer_Softmax;
     }
 
     Tensor& forward(const Tensor &x) override
@@ -215,7 +216,7 @@ public:
         float max_ = o.max();
         o -= max_;
         /* softmax(x) = exp(xi)/Σexp(xj)  */
-        util::exp(o, o);
+        o = util::exp(o);
         float s = o.sum();     
         o /= s;
         return o;
@@ -243,7 +244,7 @@ public:
         void backward(Dropout &layer, Tensor &delta_)
         {
             delta_ *= layer.mask;
-            Tensor::Mul::kikj(delta_, layer.w, delta);
+            Tensor::Mul::kikj(delta_, layer.w, e);
             return;
         }
     };
@@ -257,7 +258,7 @@ public:
     explicit Dropout(int inputDim_, int outputDim_, bool bias_, int activeType_, float p_)
         :FcLayer(inputDim_, outputDim_, bias_, activeType_),p(p_), mask(outputDim_, 1)
     {
-        layerType = LAYER_DROPOUT;
+        layerType = Layer_Dropout;
     }
 
     Tensor& forward(const Tensor &x) override
@@ -288,36 +289,56 @@ public:
             :FcLayer::Grad(param){}
         void backward(const LayerNorm &layer, Tensor &delta_)
         {
-            delta *= layer.gamma;
-            Tensor::Mul::kikj(delta_, layer.w, delta);
+            Tensor::Mul::kikj(delta_, layer.w, e*layer.gamma);
+            return;
+        }
+        void eval(LayerNorm &layer, const Tensor &x)
+        {
+            Tensor &o = layer.o;
+            float gamma = layer.gamma;
+            Tensor dy = Fn::df(activeType, o);
+            Tensor error = dy*e;
+            for (std::size_t i = 0; i < dy.totalSize; i++) {
+                float d = (layer.o1[i] - layer.u)*gamma;
+                dy[i] = (1.0 - 1.0/float(outputDim))*(1 - d*d)*gamma*error[i];
+            }
+            Tensor::Mul::ikjk(dw, dy, x);
+            if (bias == true) {
+                db += error;
+            }
+            e.zero();
+            layer.o1.zero();
             return;
         }
     };
 
 public:
     float gamma;
+    float u;
+    Tensor o1;
 public:
     LayerNorm(){}
     explicit LayerNorm(int inputDim_, int outputDim_, bool bias_, int activeType_)
         :FcLayer(inputDim_, outputDim_, bias_, activeType_), gamma(1)
     {
-        layerType = LAYER_NORM;
+        layerType = Layer_Norm;
+        o1 = Tensor(outputDim_, 1);
     }
 
     Tensor& forward(const Tensor &x) override
     {
-        o.zero();
-        Tensor::Mul::ikkj(o, w, x);
-        float u = o.mean();
-        float sigma = o.variance(u);
+        o1.zero();
+        Tensor::Mul::ikkj(o1, w, x);
+        u = o1.mean();
+        float sigma = o1.variance(u);
         gamma = 1/std::sqrt(sigma + 1e-9);
         for (std::size_t i = 0; i < o.totalSize; i++) {
-            o.val[i] = gamma*(o.val[i] - u);
+            o.val[i] = gamma*(o1.val[i] - u);
         }
         if (bias == true) {
             o += b;
         }
-        Active::func[activeType].f(o);
+        Fn::f(activeType, o);
         return o;
     }
     Tensor& operator()(const Tensor &x)
@@ -325,8 +346,6 @@ public:
         return forward(x);
     }
 };
-
-
 
 class ResidualLayer : public FcParam
 {
@@ -345,17 +364,17 @@ public:
             fcGrad1 = FcLayer::Grad(param);
             fcGrad2 = FcLayer::Grad(param);
         }
-        inline Tensor& loss() {return fcGrad1.delta;}
+        inline Tensor& loss() {return fcGrad1.e;}
         void backward(const ResidualLayer &layer, Tensor &delta_)
         {
-            fcGrad2.backward(layer.fc2, fcGrad1.delta);
+            fcGrad2.backward(layer.fc2, fcGrad1.e);
             fcGrad1.backward(layer.fc1, delta_);
             return;
         }
         void eval(ResidualLayer& layer, const Tensor &x)
         {
-             fcGrad1.eval(x, layer.fc1.o);
-             fcGrad2.eval(layer.fc1.o, layer.fc2.o);
+             fcGrad1.eval(layer.fc1, x);
+             fcGrad2.eval(layer.fc2, layer.fc1.o);
              /* residual part differentiate */
              fcGrad2.dw += 1;
              if (fcGrad2.bias == true) {
@@ -438,7 +457,7 @@ public:
     public:
         Tensor dGamma;
         Tensor dBeta;
-        std::vector<Tensor> deltas;
+        std::vector<Tensor> e;
     public:
         Grad(){}
         Grad(const BatchNorm1dParam &param)
@@ -446,14 +465,14 @@ public:
         {
             dGamma = Tensor(outputDim, 1);
             dBeta  = Tensor(outputDim, 1);
-            deltas = std::vector<Tensor>(batchSize, Tensor(outputDim, 1));
+            e = std::vector<Tensor>(batchSize, Tensor(outputDim, 1));
         }
 
         void backward(const BatchNorm1d &layer, Tensor &delta/* output */)
         {
             return;
         }
-        void eval(const Tensor &x, const Tensor &o)
+        void eval(BatchNorm1d &layer, const Tensor &o)
         {
 
             return;
@@ -522,7 +541,7 @@ public:
         }
         sigma /= batchsize;
         sigma += 1e-9;
-        util::sqrt(sigma, sigma);
+        sigma = util::sqrt(sigma);
         /* xh = (xi - u)/sqrt(sigma + 1e-9) */
         for (std::size_t i = 0; i < x.size(); i++) {
             xh[i] /= sigma;
