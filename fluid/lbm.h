@@ -166,21 +166,21 @@ public:
     double tau;
     double sigma;
     /* weights for velocity.: (9) */
-    static Tensord w;
+    static Tensor w;
     /* lattice vector: (9, 2) */
-    static Tensord e;
+    static Tensor e;
     /* density: (ny, nx) */
-    Tensord rho;
+    Tensor rho;
     /* velocity: (ny, nx, 2) */
-    Tensord vel;
+    Tensor vel;
     Tensor mask;
     /* particle density function: (ny, nx, grid.shape) */
-    Tensord fn;
-    Tensord f;
+    Tensor fn;
+    Tensor f;
     /* boundary type: (top, right, bottom, left) */
-    Tensord boundaryType;
+    Tensor boundaryType;
     /* boundary value: (4, 2): (ny, nx)  */
-    Tensord boundaryValue;
+    Tensor boundaryValue;
     /* Object */
     Object object;
 public:
@@ -188,8 +188,8 @@ public:
     LBM2d(int ny_, int nx_,
         const Object &obj,
         double niu_,
-        const Tensord &boundaryType_,
-        const Tensord &boundaryValue_)
+        const Tensor &boundaryType_,
+        const Tensor &boundaryValue_)
         :nx(nx_),ny(ny_),niu(niu_),
           boundaryType(boundaryType_), boundaryValue(boundaryValue_),
           object(obj)
@@ -197,14 +197,14 @@ public:
         tau = 3*niu + 0.5;
         sigma = 1.0 / tau;
         /* density: (ny, nx) */
-        rho = Tensord(ny, nx);
+        rho = Tensor(ny, nx);
         rho.fill(1.0);
         /* velocity: (ny, nx, 2) */
-        vel = Tensord(ny, nx, 2);
+        vel = Tensor(ny, nx, 2);
         mask = Tensor(ny, nx);
         /* particle density function: (ny, nx, grid.shape=9) */
-        fn = Tensord(ny, nx, 9);
-        f  = Tensord(ny, nx, 9);
+        fn = Tensor(ny, nx, 9);
+        f  = Tensor(ny, nx, 9);
         /* init */
         for (int i = 0; i < fn.shape[0]; i++) {
             for (int j = 0; j < fn.shape[1]; j++) {
@@ -261,9 +261,9 @@ public:
         return;
     }
 
-    static Tensord toMoment(const Tensord& f)
+    static Tensor toMoment(const Tensor& f)
     {
-        static Tensord M({9, 9}, {
+        static Tensor M({9, 9}, {
                 1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,
                -4.0, -1.0, -1.0, -1.0, -1.0,  2.0,  2.0,  2.0,  2.0,
                 4.0, -2.0, -2.0, -2.0, -2.0,  1.0,  1.0,  1.0,  1.0,
@@ -273,17 +273,17 @@ public:
                 0.0,  0.0, -2.0,  0.0,  2.0,  1.0,  1.0, -1.0, -1.0,
                 0.0,  1.0, -1.0,  1.0, -1.0,  0.0,  0.0,  0.0,  0.0,
                 0.0,  0.0,  0.0,  0.0,  0.0,  1.0, -1.0,  1.0, -1.0});
-        Tensord r(9, 1);
-        Tensord::MM::ikkj(r, M, f);
+        Tensor r(9, 1);
+        Tensor::MM::ikkj(r, M, f);
         return r;
     }
 
-    static Tensord fromMoment(const Tensord &m)
+    static Tensor fromMoment(const Tensor &m)
     {
-        static Tensord d({9, 1}, {1./9, 1./36, 1./36, 1./6,
-                                  1./12, 1./6, 1./12, 1./4, 1./4});
+        static Tensor d({9, 1}, {1.0/9, 1.0/36, 1.0/36, 1.0/6,
+                                  1.0/12, 1.0/6, 1.0/12, 1.0/4, 1.0/4});
 
-        static Tensord M({9, 9}, {1, -4,  4,  0,  0,  0,  0,  0,  0,
+        static Tensor M({9, 9}, {1, -4,  4,  0,  0,  0,  0,  0,  0,
                                   1, -1, -2,  1, -2,  0,  0,  1,  0,
                                   1, -1, -2,  0,  0,  1, -2, -1,  0,
                                   1, -1, -2, -1,  2,  0,  0,  1,  0,
@@ -292,24 +292,24 @@ public:
                                   1,  2,  1, -1, -1,  1,  1,  0, -1,
                                   1,  2,  1, -1, -1, -1, -1,  0,  1,
                                   1,  2,  1,  1,  1, -1, -1,  0, -1});
-        Tensord r(9, 1);
+        Tensor r(9, 1);
         /* r = Mx(d*m) */
-        Tensord::MM::ikkj(r, M, d*m);
+        Tensor::MM::ikkj(r, M, d*m);
         return r;
     }
 
     void colliding()
     {
-        static Tensord feqs(9, 1);
+        static Tensor feqs(9, 1);
         for (int i = 1; i < ny - 1; i++) {
             for (int j = 1; j < nx - 1; j++) {
                 for (int k = 0; k < e.shape[0]; k++) {
                     feqs[k] = feq(i, j, k);
                 }
-                Tensord fij = f.sub(i, j).reshape(9, 1);
-                Tensord meq = toMoment(feqs);
-                Tensord m = toMoment(fij);
-                static Tensord s({9, 1}, {1.0, 1.63, 1.14, 1.0, 1.92, 0.0, 1.92, sigma, sigma});
+                Tensor fij = f.sub(i, j).reshape(9, 1);
+                Tensor meq = toMoment(feqs);
+                Tensor m = toMoment(fij);
+                static Tensor s({9, 1}, {1.0, 1.63, 1.14, 1.0, 1.92, 0.0, 1.92, sigma, sigma});
                 s.val[7] = sigma;
                 s.val[8] = sigma;
                 /* MRT */
@@ -318,7 +318,10 @@ public:
 #if 0
                 m += (meq - m) * sigma;
 #endif
-                f.embedding({i, j}, fromMoment(m));
+                Tensor mi = fromMoment(m);
+                std::copy(mi.begin(), mi.end(), f.begin() + f.at(i, j));
+                //f.embedding({i, j}, fromMoment(m));
+
             }
         }
         return;
@@ -458,11 +461,11 @@ public:
 
 };
 template <typename T>
-Tensord LBM2d<T>::w({9}, {4.0 / 9.0,  1.0 / 9.0,  1.0 / 9.0,
+Tensor LBM2d<T>::w({9}, {4.0 / 9.0,  1.0 / 9.0,  1.0 / 9.0,
                       1.0 / 9.0,  1.0 / 9.0,  1.0 / 36.0,
                       1.0 / 36.0, 1.0 / 36.0, 1.0 / 36.0});
 template <typename T>
-Tensord LBM2d<T>::e({9, 2}, {0, 0,  1,  0, 0, 1,
+Tensor LBM2d<T>::e({9, 2}, {0, 0,  1,  0, 0, 1,
                         -1, 0,  0, -1, 1, 1,
                         -1, 1, -1, -1, 1, -1});
 #endif // LBM_H

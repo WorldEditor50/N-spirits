@@ -81,6 +81,7 @@ add_custom_command(TARGET test_improcess
                    POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/images" "${CMAKE_CURRENT_BINARY_DIR}/images"
                    COMMENT "COPY IMAGES")
+
 # fluid
 add_subdirectory(${PROJECT_SOURCE_DIR}/fluid)
 # test
@@ -100,6 +101,11 @@ endif()
 # test fluid
 add_executable(test_fluid test/test_lbm.cpp)
 target_link_libraries(test_fluid FLUID IMPROCESS BASIC ${IMPROCESS_3RDPARTY})
+# create diretory
+add_custom_command(TARGET test_fluid
+                  POST_BUILD
+                  COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/cylinder"
+                  COMMENT "CREATE DIR")
 # test cpp
 add_executable(test_cpp test/testcpp.cpp)
 target_link_libraries(test_cpp BASIC)

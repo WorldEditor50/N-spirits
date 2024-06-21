@@ -419,9 +419,45 @@ int LinAlg::det(const Tensor &x, float &value)
     return 0;
 }
 
-size_t LinAlg::rank(const Tensor &x)
+int LinAlg::rank(const Tensor &x)
 {
-    return 0;
+    Tensor xi(x.shape);
+    gaussianElimination(x, xi);
+    xi.printValue();
+    int N = x.shape[0];
+    for (int i = 0; i < N; i++) {
+        if (xi(i, i) == 0) {
+            int j = i;
+            for (; j < N; j++) {
+                if (xi(j, i)) {
+                    break;
+                }
+            }
+            if (j == N) {
+                return N; // zero row
+            }
+            exchangeRow(xi, i, j);
+        }
+    }
+    for (int i = 0; i < N; i++) {
+        if (xi(i, i) != 1) {
+            int j = i + 1;
+            for (; j < N; j++) {
+                if (xi(j, i)) {
+                    break;
+                }
+            }
+            if (j == N) {
+                return N - 1;  // pivot == 0
+            }
+            exchangeRow(xi, i, j);
+            for (int j = i + 1; j < N; j++) {
+                xi(j, i) /= xi(i, i);
+            }
+            xi(i, i) = 1;
+        }
+    }
+    return N;
 }
 
 int LinAlg::QR::solve(const Tensor &x, Tensor &q, Tensor &r)
@@ -636,7 +672,56 @@ int LinAlg::SVD::solve(const Tensor &x, Tensor &u, Tensor &s, Tensor &v, float e
     return 0;
 }
 
-void LinAlg::PCA::fit(const Tensor &x)
+int LinAlg::Cholesky::solve(const Tensor &x, Tensor &l)
+{
+    if (x.shape[0] != x.shape[1]) {
+        return -1;
+    }
+    int n = x.shape[0];
+    l = Tensor(n, n);
+    for (int k = 0;  k < n; k++) {
+        bool isReal = true;
+        if (k == 0) {
+            if (x(k, k) >= 0) {
+                l(k, k) = std::sqrt(x(k, k));
+            } else {
+                isReal = false;
+            }
+        } else {
+            float s = 0;
+            for (int i = 0; i < k; i++) {
+                s += l(k, i)*l(k, i);
+            }
+            float d = x(k, k) - s;
+            if (d >= 0) {
+                l(k, k) = std::sqrt(d);
+            } else {
+                isReal = false;
+            }
+        }
+        /* postive maxtrix */
+        if (!isReal || l(k, k) <= 0) {
+            return -2;
+        }
+
+        if (k == 0) {
+            for (int i = k + 1; i < n; i++) {
+                l(i, k) = x(i, k)/l(k, k);
+            }
+        } else {
+            for (int i = k + 1; i < n; i++) {
+                float s = 0;
+                for (int j = 0; j < k; j++) {
+                    s += l(i, j)*l(k, j);
+                }
+                l(i, k) = (x(i, k) - s)/l(k, k);
+            }
+        }
+    }
+    return 0;
+}
+
+void LinAlg::PCA::solve(const Tensor &x, Tensor &u)
 {
     /* covariance matrix */
     Tensor y(x.shape[1], x.shape[1]);
@@ -648,7 +733,7 @@ void LinAlg::PCA::fit(const Tensor &x)
     return;
 }
 
-void LinAlg::PCA::project(const Tensor &x, int k, Tensor &y)
+void LinAlg::PCA::project(const Tensor &x, const Tensor &u, int k, Tensor &y)
 {
     if (k >= u.shape[1]) {
         return;

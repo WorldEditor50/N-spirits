@@ -231,6 +231,12 @@ public:
         return y;
     }
 
+    template<typename ...Index>
+    std::size_t at(Index ...index)
+    {
+        return posOf(index...);
+    }
+
     Tensor_ block(const std::vector<int> &offset, const std::vector<int> &blockShape) const
     {
         Tensor_ y(blockShape);
@@ -298,7 +304,7 @@ public:
 
     /* visit */
     template<typename ...Index>
-    inline int posOf(Index ...index) const
+    inline std::size_t posOf(Index ...index) const
     {
         int indexs[] = {index...};
         std::size_t pos = 0;
@@ -791,7 +797,62 @@ public:
         }
         return std::sqrt(s);
     }
+    struct MM2 {
+        inline static void ikkj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
+        {
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t k = 0; k < x1.shape[1]; k++) {
+                    for (std::size_t j = 0; j < x.shape[1]; j++) {
+                        /* x(i, j) = x1(i, k) * x2(k, j) */
+                        x.val[i*x.shape[1] + j] += x1.val[i*x1.shape[1] + k]*x2.val[k*x2.shape[1] + j];
+                    }
+                }
+            }
+            return;
+        }
 
+        inline static void kikj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
+        {
+            /* transpose x1 */
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t k = 0; k < x1.shape[0]; k++) {
+                    for (std::size_t j = 0; j < x.shape[1]; j++) {
+                        /* x(i, j) = x1(k, i)^T * x2(k, j) */
+                        x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i]*x2.val[k*x2.shape[1] + j];
+                    }
+                }
+            }
+            return;
+        }
+
+        inline static void ikjk(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
+        {
+            /* transpose x2 */
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t k = 0; k < x1.shape[1]; k++) {
+                    for (std::size_t j = 0; j < x.shape[1]; j++) {
+                        /* x(i, j) = x1(i, k) * x2(j, k)^T */
+                        x.val[i*x.shape[1] + j] += x1.val[i*x1.shape[1] + k]*x2.val[j*x2.shape[1] + k];
+                    }
+                }
+            }
+            return;
+        }
+
+        inline static void kijk(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
+        {
+            /* transpose x1, x2 */
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t k = 0; k < x1.shape[0]; k++) {
+                    for (std::size_t j = 0; j < x.shape[1]; j++) {
+                        /* x(i, j) = x1(k, i)^T * x2(j, k)^T */
+                        x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i] * x2.val[j*x2.shape[1] + k];
+                    }
+                }
+            }
+            return;
+        }
+    };
     struct MM {
         inline static void ikkj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {

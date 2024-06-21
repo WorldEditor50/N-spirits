@@ -64,7 +64,7 @@ void gaussianElimination(const Tensor &x, Tensor &y);
 /* det */
 int det(const Tensor &x, float &value);
 /* rank */
-std::size_t rank(const Tensor &x);
+int rank(const Tensor &x);
 /* LU */
 namespace LU {
     int solve(const Tensor &x, Tensor& l, Tensor &u);
@@ -81,15 +81,14 @@ namespace SVD {
     float qrIteration(Tensor &a, const Tensor &q, float eps);
     int solve(const Tensor &x, Tensor &u, Tensor &s, Tensor &v, float eps=1e-7, std::size_t maxEpoch=1e6);
 };
+/* cholesky */
+namespace Cholesky {
+    int solve(const Tensor &x, Tensor &l);
+}
 /* pca */
-class PCA
-{
-public:
-    Tensor u;
-public:
-    PCA(){}
-    void fit(const Tensor &datas);
-    void project(const Tensor &x, int k, Tensor &y);
+namespace PCA {
+    void solve(const Tensor &x, Tensor &u);
+    void project(const Tensor &x, const Tensor &u, int k, Tensor &y);
 };
 
 

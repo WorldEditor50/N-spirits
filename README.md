@@ -116,6 +116,8 @@ fun with cpp
     });
 ```
 
+![cylinder_468](https://github.com/WorldEditor50/N-spirits/raw/main/images/cylinder_468.bmp)
+
 #### 2.1 image to video
 
 ```sh

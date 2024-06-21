@@ -10,6 +10,20 @@
 #include "utils/csv.h"
 #include "utils/dataset.h"
 #include "utils/clock.hpp"
+/*
+    http://www.yunsuan.info/matrixcomputations/solveqrfactorization.html
+*/
+
+void test_rank()
+{
+    Tensor x({3, 3}, { 0, 1, 0,
+                       1, 0, 0,
+                       0, 0, 1 });
+
+    int r = LinAlg::rank(x);
+    std::cout<<"rank:"<<r<<std::endl;
+    return;
+}
 
 void test_lu()
 {
@@ -23,6 +37,23 @@ void test_lu()
     Tensor I(x.shape);
     Tensor::MM::ikkj(I, x, xi);
     I.printValue();
+    return;
+}
+
+void test_cholesky()
+{
+    Tensor x({3, 3}, {8, 0, 0,
+                      0, 2, 6,
+                      1, 1, 3 });
+    Tensor l;
+    int ret = LinAlg::Cholesky::solve(x, l);
+    if (ret == -1) {
+        std::cout<<"x is not a square matrix."<<std::endl;
+    } else if (ret == -2) {
+        std::cout<<"x is not a positive matrix."<<std::endl;
+    } else if (ret == 0) {
+        l.printValue();
+    }
     return;
 }
 
@@ -487,6 +518,7 @@ void test_quaternion()
     Quaternion q1, q2;
     Quaternion q = Quaternion::slerp(q1, q2, 0.8);
 }
+
 int main()
 {
 #if 0
@@ -498,13 +530,15 @@ int main()
     test_conv();
     test_permute();
 #endif
-    test_tensor();
+    //test_tensor();
     //getchar();
     //std::cout<<"size of tensor = "<<sizeof (Tensor)<<std::endl;
 
     //test_dft1d();
     //test_fft1d();
     //test_dft2d();
+
+    test_cholesky();
     return 0;
 }
 
