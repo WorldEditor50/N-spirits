@@ -97,23 +97,20 @@ public:
     }
     void random()
     {
-        util::uniform(Wi, -1, 1);
-        util::uniform(Wg, -1, 1);
-        util::uniform(Wf, -1, 1);
-        util::uniform(Wo, -1, 1);
-
-        util::uniform(Ui, -1, 1);
-        util::uniform(Ug, -1, 1);
-        util::uniform(Uf, -1, 1);
-        util::uniform(Uo, -1, 1);
-
-        util::uniform(Bi, -1, 1);
-        util::uniform(Bg, -1, 1);
-        util::uniform(Bf, -1, 1);
-        util::uniform(Bo, -1, 1);
-
-        util::uniform(W, -1, 1);
-        util::uniform(B, -1, 1);
+        LinAlg::uniform(Wi, -1, 1);
+        LinAlg::uniform(Wg, -1, 1);
+        LinAlg::uniform(Wf, -1, 1);
+        LinAlg::uniform(Wo, -1, 1);
+        LinAlg::uniform(Ui, -1, 1);
+        LinAlg::uniform(Ug, -1, 1);
+        LinAlg::uniform(Uf, -1, 1);
+        LinAlg::uniform(Uo, -1, 1);
+        LinAlg::uniform(Bi, -1, 1);
+        LinAlg::uniform(Bg, -1, 1);
+        LinAlg::uniform(Bf, -1, 1);
+        LinAlg::uniform(Bo, -1, 1);
+        LinAlg::uniform(W, -1, 1);
+        LinAlg::uniform(B, -1, 1);
         return;
     }
 };
@@ -192,13 +189,13 @@ public:
             for (int t = te; t >= 0; t--) {
                 State delta(hiddenDim, outputDim);
                 /* δh = W^T * E */
-                Tensor::Mul::kikj(delta.h, lstm.W, loss[t]);
+                Tensor::MM::kikj(delta.h, lstm.W, loss[t]);
                 if (t < te) {
                     /* δh += U^T * delta_ */
-                    Tensor::Mul::kikj(delta.h, lstm.Uf, delta_.i);
-                    Tensor::Mul::kikj(delta.h, lstm.Ui, delta_.f);
-                    Tensor::Mul::kikj(delta.h, lstm.Ug, delta_.g);
-                    Tensor::Mul::kikj(delta.h, lstm.Uo, delta_.o);
+                    Tensor::MM::kikj(delta.h, lstm.Uf, delta_.i);
+                    Tensor::MM::kikj(delta.h, lstm.Ui, delta_.f);
+                    Tensor::MM::kikj(delta.h, lstm.Ug, delta_.g);
+                    Tensor::MM::kikj(delta.h, lstm.Uo, delta_.o);
                 }
                 /*
                     δht = E + δht+1
@@ -229,10 +226,10 @@ public:
                     x:     (inputDim, 1)
                     dw = delta * x^T
                 */
-                Tensor::Mul::ikjk(d.Wi, delta.i, x[t]);
-                Tensor::Mul::ikjk(d.Wf, delta.f, x[t]);
-                Tensor::Mul::ikjk(d.Wg, delta.g, x[t]);
-                Tensor::Mul::ikjk(d.Wo, delta.o, x[t]);
+                Tensor::MM::ikjk(d.Wi, delta.i, x[t]);
+                Tensor::MM::ikjk(d.Wf, delta.f, x[t]);
+                Tensor::MM::ikjk(d.Wg, delta.g, x[t]);
+                Tensor::MM::ikjk(d.Wo, delta.o, x[t]);
 
                 /*
                     du:    (hiddenDim, hiddenDim)
@@ -241,10 +238,10 @@ public:
                     du = delta * _h^T
                 */
                 Tensor _h = t > 0 ? states[t - 1].h : Tensor(hiddenDim, 1);
-                Tensor::Mul::ikjk(d.Ui, delta.i, _h);
-                Tensor::Mul::ikjk(d.Uf, delta.f, _h);
-                Tensor::Mul::ikjk(d.Ug, delta.g, _h);
-                Tensor::Mul::ikjk(d.Uo, delta.o, _h);
+                Tensor::MM::ikjk(d.Ui, delta.i, _h);
+                Tensor::MM::ikjk(d.Uf, delta.f, _h);
+                Tensor::MM::ikjk(d.Ug, delta.g, _h);
+                Tensor::MM::ikjk(d.Uo, delta.o, _h);
 
                 d.Bi += delta.i;
                 d.Bf += delta.f;
@@ -256,7 +253,7 @@ public:
                     h: (hiddenDim, 1)
                     dw = E * h^T
                 */
-                Tensor::Mul::ikjk(d.W, loss[t], states[t].h);
+                Tensor::MM::ikjk(d.W, loss[t], states[t].h);
                 d.B += loss[t];
                 /* next */
                 delta_ = delta;
@@ -387,15 +384,15 @@ public:
         */
         State state(hiddenDim, outputDim);
 
-        Tensor::Mul::ikkj(state.f, Wf, x);
-        Tensor::Mul::ikkj(state.i, Wi, x);
-        Tensor::Mul::ikkj(state.g, Wg, x);
-        Tensor::Mul::ikkj(state.o, Wo, x);
+        Tensor::MM::ikkj(state.f, Wf, x);
+        Tensor::MM::ikkj(state.i, Wi, x);
+        Tensor::MM::ikkj(state.g, Wg, x);
+        Tensor::MM::ikkj(state.o, Wo, x);
 
-        Tensor::Mul::ikkj(state.f, Uf, _h);
-        Tensor::Mul::ikkj(state.i, Ui, _h);
-        Tensor::Mul::ikkj(state.g, Ug, _h);
-        Tensor::Mul::ikkj(state.o, Uo, _h);
+        Tensor::MM::ikkj(state.f, Uf, _h);
+        Tensor::MM::ikkj(state.i, Ui, _h);
+        Tensor::MM::ikkj(state.g, Ug, _h);
+        Tensor::MM::ikkj(state.o, Uo, _h);
 
         for (std::size_t i = 0; i < state.f.totalSize; i++) {
             state.f[i] = Sigmoid::f(state.f[i] + Bf[i]);
@@ -406,7 +403,7 @@ public:
             state.h[i] = state.o[i] * Tanh::f(state.c[i]);
         }
 
-        Tensor::Mul::ikkj(state.y, W, state.h);
+        Tensor::MM::ikkj(state.y, W, state.h);
         state.y += B;
         return state;
     }

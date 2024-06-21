@@ -1,7 +1,7 @@
 #ifndef FILTER_H
 #define FILTER_H
 #include <functional>
-#include "../basic/util.hpp"
+#include "../basic/linalg.h"
 #include "../basic/ctensor.hpp"
 #include "../basic/complex.hpp"
 #include "improcess_def.h"
@@ -28,20 +28,24 @@ inline void conv2d(OutTensor y, InTensor kernel, InTensor x, int stride=1, int p
     y = Tensor(ho, wo, ci);
     for (int i = 0; i < ho; i++) {
         for (int j = 0; j < wo; j++) {
-            /* kernels */
-            for (int u = 0; u < hk; u++) {
-                for (int v = 0; v < wk; v++) {
-                    /* map to input  */
-                    int row = u + i*stride - padding;
-                    int col = v + j*stride - padding;
-                    if (row < 0 || row >= hi || col < 0 || col >= wi) {
-                        continue;
-                    }
-                    for (int c = 0; c < ci; c++) {
+            for (int c = 0; c < ci; c++) {
+                float yi = 0;
+                /* kernels */
+                for (int u = 0; u < hk; u++) {
+                    for (int v = 0; v < wk; v++) {
+                        /* map to input  */
+                        int row = u + i*stride - padding;
+                        int col = v + j*stride - padding;
+                        if (row < 0 || row >= hi || col < 0 || col >= wi) {
+                            continue;
+                        }
                         //y(i, wo - j - 1, c) += kernel(u, v)*x(row, wo - col - 1, c);
-                        y(i, j, c) += kernel(u, v)*x(row, col, c);
+                        float kt = kernel(u, v);
+                        float xt = x(row, col, c);
+                        yi += kt*xt;
                     }
                 }
+                y(i, j, c) = yi;
             }
         }
     }

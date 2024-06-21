@@ -4,7 +4,7 @@
 #include <immintrin.h>
 #include <vector>
 #include <cmath>
-#include "basic_def.h"
+#include "../basic_def.h"
 /*
     Start:
         avx2 on windows:

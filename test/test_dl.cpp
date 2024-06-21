@@ -150,7 +150,7 @@ void test_bpnn()
     auto t1 = Clock::tiktok();
     for (int i = 0; i < 10000; i++) {
         for (int j = 0; j < 4; j++) {
-            int k = distribution(util::engine);
+            int k = distribution(LinAlg::Random::engine);
             /* forward */
             Tensor& y = bp(x[k]);
             /* loss */
@@ -197,12 +197,12 @@ void test_lenet5()
     Tensor yt(10, 1);
     auto t1 = Clock::tiktok();
     for (std::size_t i = 0; i < 1; i++) {
-        util::uniform(x, 0, 1);
+        LinAlg::uniform(x, 0, 1);
         /* forward */
         Tensor& y = lenet5(x);
         y.printValue();
         /* loss */
-        util::uniform(yt, 0, 1);
+        LinAlg::uniform(yt, 0, 1);
         Tensor loss = Loss::CrossEntropy(y, yt);
         /* backward */
         optimizer.backward(loss, x, yt);
@@ -343,7 +343,7 @@ void test_lstm()
         int k = distribution(engine);
         for (std::size_t j = 0; j < 8; j++) {
             Tensor& y = lstm(x[k + i]);
-            float error = util::Norm::l2(y, x[k + 8]);
+            float error = LinAlg::normL2(y, x[k + 8]);
             std::cout<<"target="<<x[k + 8][0]<<", predict="<<y[0]<<", error="<<error<<std::endl;
         }
     }

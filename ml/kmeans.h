@@ -6,7 +6,7 @@
 #include <string>
 #include <random>
 #include "../basic/tensor.hpp"
-#include "../basic/util.hpp"
+#include "../basic/linalg.h"
 
 class KMeans
 {
@@ -38,7 +38,7 @@ public:
                 float maxD = -1;
                 std::size_t topic = 0;
                 for (std::size_t j = 0; j < centers.size(); j++) {
-                    float d = util::Norm::l2(x[i], centers[j]);
+                    float d = LinAlg::normL2(x[i], centers[j]);
                     if (d > maxD) {
                         maxD = d;
                         topic = j;
@@ -58,7 +58,7 @@ public:
             /* error */
             float delta = 0;
             for (std::size_t i = 0; i < centers.size(); i++) {
-                delta += util::Norm::l2(centers[i], centers_[i]);
+                delta += LinAlg::normL2(centers[i], centers_[i]);
             }
             delta /= float(topicDim);
             if (delta < eps && epoch > maxEpoch/4) {
@@ -86,7 +86,7 @@ public:
             float maxD = -1;
             std::size_t topic = 0;
             for (std::size_t j = 0; j < centers.size(); j++) {
-                float d = util::Norm::l2(x[i], centers[j]);
+                float d = LinAlg::normL2(x[i], centers[j]);
                 if (d > maxD) {
                     maxD = d;
                     topic = j;
@@ -102,7 +102,7 @@ public:
         float maxD = -1;
         std::size_t topic = 0;
         for (std::size_t i = 0; i < centers.size(); i++) {
-            float d = util::Norm::l2(x, centers[i]);
+            float d = LinAlg::normL2(x, centers[i]);
             if (d > maxD) {
                 maxD = d;
                 topic = i;

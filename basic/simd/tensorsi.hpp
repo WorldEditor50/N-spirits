@@ -1,6 +1,6 @@
 #ifndef TENSORSI_HPP
 #define TENSORSI_HPP
-#include "tensor.hpp"
+#include "../tensor.hpp"
 #include "sse2func.hpp"
 #include "avx2func.hpp"
 
@@ -327,12 +327,12 @@ public:
     }
 
     /* matrix operation */
-    struct Mul {
+    struct MM {
         static void ikkj(Tensorsi_ &x, const Tensorsi_ &x1, const Tensorsi_ &x2)
         {
             /* x = x1 * x2 */
             if (x1.shape[0] < step || x1.shape[1] < step || x2.shape[1] < step) {
-                return __Tensor::Mul::ikkj(x, x1, x2);
+                return __Tensor::MM::ikkj(x, x1, x2);
             }
             Instruct::MatMul::ikkj(x.ptr(), x.shape[0], x.shape[1],
                                    x1.ptr(), x1.shape[0], x1.shape[1],
@@ -343,7 +343,7 @@ public:
         {
             /* x = x1^T * x2 */
             if (x1.shape[0] < step || x1.shape[1] < step || x2.shape[1] < step) {
-                return __Tensor::Mul::kikj(x, x1, x2);
+                return __Tensor::MM::kikj(x, x1, x2);
             }
             /* transpose x1 */
             Instruct::MatMul::kikj(x.ptr(), x.shape[0], x.shape[1],
@@ -355,7 +355,7 @@ public:
         {
             /* x = x1 * x2^T */
             if (x1.shape[0] < step || x1.shape[1] < step || x2.shape[0] < step) {
-                return __Tensor::Mul::ikjk(x, x1, x2);
+                return __Tensor::MM::ikjk(x, x1, x2);
             }
             /* transpose x2 */
             Instruct::MatMul::ikjk(x.ptr(), x.shape[0], x.shape[1],
@@ -367,7 +367,7 @@ public:
         {
             /* x = x1^T * x2^T */
             if (x1.shape[0] < step || x1.shape[1] < step || x2.shape[0] < step) {
-                return __Tensor::Mul::kijk(x, x1, x2);
+                return __Tensor::MM::kijk(x, x1, x2);
             }
             /* transpose x1, x2 */
             Instruct::MatMul::kijk(x.ptr(), x.shape[0], x.shape[1],

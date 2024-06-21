@@ -2,7 +2,7 @@
 #define ACTIVATE_H
 #include <cmath>
 #include <map>
-#include "../basic/util.hpp"
+#include "../basic/linalg.h"
 #include "../basic/tensor.hpp"
 enum ActiveType {
     Active_Linear = 0,

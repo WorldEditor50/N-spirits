@@ -1,8 +1,7 @@
 #ifndef GMM_H
 #define GMM_H
 #include "kmeans.h"
-#include "../basic/util.hpp"
-#include "../basic/linearalgebra.h"
+#include "../basic/linalg.h"
 
 class GMM
 {
@@ -67,7 +66,7 @@ public:
         /* variance of all data */
         for (std::size_t i = 0; i < x.size(); i++) {
             std::size_t topic = y[i];
-            minSigma[topic] += util::dot(x[i], x[i]);
+            minSigma[topic] += LinAlg::dot(x[i], x[i]);
         }
         for (std::size_t i = 0; i < u.totalSize; i++) {
             minSigma[i] = std::max(1e-10, 0.01*(minSigma[i]/float(x.size()) - u[i]*u[i]));

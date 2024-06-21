@@ -1,9 +1,10 @@
 #include "noise.h"
+#include "../basic/linalg.h"
 
 Tensor imp::Noise::uniform(int h, int w, float high, float low)
 {
     Tensor x(h, w);
-    util::uniform(x, high, low);
+    LinAlg::uniform(x, high, low);
     return x;
 }
 
@@ -38,6 +39,6 @@ Tensor imp::Noise::rayleigh(int h, int w, float sigma)
 Tensor imp::Noise::saltPepper(int h, int w)
 {
     Tensor x(h, w);
-    util::uniform(x, -255, 255);
+    LinAlg::uniform(x, -255, 255);
     return x;
 }

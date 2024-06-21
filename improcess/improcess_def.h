@@ -98,7 +98,7 @@ inline static double bound(double x, double min_, double max_)
     return value;
 }
 
-inline static void bound(Tensor &img, float min_, float max_)
+inline static void clamp(Tensor &img, float min_, float max_)
 {
     for (std::size_t i = 0; i < img.totalSize; i++) {
         img[i] = bound(img[i], min_, max_);

@@ -6,7 +6,7 @@
 #include "activate.hpp"
 #include "../dl/layer.hpp"
 #include "../basic/tensor.hpp"
-#include "../basic/util.hpp"
+#include "../basic/linalg.h"
 
 
 #if 0

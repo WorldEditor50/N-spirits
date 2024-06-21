@@ -67,6 +67,9 @@ public:
 
     Image& operator = (Image &&r) noexcept
     {
+        if (this == &r) {
+            return *this;
+        }
         height = r.height;
         width = r.width;
         channel = r.channel;
@@ -79,6 +82,7 @@ public:
         r.widthstep = 0;
         r.totalsize = 0;
         r.data = nullptr;
+        return *this;
     }
 
     ~Image()

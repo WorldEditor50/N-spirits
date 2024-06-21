@@ -82,7 +82,7 @@ int imp::sobel3x3(OutTensor xo, InTensor xi)
                             -1, -2, -1});
     Tensor grady;
     imp::conv2d(grady, kernely, xi, 1);
-    xo = util::sqrt(gradx*gradx + grady*grady)/2;
+    xo = LinAlg::sqrt(gradx*gradx + grady*grady)/2;
     //xo = gradx + grady;
     return 0;
 }
@@ -103,7 +103,7 @@ int imp::sobel5x5(OutTensor xo, InTensor xi)
                            -5,  -8, -10,  -8, -5});
     Tensor grady;
     imp::conv2d(grady, kernely, xi, 1);
-    xo = util::sqrt(gradx*gradx + grady*grady);
+    xo = LinAlg::sqrt(gradx*gradx + grady*grady);
     return 0;
 }
 
@@ -145,7 +145,7 @@ int imp::prewitt3x3(OutTensor xo, InTensor xi)
 
     Tensor grad135;
     imp::conv2d(grad135, kernel135, xi, 1);
-    xo = util::sqrt(grad0*grad0 + grad45*grad45 + grad90*grad90 + grad135*grad135);
+    xo = LinAlg::sqrt(grad0*grad0 + grad45*grad45 + grad90*grad90 + grad135*grad135);
     return 0;
 }
 

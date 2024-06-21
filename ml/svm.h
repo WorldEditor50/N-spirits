@@ -4,7 +4,7 @@
 #include <cmath>
 #include <vector>
 #include <random>
-#include "../basic/util.hpp"
+#include "../basic/linalg.h"
 #include "../basic/tensor.hpp"
 
 
@@ -14,7 +14,7 @@ struct RBF {
     static float f(const Tensor& x1, const Tensor& x2)
     {
         float sigma = 1;
-        float xL2 = util::dot(x1, x1) + util::dot(x2, x2) - 2*util::dot(x1, x2);
+        float xL2 = LinAlg::dot(x1, x1) + LinAlg::dot(x2, x2) - 2*LinAlg::dot(x1, x2);
         xL2 = xL2/(-2*sigma*sigma);
         return std::exp(xL2);
     }
@@ -23,7 +23,7 @@ struct Laplace {
     static float f(const Tensor& x1, const Tensor& x2)
     {
         float sigma = 1;
-        float xL2 = util::dot(x1, x1) + util::dot(x2, x2) - 2*util::dot(x1, x2);
+        float xL2 = LinAlg::dot(x1, x1) + LinAlg::dot(x2, x2) - 2*LinAlg::dot(x1, x2);
         xL2 = -sqrt(xL2)/sigma;
         return exp(xL2);
     }
@@ -34,7 +34,7 @@ struct Sigmoid {
     {
         float beta1 = 1;
         float theta = -1;
-        return std::tanh(beta1 * util::dot(x1, x2) + theta);
+        return std::tanh(beta1 * LinAlg::dot(x1, x2) + theta);
     }
 };
 
@@ -43,14 +43,14 @@ struct Polynomial {
     {
         float d = 1.0;
         float p = 100;
-        return pow(util::dot(x1, x2) + d, p);
+        return std::pow(LinAlg::dot(x1, x2) + d, p);
     }
 };
 
 struct Linear {
     static float f(const Tensor& x1, const Tensor& x2)
     {
-        return util::dot(x1, x2);
+        return LinAlg::dot(x1, x2);
     }
 };
 

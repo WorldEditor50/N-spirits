@@ -1,8 +1,8 @@
 #include <iostream>
-#include "../basic/tensorsi.hpp"
-#include "../basic/simd.hpp"
-#include "../basic/avx2func.hpp"
-#include "../basic/util.hpp"
+#include "../basic/simd/tensorsi.hpp"
+#include "../basic/simd/simd.hpp"
+#include "../basic/simd/avx2func.hpp"
+#include "../basic/linalg.h"
 #include "../utils/clock.hpp"
 
 float correct(const Tensorsi &x1, const Tensorsi &x2)
@@ -212,14 +212,14 @@ int main()
     Tensorsi x(N, N);
     Tensorsi x1(N, N);
     Tensorsi x2(N, N);
-    util::uniform(x1, -9, 9);
-    util::uniform(x2, -9, 9);
+    LinAlg::uniform(x1, -9, 9);
+    LinAlg::uniform(x2, -9, 9);
     for (std::size_t i = 0; i < 4; i++) {
         x.zero();
-        Tensorsi::Mul::ikkj(x, x1, x2);
+        Tensorsi::MM::ikkj(x, x1, x2);
     }
     Tensorsi x3(N, N);
-    Tensorsi::Mul::ikkj(x3, x1, x2);
+    Tensorsi::MM::ikkj(x3, x1, x2);
     std::cout<<"correct rate:"<<correct(x, x3)<<std::endl;
     x.printValue();
     x3.printValue();

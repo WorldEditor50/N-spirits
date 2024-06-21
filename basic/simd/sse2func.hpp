@@ -1,11 +1,10 @@
 #ifndef SSE2FUNC_HPP
 #define SSE2FUNC_HPP
-
 #include <immintrin.h>
 #include <vector>
 #include <cmath>
 #include <iostream>
-#include "basic_def.h"
+#include "../basic_def.h"
 
 namespace simd {
 #if defined(__SSE2__)
@@ -26,17 +25,17 @@ struct SSE2 {
     inline static float reduce(__m128& ymm)
     {
         float result[4];
-        //ymm = _mm_add_ps(ymm, ymm);
-        //ymm = _mm_add_ps(ymm, ymm);
-        //_mm_storeu_ps(result, ymm);
+        ymm = _mm_add_ps(ymm, ymm);
+        ymm = _mm_add_ps(ymm, ymm);
+        _mm_storeu_ps(result, ymm);
         return result[0] + result[3];
     }
 
     inline static double reduce(__m128d& ymm)
     {
         double result[2];
-        //ymm = _mm_add_pd(ymm, ymm);
-        //_mm_storeu_pd(result, ymm);
+        ymm = _mm_add_pd(ymm, ymm);
+        _mm_storeu_pd(result, ymm);
         return result[0] + result[1];
     }
 

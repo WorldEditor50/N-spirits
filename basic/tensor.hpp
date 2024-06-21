@@ -18,46 +18,11 @@ public:
     using Size = std::vector<int>;
     using iterator = typename Vector::iterator;
     using const_iterator = typename Vector::const_iterator;
-    class Sub
-    {
-    public:
-        Tensor_ *pointer;
-        std::size_t pos;
-    public:
-        Sub():pointer(nullptr),pos(0){}
-        Sub(const Sub &r):pointer(r.pointer),pos(r.pos){}
-        Sub& operator=(const Sub &r)
-        {
-            if (this == &r) {
-                return *this;
-            }
-            pointer = r.pointer;
-            pos = r.pos;
-            return *this;
-        }
-        inline void operator=(const Tensor_ &x)
-        {
-            for (std::size_t i = 0; i < x.totalSize; i++) {
-                pointer->val[i + pos] = x.val[i];
-            }
-            return;
-        }
-        inline void operator=(const std::vector<T> &x)
-        {
-            for (std::size_t i = 0; i < x.size(); i++) {
-                pointer->val[i + pos] = x[i];
-            }
-            return;
-        }
-    };
-
 public:
     std::size_t totalSize;
     Vector val;
     Size sizes;
     Shape shape;
-private:
-    Sub subset;
 public:
     /* default construct */
     Tensor_():totalSize(0){}
@@ -282,7 +247,7 @@ public:
         return y;
     }
 
-    void setBlock(const std::vector<int> &offset, const Tensor_ &x)
+    void embedding(const std::vector<int> &offset, const Tensor_ &x)
     {
         std::vector<int> indexs(shape.size(), 0);
         for (std::size_t i = 0; i < x.totalSize; i++) {
@@ -329,14 +294,6 @@ public:
             offset += vec[i].totalSize;
         }
         return x;
-    }
-
-    template<typename ...Index>
-    inline Sub& at(Index ...index)
-    {
-        subset.pointer = this;
-        subset.pos = posOf(index...);
-        return subset;
     }
 
     /* visit */
@@ -835,7 +792,7 @@ public:
         return std::sqrt(s);
     }
 
-    struct Mul {
+    struct MM {
         inline static void ikkj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
             std::size_t rows = x.shape[0];

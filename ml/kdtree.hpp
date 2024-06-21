@@ -6,7 +6,7 @@
 #include <stack>
 #include <memory>
 #include "../basic/tensor.hpp"
-#include "../basic/util.hpp"
+#include "../basic/linalg.h"
 
 class KDTree
 {
@@ -43,8 +43,8 @@ protected:
     static std::size_t sort(std::vector<Tensor> &x)
     {
         /* variance of dataset */
-        Tensor u = util::sum(x) / x.size();
-        Tensor sigma = util::variance(x, u);
+        Tensor u = LinAlg::mean(x);
+        Tensor sigma = LinAlg::variance(x, u);
         /* sort by variance */
         std::size_t compareIndex = 0;
         for (std::size_t i = 1; i < sigma.size(); i++) {
@@ -106,7 +106,7 @@ protected:
         /* first node */
         Tensor *nearestValue = &prependingNodes.top()->value;
         prependingNodes.pop();
-        float nearestDist = util::Norm::l2(x, *nearestValue);
+        float nearestDist = LinAlg::normL2(x, *nearestValue);
         nearest.push_back(Result(nearestDist, *nearestValue));
         /* find the rest */
         while (prependingNodes.empty() == false) {
@@ -114,7 +114,7 @@ protected:
             prependingNodes.pop();
             /* leaf node */
             if (pNode->left == nullptr && pNode->right == nullptr) {
-                float d = util::Norm::l2(x, pNode->value);
+                float d = LinAlg::normL2(x, pNode->value);
                 if (nearestDist >= d) {
                     nearestValue = &pNode->value;
                     nearestDist = d;
@@ -126,7 +126,7 @@ protected:
                 std::size_t i = pNode->compareIndex;
                 float delta = x[i] - pNode->value[i];
                 if (std::fabs(delta) > nearestDist) {
-                    float d = util::Norm::l2(x, pNode->value);
+                    float d = LinAlg::normL2(x, pNode->value);
                     if (nearestDist >= d) {
                         nearestValue = &pNode->value;
                         nearestDist = d;

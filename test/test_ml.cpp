@@ -1,5 +1,5 @@
 #include <iostream>
-#include "../basic/linearalgebra.h"
+#include "../basic/linalg.h"
 #include "../ml/kmeans.h"
 #include "../ml/svm.h"
 #include "../ml/gmm.h"
@@ -48,9 +48,11 @@ void test_kdtree()
                              Tensor({4, 1}, {0, 1, 1, 1}),
                              Tensor({4, 1}, {0, 0, 0, 1})};
 
-    Tensor u = util::sum(x) / x.size();
+    Tensor u(1, 4);
+    LinAlg::mean(x, u);
     u.printValue();
-    Tensor sigma = util::variance(x, u);
+    Tensor sigma(1, 4);
+    LinAlg::variance(x, u, sigma);
     sigma.printValue();
     //return 0;
     KDTree kdtree(x);

@@ -4,7 +4,7 @@
 #include <cmath>
 #include <array>
 #include "../basic/tensor.hpp"
-#include "../basic/util.hpp"
+#include "../basic/linalg.h"
 #include "physics.hpp"
 
 /*

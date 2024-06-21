@@ -4,7 +4,7 @@
 #include <cmath>
 #include <array>
 #include "../basic/tensor.hpp"
-#include "../basic/util.hpp"
+#include "../basic/linalg.h"
 #include "physics.hpp"
 
 /*
@@ -274,7 +274,7 @@ public:
                 0.0,  1.0, -1.0,  1.0, -1.0,  0.0,  0.0,  0.0,  0.0,
                 0.0,  0.0,  0.0,  0.0,  0.0,  1.0, -1.0,  1.0, -1.0});
         Tensord r(9, 1);
-        Tensord::Mul::ikkj(r, M, f);
+        Tensord::MM::ikkj(r, M, f);
         return r;
     }
 
@@ -294,7 +294,7 @@ public:
                                   1,  2,  1,  1,  1, -1, -1,  0, -1});
         Tensord r(9, 1);
         /* r = Mx(d*m) */
-        Tensord::Mul::ikkj(r, M, d*m);
+        Tensord::MM::ikkj(r, M, d*m);
         return r;
     }
 
@@ -318,7 +318,7 @@ public:
 #if 0
                 m += (meq - m) * sigma;
 #endif
-                f.at(i, j) = fromMoment(m);
+                f.embedding({i, j}, fromMoment(m));
             }
         }
         return;

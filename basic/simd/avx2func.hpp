@@ -4,7 +4,7 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
-#include "basic_def.h"
+#include "../basic_def.h"
 
 namespace simd {
 #if defined(__AVX2__)

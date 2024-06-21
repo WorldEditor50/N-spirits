@@ -4,7 +4,7 @@
 #include "activate.hpp"
 #include "layer.hpp"
 #include "../basic/tensor.hpp"
-#include "../basic/util.hpp"
+#include "../basic/linalg.h"
 
 class VAE
 {  
@@ -47,7 +47,7 @@ public:
         Tensor sigma;
         encoder(img, mu, sigma);
         Tensor epsilon = Tensor(sigma.shape);
-        util::uniform(epsilon, -1, 1);
+        LinAlg::uniform(epsilon, -1, 1);
         Tensor z = mu + epsilon;
         Tensor img_ = decoder(z);
         return std::tuple<Tensor, Tensor, Tensor>(img_, mu, sigma);
@@ -59,7 +59,7 @@ public:
         Tensor sigma;
         encoder(img, mu, sigma);
         Tensor epsilon = Tensor(sigma.shape);
-        util::uniform(epsilon, -1, 1);
+        LinAlg::uniform(epsilon, -1, 1);
         Tensor z = mu + epsilon;
         return decoder(z);
     }

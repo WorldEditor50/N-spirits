@@ -1,11 +1,16 @@
 cmake_minimum_required(VERSION 3.5)
 
-LIST(APPEND BASIC_DIR ${PROJECT_SOURCE_DIR}/basic)
-foreach(BASIC_CURRENT_DIR ${BASIC_DIR})
-	file(GLOB_RECURSE BASIC_SRCS ${BASIC_CURRENT_DIR}/*.cpp)
-	file(GLOB_RECURSE BASIC_HDRS ${BASIC_CURRENT_DIR}/*.h)
-	file(GLOB_RECURSE BASIC_HPPS ${BASIC_CURRENT_DIR}/*.hpp)
-	LIST(APPEND BASIC_SRC_LIST ${BASIC_SRCS})
-	LIST(APPEND BASIC_HDR_LIST ${BASIC_HDRS} ${BASIC_HPPS})
-endforeach()
-add_library(BASIC STATIC ${BASIC_SRC_LIST} ${BASIC_HDR_LIST})
+
+set(BASIC_DIR "${PROJECT_SOURCE_DIR}/basic")
+file(GLOB BASIC_FILES
+    ${BASIC_DIR}/*.h
+    ${BASIC_DIR}/*.hpp
+    ${BASIC_DIR}/*.cpp)
+if (ENABLE_SIMD)
+    file(GLOB SIMD_FILES
+        ${BASIC_DIR}/simd/*.h
+        ${BASIC_DIR}/simd/*.hpp
+        ${BASIC_DIR}/simd/*.cpp)
+    list(APPEND BASIC_FILES ${SIMD_FILES})
+endif()
+add_library(BASIC STATIC ${BASIC_FILES})

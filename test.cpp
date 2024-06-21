@@ -2,11 +2,10 @@
 #include <tuple>
 #include "basic/mat.h"
 #include "basic/mats.hpp"
-#include "basic/linearalgebra.h"
+#include "basic/linalg.h"
 #include "basic/tensor.hpp"
 #include "basic/complex.hpp"
 #include "basic/quaternion.hpp"
-#include "basic/util.hpp"
 #include "basic/fft.h"
 #include "utils/csv.h"
 #include "utils/dataset.h"
@@ -14,87 +13,87 @@
 
 void test_lu()
 {
-    Mat x(3, 3, { 1, 1, 1,
-                  0, 0.5, -2,
-                  0, 1, 1});
-    Mat xi;
-    LinearAlgebra::LU::inv(x, xi);
-    xi.show();
+    Tensor x({3, 3}, { 1, 1, 1,
+                       0, 0.5, -2,
+                       0, 1, 1});
+    Tensor xi;
+    LinAlg::LU::inv(x, xi);
+    xi.printValue();
     std::cout<<"test inverse:"<<std::endl;
-    Mat I(x.rows, x.cols);
-    Mat::Multi::ikkj(I, x, xi);
-    I.show();
+    Tensor I(x.shape);
+    Tensor::MM::ikkj(I, x, xi);
+    I.printValue();
     return;
 }
 
 void test_det()
 {
     float value;
-    Mat x1(3, 3, {1, 1, 1,
+    Tensor x1({3, 3}, {1, 1, 1,
                   1, 2, 3,
                   1, 5, 1});
-    LinearAlgebra::det(x1, value);
+    LinAlg::det(x1, value);
     std::cout<<"det:"<<value<<std::endl;
 
 
 
-    Mat x2(4, 4, {1, 1, 1, 2,
+    Tensor x2({4, 4}, {1, 1, 1, 2,
                   1, 2, 3, 0,
                   0, 5, 1, -1,
                   1, 0, -3, 1});
-    LinearAlgebra::det(x2, value);
+    LinAlg::det(x2, value);
     std::cout<<"det:"<<value<<std::endl;
     return;
 }
 
 void test_qr()
 {
-    Mat x(3, 3, {1, 1, 1,
+    Tensor x({3, 3}, {1, 1, 1,
                  1, 2, 3,
                  1, 5, 1});
-    Mat q;
-    Mat r;
-    LinearAlgebra::QR::solve(x, q, r);
+    Tensor q;
+    Tensor r;
+    LinAlg::QR::solve(x, q, r);
     std::cout<<"Q:"<<std::endl;
-    q.show();
+    q.printValue();
     std::cout<<"R:"<<std::endl;
-    r.show();
+    r.printValue();
     return;
 }
 
 void test_svd()
 {
-    Mat x1(3, 3, {1, 1, 1,
-                 1, 2, 3,
-                 1, 5, 1});
+    Tensor x1({3, 3}, {1, 1, 1,
+                       1, 2, 3,
+                       1, 5, 1});
 
-    Mat x(10, 5, {0.0162, 0.878, 0.263, 0.0955, 0.359,
-                  0.329, 0.326, 0.757, 0.165, 0.728,
-                  0.609, 0.515, 0.385, 0.908, 0.89,
-                  0.91, 0.06, 0.43, 0.691, 0.96,
-                  0.476, 0.0498, 0.65, 0.378, 0.672,
-                  0.914, 0.788, 0.285, 0.447, 0.0846,
-                  0.495, 0.463, 0.962, 0.758, 0.558,
-                  0.321, 0.0872, 0.884, 0.0788, 0.252,
-                  0.612, 0.688, 0.767, 0.997, 0.597,
-                  0.657, 0.907, 0.657, 0.0873, 0.598
+    Tensor x({10, 5}, {0.0162, 0.878, 0.263, 0.0955, 0.359,
+                       0.329, 0.326, 0.757, 0.165, 0.728,
+                       0.609, 0.515, 0.385, 0.908, 0.89,
+                       0.91, 0.06, 0.43, 0.691, 0.96,
+                       0.476, 0.0498, 0.65, 0.378, 0.672,
+                       0.914, 0.788, 0.285, 0.447, 0.0846,
+                       0.495, 0.463, 0.962, 0.758, 0.558,
+                       0.321, 0.0872, 0.884, 0.0788, 0.252,
+                       0.612, 0.688, 0.767, 0.997, 0.597,
+                       0.657, 0.907, 0.657, 0.0873, 0.598
           });
-    Mat u;
-    Mat v;
-    Mat s;
-    LinearAlgebra::SVD::solve(x, u, s, v);
+    Tensor u;
+    Tensor v;
+    Tensor s;
+    LinAlg::SVD::solve(x, u, s, v);
     std::cout<<"U:"<<std::endl;
-    u.show();
+    u.printValue();
     std::cout<<"S:"<<std::endl;
-    s.show();
+    s.printValue();
     std::cout<<"V:"<<std::endl;
-    v.show();
+    v.printValue();
     /* x = U*S*V^T */
-    Mat y = u*s*v.tr();
+    Tensor y = u*s*v.tr();
     std::cout<<"x:"<<std::endl;
-    x.show();
+    x.printValue();
     std::cout<<"y:"<<std::endl;
-    y.show();
+    y.printValue();
     return;
 }
 
@@ -159,8 +158,8 @@ void test_transpose_multiply()
     Mat x9(3, 4);
     Mat x10(3, 5);
     Mat x11(4, 5);
-    util::uniform(x9, 0, 9);
-    util::uniform(x10, 0, 9);
+    LinAlg::uniform(x9, 0, 9);
+    LinAlg::uniform(x10, 0, 9);
     Mat::Multi::kikj(x11, x9, x10);
     std::cout<<"x9:"<<std::endl;
     x9.show();
@@ -274,8 +273,8 @@ void test_tensor()
                              2, 2, 2,
                              2, 2, 2
                         });
-        x.at(1, 1) = Tensor({1, 3}, {0, 9, 0});
-        x.at(2, 1) = Tensor({1, 3}, {2, 1, 0});
+        x.embedding({1, 1}, Tensor({1, 3}, {0, 9, 0}));
+        x.embedding({2, 1}, Tensor({1, 3}, {2, 1, 0}));
         x.printValue();
     }
     /* reshpae */

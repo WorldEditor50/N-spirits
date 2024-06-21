@@ -4,8 +4,7 @@
 #include <fstream>
 #include "activate.hpp"
 #include "layerdef.h"
-#include "../basic/util.hpp"
-
+#include "../basic/linalg.h"
 
 class FcParam
 {
@@ -59,7 +58,7 @@ public:
                 delta:  (outputDim, 1)
                 delta_ = w^T * delta
             */
-            Tensor::Mul::kikj(ei, layer.w, e);
+            Tensor::MM::kikj(ei, layer.w, e);
             return;
         }
 
@@ -76,7 +75,7 @@ public:
             Tensor &o = layer.o;
             Tensor dy = Fn::df(activeType, o);
             dy *= e;
-            Tensor::Mul::ikjk(dw, dy, x);
+            Tensor::MM::ikjk(dw, dy, x);
             if (bias == true) {
                 db += dy;
             }
@@ -127,8 +126,8 @@ public:
         }
         o = Tensor(outputDim, 1);
         /* init */
-        util::uniform(w, -1, 1);
-        util::uniform(b, -1, 1);
+        LinAlg::uniform(w, -1, 1);
+        LinAlg::uniform(b, -1, 1);
     }
 
     inline Tensor& output() {return o;}
@@ -141,7 +140,7 @@ public:
            o = Active(w * x + b)
         */
         o.zero();
-        Tensor::Mul::ikkj(o, w, x);
+        Tensor::MM::ikkj(o, w, x);
         if (bias == true) {
             o += b;
         }
@@ -192,7 +191,7 @@ public:
             Tensor dy(o.shape);
             dy = o - yt;
             /* dw = dy*x^T */
-            Tensor::Mul::ikjk(dw, dy, x);
+            Tensor::MM::ikjk(dw, dy, x);
             if (bias == true) {
                 db += dy;
             }
@@ -216,7 +215,7 @@ public:
         float max_ = o.max();
         o -= max_;
         /* softmax(x) = exp(xi)/Σexp(xj)  */
-        o = util::exp(o);
+        o = LinAlg::exp(o);
         float s = o.sum();     
         o /= s;
         return o;
@@ -244,7 +243,7 @@ public:
         void backward(Dropout &layer, Tensor &delta_)
         {
             delta_ *= layer.mask;
-            Tensor::Mul::kikj(delta_, layer.w, e);
+            Tensor::MM::kikj(delta_, layer.w, e);
             return;
         }
     };
@@ -265,7 +264,7 @@ public:
     {
         FcLayer::forward(x);
         if (Grad::enable == true) {
-            util::bernoulli(mask, p);
+            LinAlg::bernoulli(mask, p);
             mask /= (1 - p);
             FcLayer::o *= mask;
         }
@@ -289,7 +288,7 @@ public:
             :FcLayer::Grad(param){}
         void backward(const LayerNorm &layer, Tensor &delta_)
         {
-            Tensor::Mul::kikj(delta_, layer.w, e*layer.gamma);
+            Tensor::MM::kikj(delta_, layer.w, e*layer.gamma);
             return;
         }
         void eval(LayerNorm &layer, const Tensor &x)
@@ -302,7 +301,7 @@ public:
                 float d = (layer.o1[i] - layer.u)*gamma;
                 dy[i] = (1.0 - 1.0/float(outputDim))*(1 - d*d)*gamma*error[i];
             }
-            Tensor::Mul::ikjk(dw, dy, x);
+            Tensor::MM::ikjk(dw, dy, x);
             if (bias == true) {
                 db += error;
             }
@@ -328,7 +327,7 @@ public:
     Tensor& forward(const Tensor &x) override
     {
         o1.zero();
-        Tensor::Mul::ikkj(o1, w, x);
+        Tensor::MM::ikkj(o1, w, x);
         u = o1.mean();
         float sigma = o1.variance(u);
         gamma = 1/std::sqrt(sigma + 1e-9);
@@ -531,24 +530,24 @@ public:
         /* xh */
         xh = std::vector<Tensor>(batchsize, Tensor(u.shape));
         for (std::size_t i = 0; i < x.size(); i++) {
-            util::sub(xh[i], x[i], u);
+            LinAlg::sub(xh[i], x[i], u);
         }
         /* sigma */
         Tensor r(u.shape);
         for (std::size_t i = 0; i < xh.size(); i++) {
-            util::mul(r, xh[i], xh[i]);
+            LinAlg::mul(r, xh[i], xh[i]);
             sigma += r;
         }
         sigma /= batchsize;
         sigma += 1e-9;
-        sigma = util::sqrt(sigma);
+        sigma = LinAlg::sqrt(sigma);
         /* xh = (xi - u)/sqrt(sigma + 1e-9) */
         for (std::size_t i = 0; i < x.size(); i++) {
             xh[i] /= sigma;
         }
         /* o = gamma*xh + b */
         for (std::size_t i = 0; i < xh.size(); i++) {
-            util::mul(o[i], gamma, xh[i]);
+            LinAlg::mul(o[i], gamma, xh[i]);
             o[i] += beta;
         }
         return;
@@ -574,7 +573,7 @@ public:
         Tensor values(p.shape);
         for (std::size_t i = 0; i < p.totalSize; i++) {
             std::bernoulli_distribution distribution(p.val[i]);
-            values.val[i] = distribution(util::engine);
+            values.val[i] = distribution(LinAlg::Random::engine);
         }
         return values;
     }

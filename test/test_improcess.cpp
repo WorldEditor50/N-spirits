@@ -3,7 +3,7 @@
 #include <numeric>
 #include <fstream>
 #include <algorithm>
-#include "../basic/util.hpp"
+#include "../basic/linalg.h"
 #include "../basic/tensor.hpp"
 #include "../utils/clock.hpp"
 #include "../improcess/improcess_def.h"
@@ -228,8 +228,8 @@ void test_conv()
                              0, 4,  0,
                             -1, 0, -1});
     imp::conv2d(y, kernel3, img, 1);
-    Tensor out = util::abs(y);
-    imp::bound(out, 0, 255);
+    Tensor out = LinAlg::abs(y);
+    imp::clamp(out, 0, 255);
     imp::save(out, "conv.bmp");
     return;
 }
@@ -275,7 +275,8 @@ void test_sobel()
     }
     Tensor dst;
     imp::sobel3x3(dst, img);
-    imp::save(dst, "sobel3x3.bmp");
+    //imp::save(dst, "sobel3x3.bmp");
+    imp::show(dst);
     return;
 }
 
@@ -290,7 +291,7 @@ void test_laplacian()
     imp::gaussianFilter3x3(blur, img);
     Tensor dst;
     imp::laplacian3x3(dst, blur);
-    imp::save(util::abs(dst), "laplacian3x3.bmp");
+    imp::save(LinAlg::abs(dst), "laplacian3x3.bmp");
     return;
 }
 
@@ -357,7 +358,7 @@ void noise_img()
     }
     Tensor epsilon(img.shape);
     //Statistics::gaussian(epsilon, 0, 1);
-    util::uniform(epsilon, -1, 1);
+    LinAlg::uniform(epsilon, -1, 1);
     Tensor dst = img + epsilon;
     imp::save(dst, "dota2_noise.bmp");
     return;
@@ -450,6 +451,7 @@ void test_entropyThreshold()
     Tensor rgb;
     imp::gray2rgb(rgb, xo);
     imp::save(rgb, "dota2_entropy.bmp");
+    imp::show("dota2_entropy.bmp");
     return;
 }
 void test_templateMatch()
@@ -539,6 +541,7 @@ void test_concat()
     imp::show(x2);
     return;
 }
+
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -573,6 +576,6 @@ int main()
     test_entropyThreshold();
     test_show();
 #endif
-    test_concat();
+    test_sobel();
 	return 0;
 }
