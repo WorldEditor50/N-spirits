@@ -319,8 +319,7 @@ public:
                 m += (meq - m) * sigma;
 #endif
                 Tensor mi = fromMoment(m);
-                std::copy(mi.begin(), mi.end(), f.begin() + f.at(i, j));
-                //f.embedding({i, j}, fromMoment(m));
+                std::copy(mi.begin(), mi.end(), f.at(i, j));
 
             }
         }

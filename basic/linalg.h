@@ -60,7 +60,11 @@ int trace(const Tensor& x, float &value);
 /* diag */
 Tensor diag(const Tensor &x);
 /* gaussian elimination */
-void gaussianElimination(const Tensor &x, Tensor &y);
+namespace GaussianElimination {
+    void solve(const Tensor &a, Tensor &u);
+    void evaluate(const Tensor &u, Tensor &x);
+}
+int gaussSeidel(const Tensor &a, const Tensor &b, Tensor &x, int iteration, float eps=1e-4);
 /* det */
 int det(const Tensor &x, float &value);
 /* rank */

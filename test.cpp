@@ -57,12 +57,41 @@ void test_cholesky()
     return;
 }
 
+void test_gaussSeidel()
+{
+    Tensor a({3, 3}, { 20, 2, 3,
+                       1,  8, 1,
+                       2, -3, 15 });
+    Tensor b({3, 1}, {24.0, 12.0, 30.0});
+    Tensor x(3, 1);
+    int ret = LinAlg::gaussSeidel(a, b, x, 1000, 1e-3);
+    if (ret == -2) {
+        std::cout<<"a is not a positive definite matrix"<<std::endl;
+        return;
+    }
+    x.printValue();
+    return;
+}
+
+void test_gaussianElimination()
+{
+    Tensor a({3, 4}, { 3, -4, 6, 24,
+                       5,  2, -8, -24,
+                      -1,  1, 2, 11 });
+    Tensor b;
+    LinAlg::GaussianElimination::solve(a, b);
+    Tensor x(3, 1);
+    LinAlg::GaussianElimination::evaluate(b, x);
+    x.printValue();
+    return;
+}
+
 void test_det()
 {
     float value;
     Tensor x1({3, 3}, {1, 1, 1,
-                  1, 2, 3,
-                  1, 5, 1});
+                       1, 2, 3,
+                       1, 5, 1});
     LinAlg::det(x1, value);
     std::cout<<"det:"<<value<<std::endl;
 
@@ -538,7 +567,10 @@ int main()
     //test_fft1d();
     //test_dft2d();
 
-    test_cholesky();
+    test_gaussianElimination();
+    //test_cholesky();
+    //test_gaussSeidel();
+
     return 0;
 }
 

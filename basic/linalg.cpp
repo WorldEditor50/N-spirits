@@ -328,12 +328,12 @@ Tensor LinAlg::diag(const Tensor &x)
     return d;
 }
 
-void LinAlg::gaussianElimination(const Tensor &x, Tensor &y)
+void LinAlg::GaussianElimination::solve(const Tensor &a, Tensor &u)
 {
-    y = Tensor(x);
+    u = Tensor(a);
     std::size_t pivot = 0;
-    std::size_t rows = y.shape[0];
-    std::size_t cols = y.shape[1];
+    std::size_t rows = u.shape[0];
+    std::size_t cols = u.shape[1];
     for (std::size_t i = 0; i < rows && pivot < cols; i++, pivot++) {
         if (i >= cols) {
             /* found the pivot */
@@ -341,28 +341,83 @@ void LinAlg::gaussianElimination(const Tensor &x, Tensor &y)
         }
         /* swap the row with pivot */
         for (std::size_t k = i + 1; k < rows; k++) {
-            if (y(i, pivot) != 0) {
+            if (u(i, pivot) != 0) {
                 break;
             } else if (k < rows) {
-                exchangeRow(y, i, k);
+                exchangeRow(u, i, k);
             }
-            if (k == rows - 1 && pivot < cols - 1 && y(i, pivot) == 0) {
+            if (k == rows - 1 && pivot < cols - 1 && u(i, pivot) == 0) {
                 pivot++;
                 k = i;
                 continue;
             }
         }
         for (std::size_t k = i + 1; k < rows; k++) {
-            double scalingFactor = y(k, pivot) / y(i, pivot);
+            double scalingFactor = u(k, pivot) / u(i, pivot);
             if (scalingFactor != 0) {
-                y(k, pivot) = 0;
+                u(k, pivot) = 0;
                 for (std::size_t j = pivot + 1; j < cols; j++) {
-                    y(k, j) -= scalingFactor * y(i, j);
+                    u(k, j) -= scalingFactor * u(i, j);
                 }
             }
         }
     }
     return;
+}
+
+void LinAlg::GaussianElimination::evaluate(const Tensor &u, Tensor &x)
+{
+    Tensor a(u);
+    int N = a.shape[0];
+    for (int i = N - 1; i >= 0; i--) {
+        for (int j = i+1; j < N; j++) {
+            a(i, N) -= a(i, j) * a(j, N);
+        }
+        a(i, N) /= a(i, i);
+    }
+    for (int i = 0; i < N; i++) {
+        x[i] = a(i, N);
+    }
+    return;
+}
+
+int LinAlg::gaussSeidel(const Tensor &a, const Tensor &b, Tensor &x, int iteration, float eps)
+{
+    int N = x.shape[0];
+    /* pivot is not 0 */
+    for (int i = 0; i < N; i++) {
+        if (a(i, i) == 0) {
+            return -1;
+        }
+    }
+    /* positive definite matrix */
+    Tensor l(a.shape);
+    if (Cholesky::solve(a, l) == -2) {
+        return -2;
+    }
+    Tensor x_(x.shape);
+    for (int k = 0; k < iteration; k++) {
+        float delta = 0.0;
+        for (int i = 0; i < N; i++) {
+            float s = 0;
+            for (int j = 0; j < i; j++) {
+                s += a(i, j)*x_[j];
+            }
+            for (int j = i + 1; j < N; j++) {
+                s += a(i, j)*x[j];
+            }
+            x_[i] = (b[i] - s)/a(i, i);
+            float d = (x_[i] - x[i]);
+            delta += d*d;
+        }
+        delta = std::sqrt(delta/float(N));
+        //std::cout<<"delta:"<<delta<<std::endl;
+        if (delta < eps) {
+            break;
+        }
+        x = x_;
+    }
+    return 0;
 }
 
 int LinAlg::det(const Tensor &x, float &value)
@@ -422,7 +477,7 @@ int LinAlg::det(const Tensor &x, float &value)
 int LinAlg::rank(const Tensor &x)
 {
     Tensor xi(x.shape);
-    gaussianElimination(x, xi);
+    GaussianElimination::solve(x, xi);
     xi.printValue();
     int N = x.shape[0];
     for (int i = 0; i < N; i++) {
@@ -699,7 +754,7 @@ int LinAlg::Cholesky::solve(const Tensor &x, Tensor &l)
                 isReal = false;
             }
         }
-        /* postive maxtrix */
+        /* positive definite matrix */
         if (!isReal || l(k, k) <= 0) {
             return -2;
         }

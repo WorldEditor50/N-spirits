@@ -232,9 +232,9 @@ public:
     }
 
     template<typename ...Index>
-    std::size_t at(Index ...index)
+    iterator at(Index ...index)
     {
-        return posOf(index...);
+        return val.begin() + posOf(index...);
     }
 
     Tensor_ block(const std::vector<int> &offset, const std::vector<int> &blockShape) const

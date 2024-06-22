@@ -19,7 +19,7 @@ public:
         FIELD_V,
         FIELD_S
     };
-public:
+protected:
     std::size_t domainHeight;
     std::size_t domainWidth;
     /* density */
@@ -29,18 +29,18 @@ public:
     /* overrelaxtion: 1 < o < 2 */
     double overRelaxation;
     /* horizontal velocity field: (h, w) */
-    Tensord u;
-    Tensord un;
+    Tensor u;
+    Tensor un;
     /* vertical velocity field: (h, w) */
-    Tensord v;
-    Tensord vn;
+    Tensor v;
+    Tensor vn;
     /* pressure: (h, w) */
-    Tensord p;
+    Tensor p;
     /* (h, w) */
-    Tensord s;
+    Tensor s;
     /* (h, w) */
-    Tensord M;
-    Tensord Mn;
+    Tensor M;
+    Tensor Mn;
 public:
     explicit Eulerian(int height, int width, double density=1000)
         :domainWidth(width), domainHeight(height), rho(density)
@@ -50,17 +50,17 @@ public:
         /* overrelaxtion: 1 < o < 2 */
         overRelaxation = 1.9;
         /* velocity field: (h, w) */
-        u = Tensord(height, width);
-        v = Tensord(height, width);
-        un = Tensord(height, width);
-        vn = Tensord(height, width);
+        u = Tensor(height, width);
+        v = Tensor(height, width);
+        un = Tensor(height, width);
+        vn = Tensor(height, width);
         /* pressure field: (h, w) */
-        p = Tensord(height, width);
+        p = Tensor(height, width);
         /* (h, w) */
-        s = Tensord(height, width);
+        s = Tensor(height, width);
         /* (h, w) */
-        M  = Tensord(height, width);
-        Mn = Tensord(height, width);
+        M  = Tensor(height, width);
+        Mn = Tensor(height, width);
     }
 
     void integrateGravity(double dt)
@@ -130,14 +130,14 @@ public:
         double dx = 0.0;
         double dy = 0.0;
 
-        Tensord *pField = nullptr;
+        Tensor *pField = nullptr;
 
         switch (field) {
         case FIELD_U: pField = &u; dy = h2; break;
         case FIELD_V: pField = &v; dx = h2; break;
         case FIELD_S: pField = &M; dx = h2; dy = h2; break;
         }
-        Tensord &f = *pField;
+        Tensor &f = *pField;
 
         std::size_t x0 = std::min(std::size_t(std::floor((x - dx)*h1)), domainWidth - 1);
         double tx = ((x-dx) - x0*h) * h1;
@@ -202,13 +202,13 @@ public:
     {
         Mn = M;
         std::size_t h1 = h;
-        std::size_t h2 = 0.5 * h;
+        std::size_t h2 = 0.5*h;
         for (std::size_t i = 1; i < domainHeight-1; i++) {
             for (std::size_t j = 1; j < domainWidth-1; j++) {
 
                 if (s(i, j) != 0.0) {
-                    double uij = (u(i, j) + u(i+1, j)) * 0.5;
-                    double vij = (v(i, j) + v(i, j+1)) * 0.5;
+                    double uij = (u(i, j) + u(i + 1, j)) * 0.5;
+                    double vij = (v(i, j) + v(i, j + 1)) * 0.5;
                     std::size_t x = i*h1 + h2 - dt*uij;
                     std::size_t y = j*h1 + h2 - dt*vij;
                     Mn(i, j) = sampleField(x, y, FIELD_S);
@@ -234,6 +234,29 @@ public:
         advectSmoke(dt);
         return;
     }
+
+    void solve(std::size_t iteratNum, const std::array<double, 3> &colorScaler, std::function<void(std::size_t i, Tensor &img)> func)
+    {
+        for (std::size_t it = 0; it < iteratNum; it++) {
+            simulate(100, 1e-3);
+            Tensor img(domainHeight, domainWidth, 3);
+            for (int i = 0; i < domainHeight; i++) {
+                for (int j = 0; j < domainWidth; j++) {
+                    float uij = u(i, j);
+                    float vij = v(i, j);
+                    float p = std::sqrt(uij*uij + vij*vij);
+                    img(i, j, 0) = colorScaler[0]*p;
+                    img(i, j, 1) = colorScaler[1]*p;
+                    img(i, j, 2) = colorScaler[2]*p;
+                }
+            }
+            float c = img.max()/255.0;
+            img /= c;
+            func(it, img);
+        }
+        return;
+    }
+
 };
 
 #endif // EULERIAN_HPP
