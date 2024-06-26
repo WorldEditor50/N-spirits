@@ -9,7 +9,6 @@
 #include "../utils/clock.hpp"
 #include "../utils/dataset.h"
 #include "../dl/vae.hpp"
-#include "../dl/transformer.hpp"
 
 void convi(Tensori &o, const Tensori &kernels, const Tensori &x, int stride=1, int padding=1)
 {
@@ -128,15 +127,13 @@ void test_conv()
 }
 
 
-void test_bpnn()
+void test_xor()
 {
-    using BPNN = Net<FcLayer, LayerNorm, FcLayer, LayerNorm, FcLayer>;
-    BPNN bp(FcLayer(2, 32, true, Active_Tanh),
-            LayerNorm(32, 32, true, Active_Sigmoid),
-            FcLayer(32, 32, true, Active_Tanh),
-            LayerNorm(32, 32, true, Active_Sigmoid),
-            FcLayer(32, 1, true, Active_Sigmoid));
-    Optimizer<BPNN, Optimize::RMSProp> optimizer(bp, 1e-3);
+    using BPNN = Net<FcLayer, FcLayer, FcLayer>;
+    BPNN bp(FcLayer(2, 8, true, Fn_Tanh),
+            FcLayer(8, 8, true, Fn_Tanh),
+            FcLayer(8, 1, true, Fn_Sigmoid));
+    Optimizer<BPNN, Optimize::RMSProp> optimizer(bp, 1e-3, 1e-4, true);
     /* train xor */
     std::vector<Tensor> x = {Tensor({2, 1}, {1, 1}),
                              Tensor({2, 1}, {1, 0}),
@@ -146,20 +143,28 @@ void test_bpnn()
                               Tensor({1, 1}, {1}),
                               Tensor({1, 1}, {1}),
                               Tensor({1, 1}, {0})};
-    std::uniform_int_distribution<int> distribution(0, 3);
+    std::uniform_int_distribution<int> uniform(0, 3);
     auto t1 = Clock::tiktok();
-    for (int i = 0; i < 10000; i++) {
-        for (int j = 0; j < 4; j++) {
-            int k = distribution(LinAlg::Random::engine);
+    std::size_t maxEpoch = 10000;
+    std::size_t batchSize = 4;
+    Tensor totalLoss(1, 1);
+    for (std::size_t i = 0; i < maxEpoch; i++) {
+        totalLoss.zero();
+        for (std::size_t j = 0; j < batchSize; j++) {
+            int k = uniform(LinAlg::Random::engine);
             /* forward */
             Tensor& y = bp(x[k]);
             /* loss */
             Tensor loss = Loss::MSE(y, yt[k]);
+            totalLoss += loss;
             /* backward */
             optimizer.backward(loss, x[k]);
         }
         /* update */
         optimizer.update();
+        totalLoss /= batchSize;
+        std::cout<<"progress:---loss="<<totalLoss.norm2()<<", "
+                <<i<<"/"<<maxEpoch<<"---"<<std::endl;
     }
     auto t2 = Clock::tiktok();
     std::cout<<"train cost time:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
@@ -183,15 +188,17 @@ void test_lenet5()
         (84,1)
         (10,1)
     */
-    using LeNet5 = Net<Conv2d, MaxPooling2d, Conv2d, MaxPooling2d, FcLayer, FcLayer, SoftmaxLayer>;
+    using LeNet5 = Net<Conv2d, MaxPooling2d,
+                       Conv2d, MaxPooling2d,
+                       FcLayer, FcLayer, Softmax>;
 
     LeNet5 lenet5(Conv2d(3, 32, 32, 6, 5, 1, 0),
                   MaxPooling2d(6, 28, 28, 2, 2),
                   Conv2d(6, 14, 14, 16, 5, 1, 0),
                   MaxPooling2d(16, 10, 10, 2, 2),
-                  FcLayer(16*5*5, 120, true, Active_Sigmoid),
-                  FcLayer(120, 84, true, Active_Sigmoid),
-                  SoftmaxLayer(84, 10, true));
+                  FcLayer(16*5*5, 120, true, Fn_Sigmoid),
+                  FcLayer(120, 84, true, Fn_Sigmoid),
+                  Softmax(84, 10, true));
     Optimizer<LeNet5, Optimize::RMSProp> optimizer(lenet5, 1e-3);
     Tensor x(3, 32, 32);
     Tensor yt(10, 1);
@@ -239,21 +246,24 @@ void test_lenet5()
 
 void test_mnist()
 {
+    /*
+        http://yann.lecun.com/exdb/mnist/
+    */
     using LeNet5 = Net<Conv2d, NMS, MaxPooling2d,
                        Conv2d, NMS, MaxPooling2d,
-                       FcLayer, LayerNorm, FcLayer>;
-    LeNet5 lenet5(Conv2d(1, 28, 28, 6, 5, 1, 0, false, Active_LeakyRelu),
+                       FcLayer, FcLayer, FcLayer>;
+    LeNet5 lenet5(Conv2d(1, 28, 28, 6, 5, 1, 0, false, Fn_LeakyRelu),
                   NMS(6, 24, 24),
                   MaxPooling2d(6, 24, 24, 2, 2),
-                  Conv2d(6, 12, 12, 16, 5, 1, 0, false, Active_LeakyRelu),
+                  Conv2d(6, 12, 12, 16, 5, 1, 0, false, Fn_LeakyRelu),
                   NMS(16, 8, 8),
                   MaxPooling2d(16, 8, 8, 2, 2),
-                  FcLayer(16*4*4, 120, true, Active_Tanh),
-                  LayerNorm(120, 84, true, Active_Sigmoid),
-                  FcLayer(84, 10, true, Active_Sigmoid));
+                  FcLayer(16*4*4, 120, true, Fn_Sigmoid),
+                  FcLayer(120, 84, true, Fn_Tanh),
+                  FcLayer(84, 10, true, Fn_Sigmoid));
     /* load data */
-    MnistLoader mnist("./dataset/train-images.idx3-ubyte",
-                      "./dataset/train-labels.idx1-ubyte");
+    MnistLoader mnist("./dataset/mnist/train-images.idx3-ubyte",
+                      "./dataset/mnist/train-labels.idx1-ubyte");
     int ret = mnist.load();
     if (ret < 0) {
         return;
@@ -262,24 +272,29 @@ void test_mnist()
     std::vector<Tensor> &yt = mnist.yt;
     std::size_t N = mnist.N;
     /* train: max epoch = 1000, batch size = 100, learning rate = 1e-3 */
-    Optimizer<LeNet5, Optimize::RMSProp> optimizer(lenet5, 1e-3);
-    std::random_device device;
-    std::default_random_engine engine(device());
-    std::uniform_int_distribution<int> distribution(0, N - 1);
+    Optimizer<LeNet5, Optimize::RMSProp> optimizer(lenet5, 1e-3, 1e-5, true);
+    std::uniform_int_distribution<int> uniform(0, N - 1);
     auto t1 = Clock::tiktok();
-    for (std::size_t epoch = 0; epoch < 1000; epoch++) {
-        for (std::size_t i = 0; i < 100; i++) {
+    std::size_t maxEpoch = 2000;
+    std::size_t batchSize = 256;
+    Tensor totalLoss(10, 1);
+    for (std::size_t epoch = 0; epoch < maxEpoch; epoch++) {
+        totalLoss.zero();
+        for (std::size_t i = 0; i < batchSize; i++) {
             /* forward */
-            int k = distribution(engine);
+            int k = uniform(LinAlg::Random::engine);
             Tensor& y = lenet5(x[k]);
             /* loss */
             Tensor loss = Loss::MSE(y, yt[k]);
+            totalLoss += loss;
             /* optimize */
             optimizer.backward(loss, x[k]);
         }
         /* update */
         optimizer.update();
-        std::cout<<"progress:---"<<epoch<<"---"<<std::endl;
+        totalLoss /= batchSize;
+        std::cout<<"progress:---loss="<<totalLoss.norm2()<<", "
+                <<epoch<<"/"<<maxEpoch<<"---"<<std::endl;
     }
     auto t2 = Clock::tiktok();
     std::cout<<"lenet5 training cost:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
@@ -288,7 +303,7 @@ void test_mnist()
     std::size_t Nt = 100;
     for (std::size_t i = 0; i < Nt; i++) {
         /* forward */
-        int k = distribution(engine);
+        int k = uniform(LinAlg::Random::engine);
         Tensor& y = lenet5(x[k]);
         int p = y.argmax();
         int t = yt[k].argmax();
@@ -304,13 +319,12 @@ void test_mnist()
 
 void test_lstm()
 {
-    using LSTMNET = Net<LSTM,
-                        FcLayer, FcLayer>;
-    LSTMNET lstm(LSTM(1, 16, 16),
-                 FcLayer(16, 16, true, Active_Tanh),
-                 FcLayer(16, 1, true, Active_Linear));
+    using LSTMNET = Net<LSTM, FcLayer, FcLayer>;
+    LSTMNET lstm(LSTM(1, 8, 8),
+                 FcLayer(8, 8, true, Fn_Tanh),
+                 FcLayer(8, 1, true, Fn_Linear));
 
-    Optimizer<LSTMNET, Optimize::RMSProp> optimizer(lstm, 1e-4);
+    Optimizer<LSTMNET, Optimize::RMSProp> optimizer(lstm, 1e-3, 1e-4, true);
     /* data */
     std::size_t N = 10000;
     std::vector<Tensor> x(N, Tensor(1, 1));
@@ -320,11 +334,9 @@ void test_lstm()
         value += 0.1;
     }
     /* train */
-    std::random_device device;
-    std::default_random_engine engine(device());
-    std::uniform_int_distribution<int> distribution(0, N - 9);
+    std::uniform_int_distribution<int> uniform(0, N - 9);
     for (std::size_t epoch = 0; epoch < 10000; epoch++) {
-        int k = distribution(engine);
+        int k = uniform(LinAlg::Random::engine);
         std::get<0>(lstm.layers).reset();
         for (std::size_t i = 0; i < 8; i++) {
             /* forward */
@@ -338,9 +350,9 @@ void test_lstm()
         optimizer.update();
     }
     /* predict */
-    for (std::size_t i = 0; i < 4; i++) {
+    for (std::size_t i = 0; i < 2; i++) {
         std::get<0>(lstm.layers).reset();
-        int k = distribution(engine);
+        int k = uniform(LinAlg::Random::engine);
         for (std::size_t j = 0; j < 8; j++) {
             Tensor& y = lstm(x[k + i]);
             float error = LinAlg::normL2(y, x[k + 8]);
@@ -356,20 +368,20 @@ void test_alexnet()
                         Conv2d, MaxPooling2d,
                         Conv2d, Conv2d, Conv2d, MaxPooling2d,
                         FcLayer, FcLayer, FcLayer>;
-    AlexNet alexnet(Conv2d(3, 227, 227, 48, 11, 4, 2, false, Active_LeakyRelu),
+    AlexNet alexnet(Conv2d(3, 227, 227, 48, 11, 4, 2, false, Fn_LeakyRelu),
                     MaxPooling2d(48, 56, 56, 3, 2),
 
-                    Conv2d(48, 27, 27, 128, 5, 1, 2, false, Active_LeakyRelu),
+                    Conv2d(48, 27, 27, 128, 5, 1, 2, false, Fn_LeakyRelu),
                     MaxPooling2d(128, 27, 27, 3, 2),
 
-                    Conv2d(128, 13, 13, 192, 3, 1, 1, false, Active_LeakyRelu),
-                    Conv2d(192, 13, 13, 192, 3, 1, 1, false, Active_LeakyRelu),
-                    Conv2d(192, 13, 13, 128, 3, 1, 1, false, Active_LeakyRelu),
+                    Conv2d(128, 13, 13, 192, 3, 1, 1, false, Fn_LeakyRelu),
+                    Conv2d(192, 13, 13, 192, 3, 1, 1, false, Fn_LeakyRelu),
+                    Conv2d(192, 13, 13, 128, 3, 1, 1, false, Fn_LeakyRelu),
                     MaxPooling2d(128, 13, 13, 3, 2),
 
-                    FcLayer(128*6*6, 2048, true, Active_Tanh),
-                    FcLayer(2048, 2048, true, Active_Sigmoid),
-                    FcLayer(2048, 1000, true, Active_Sigmoid));
+                    FcLayer(128*6*6, 2048, true, Fn_Tanh),
+                    FcLayer(2048, 2048, true, Fn_Sigmoid),
+                    FcLayer(2048, 1000, true, Fn_Sigmoid));
 
     Tensor x(3, 227, 227);
     /* alexnet forward cost:3.24633s */
@@ -390,31 +402,31 @@ void test_vgg16()
                       Conv2d, Conv2d, Conv2d, MaxPooling2d,
                       FcLayer, FcLayer, FcLayer>;
     /* 16 conv2d */
-    VGG16 vgg16(Conv2d(3,  224, 224, 64, 3, 1, 1, false, Active_LeakyRelu),
-                Conv2d(64, 224, 224, 64, 3, 1, 1, false, Active_LeakyRelu),
+    VGG16 vgg16(Conv2d(3,  224, 224, 64, 3, 1, 1, false, Fn_LeakyRelu),
+                Conv2d(64, 224, 224, 64, 3, 1, 1, false, Fn_LeakyRelu),
                 MaxPooling2d(64, 224, 224, 2, 2),
 
-                Conv2d(64,  112, 112, 128, 3, 1, 1, false, Active_LeakyRelu),
-                Conv2d(128, 112, 112, 128, 3, 1, 1, false, Active_LeakyRelu),
+                Conv2d(64,  112, 112, 128, 3, 1, 1, false, Fn_LeakyRelu),
+                Conv2d(128, 112, 112, 128, 3, 1, 1, false, Fn_LeakyRelu),
                 MaxPooling2d(128, 112, 112, 2, 2),
 
-                Conv2d(128, 56, 56, 256, 3, 1, 1, false, Active_LeakyRelu),
-                Conv2d(256, 56, 56, 256, 3, 1, 1, false, Active_LeakyRelu),
-                Conv2d(256, 56, 56, 256, 3, 1, 1, false, Active_LeakyRelu),
+                Conv2d(128, 56, 56, 256, 3, 1, 1, false, Fn_LeakyRelu),
+                Conv2d(256, 56, 56, 256, 3, 1, 1, false, Fn_LeakyRelu),
+                Conv2d(256, 56, 56, 256, 3, 1, 1, false, Fn_LeakyRelu),
                 MaxPooling2d(256, 56, 56, 2, 2),
 
-                Conv2d(256, 28, 28, 512, 3, 1, 1, false, Active_LeakyRelu),
-                Conv2d(512, 28, 28, 512, 3, 1, 1, false, Active_LeakyRelu),
-                Conv2d(512, 28, 28, 512, 3, 1, 1, false, Active_LeakyRelu),
+                Conv2d(256, 28, 28, 512, 3, 1, 1, false, Fn_LeakyRelu),
+                Conv2d(512, 28, 28, 512, 3, 1, 1, false, Fn_LeakyRelu),
+                Conv2d(512, 28, 28, 512, 3, 1, 1, false, Fn_LeakyRelu),
                 MaxPooling2d(512, 28, 28, 2, 2),
 
-                Conv2d(512, 14, 14, 512, 3, 1, 1, false, Active_LeakyRelu),
-                Conv2d(512, 14, 14, 512, 3, 1, 1, false, Active_LeakyRelu),
-                Conv2d(512, 14, 14, 512, 3, 1, 1, false, Active_LeakyRelu),
+                Conv2d(512, 14, 14, 512, 3, 1, 1, false, Fn_LeakyRelu),
+                Conv2d(512, 14, 14, 512, 3, 1, 1, false, Fn_LeakyRelu),
+                Conv2d(512, 14, 14, 512, 3, 1, 1, false, Fn_LeakyRelu),
                 MaxPooling2d(512, 7, 7, 2, 2),
-                FcLayer(512*7*7, 4096, true, Active_Tanh),
-                FcLayer(4096, 4096, true, Active_Sigmoid),
-                FcLayer(4096, 1000, true, Active_Sigmoid));
+                FcLayer(512*7*7, 4096, true, Fn_Tanh),
+                FcLayer(4096, 4096, true, Fn_Sigmoid),
+                FcLayer(4096, 1000, true, Fn_Sigmoid));
 
     Optimizer<VGG16, Optimize::RMSProp> optimizer(vgg16, 1e-3);
 
@@ -458,13 +470,13 @@ int main()
 {
 #if 0
     test_conv1d();
-    test_bpnn();
+    test_xor();
     test_lenet5();
     test_lstm();
     test_mnist();
     test_alexnet();
     test_vgg16();
 #endif
-    test_bpnn();
+    test_xor();
 	return 0;
 }

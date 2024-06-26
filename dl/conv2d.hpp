@@ -33,7 +33,7 @@ public:
         : inChannels(param.inChannels),outChannels(param.outChannels),kernelSize(param.kernelSize),
           stride(param.stride),padding(param.padding),bias(param.bias),
           hi(param.hi),wi(param.wi),ho(param.ho),wo(param.wo),
-          id(0),opType(OP_FORWARD),activeType(Active_Linear),layerType(Layer_Conv2d){}
+          id(0),opType(OP_FORWARD),activeType(Fn_Linear),layerType(Layer_Conv2d){}
     explicit Conv2dParam(int inChannels_,
                          int h,
                          int w,
@@ -42,7 +42,7 @@ public:
                          int stride_=1,
                          int padding_=0,
                          bool bias_=false,
-                         int activeType_=Active_LeakyRelu):
+                         int activeType_=Fn_LeakyRelu):
         inChannels(inChannels_),outChannels(outChannels_),kernelSize(kernelSize_),
     stride(stride_),padding(padding_),bias(bias_),
     hi(h),wi(w),
@@ -212,11 +212,11 @@ public:
                 optB = Optimizer(layer.b.shape);
             }
         }
-        void operator()(Conv2d& layer, Grad& grad, float learningRate)
+        void operator()(Conv2d& layer, Grad& grad, float learningRate, float decay, bool clipGrad)
         {
-            optKernels(layer.kernels, grad.dkernels, learningRate);
-            if (layer.bias == true) {
-                optB(layer.b, grad.db, learningRate);
+            optKernels(layer.kernels, grad.dkernels, learningRate, decay, clipGrad);
+            if (layer.bias) {
+                optB(layer.b, grad.db, learningRate, decay, clipGrad);
             }
             return;
         }
@@ -238,7 +238,7 @@ public:
                     int stride_=1,
                     int padding_=0,
                     bool bias_=false,
-                    int activeType_=Active_LeakyRelu):
+                    int activeType_=Fn_LeakyRelu):
         Conv2dParam(inChannels_, h, w, outChannels_, kernelSize_, stride_, padding_, bias_, activeType_)
     {
         kernels = Tensor(outChannels, inChannels, kernelSize, kernelSize);
@@ -334,7 +334,7 @@ public:
     public:
         OptimizeBlock(){}
         explicit OptimizeBlock(const MaxPooling2d &){}
-        void operator()(MaxPooling2d&, Grad&, float){}
+        void operator()(MaxPooling2d&, Grad&, float, float, bool){}
     };
 public:
     Tensor o;
@@ -525,10 +525,10 @@ public:
             opt1 = Conv2d::OptimizeBlock<Optimizer>(layer.conv1);
             opt2 = Conv2d::OptimizeBlock<Optimizer>(layer.conv2);
         }
-        void operator()(ResidualConv2d& layer, Grad& grad, float learningRate)
+        void operator()(ResidualConv2d& layer, Grad& grad, float learningRate, float decay, bool clipGrad)
         {
-            opt1(layer.conv1, grad.convGrad1, learningRate);
-            opt2(layer.conv2, grad.convGrad2, learningRate);
+            opt1(layer.conv1, grad.convGrad1, learningRate, decay, clipGrad);
+            opt2(layer.conv2, grad.convGrad2, learningRate, decay, clipGrad);
             return;
         }
     };
@@ -545,7 +545,7 @@ public:
                     int stride_=1,
                     int padding_=0,
                     bool bias_=false,
-                    int activeType_=Active_LeakyRelu):
+                    int activeType_=Fn_LeakyRelu):
         Conv2dParam(inChannels_, h, w, inChannels_, kernelSize_, stride_, padding_, bias_, activeType_)
     {
         conv1 = Conv2d(inChannels, h, w, inChannels, kernelSize, stride, padding, bias, activeType);
@@ -594,7 +594,7 @@ public:
     public:
         OptimizeBlock(){}
         explicit OptimizeBlock(const NMS &){}
-        void operator()(NMS&, Grad&, float){}
+        void operator()(NMS&, Grad&, float, float, bool){}
     };
 public:
     Tensor o;

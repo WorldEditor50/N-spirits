@@ -304,25 +304,25 @@ public:
             optW  = Optimizer(layer.W.shape);
             optB  = Optimizer(layer.B.shape);
         }
-        void operator()(LSTM& lstm, Grad& grad, float learningRate)
+        void operator()(LSTM& lstm, Grad& grad, float learningRate, float decay, bool clipGrad)
         {
             /* backward and eval */
             grad.backwardThroughTime(lstm);
             /* update */
-            optWi(lstm.Wi, grad.d.Wi, learningRate);
-            optUi(lstm.Ui, grad.d.Ui, learningRate);
-            optBi(lstm.Bi, grad.d.Bi, learningRate);
-            optWg(lstm.Wg, grad.d.Wg, learningRate);
-            optUg(lstm.Ug, grad.d.Ug, learningRate);
-            optBg(lstm.Bg, grad.d.Bg, learningRate);
-            optWf(lstm.Wf, grad.d.Wf, learningRate);
-            optUf(lstm.Uf, grad.d.Uf, learningRate);
-            optBf(lstm.Bf, grad.d.Bf, learningRate);
-            optWo(lstm.Wo, grad.d.Wo, learningRate);
-            optUo(lstm.Uo, grad.d.Uo, learningRate);
-            optBo(lstm.Bo, grad.d.Bo, learningRate);
-            optW(lstm.W, grad.d.W, learningRate);
-            optB(lstm.B, grad.d.B, learningRate);
+            optWi(lstm.Wi, grad.d.Wi, learningRate, decay, clipGrad);
+            optUi(lstm.Ui, grad.d.Ui, learningRate, decay, clipGrad);
+            optBi(lstm.Bi, grad.d.Bi, learningRate, decay, clipGrad);
+            optWg(lstm.Wg, grad.d.Wg, learningRate, decay, clipGrad);
+            optUg(lstm.Ug, grad.d.Ug, learningRate, decay, clipGrad);
+            optBg(lstm.Bg, grad.d.Bg, learningRate, decay, clipGrad);
+            optWf(lstm.Wf, grad.d.Wf, learningRate, decay, clipGrad);
+            optUf(lstm.Uf, grad.d.Uf, learningRate, decay, clipGrad);
+            optBf(lstm.Bf, grad.d.Bf, learningRate, decay, clipGrad);
+            optWo(lstm.Wo, grad.d.Wo, learningRate, decay, clipGrad);
+            optUo(lstm.Uo, grad.d.Uo, learningRate, decay, clipGrad);
+            optBo(lstm.Bo, grad.d.Bo, learningRate, decay, clipGrad);
+            optW(lstm.W, grad.d.W, learningRate, decay, clipGrad);
+            optB(lstm.B, grad.d.B, learningRate, decay, clipGrad);
             return;
         }
     };
@@ -348,6 +348,7 @@ public:
     {
         h.zero();
         c.zero();
+        states.clear();
         return;
     }
 

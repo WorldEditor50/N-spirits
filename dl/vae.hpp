@@ -20,12 +20,12 @@ public:
     explicit VAE(int imgSize, int hiddenDim, int zDim)
     {
         /* encoder */
-        fromImg = FcLayer(imgSize, hiddenDim, false, Active_LeakyRelu);
-        map2Mu = FcLayer(hiddenDim, zDim, false, Active_Linear);
-        map2Sigma = FcLayer(hiddenDim, zDim, false, Active_Linear);
+        fromImg = FcLayer(imgSize, hiddenDim, false, Fn_LeakyRelu);
+        map2Mu = FcLayer(hiddenDim, zDim, false, Fn_Linear);
+        map2Sigma = FcLayer(hiddenDim, zDim, false, Fn_Linear);
         /* decoder */
-        fromZ = FcLayer(zDim, hiddenDim, false, Active_LeakyRelu);
-        map2Img = FcLayer(hiddenDim, imgSize, false, Active_Sigmoid);
+        fromZ = FcLayer(zDim, hiddenDim, false, Fn_LeakyRelu);
+        map2Img = FcLayer(hiddenDim, imgSize, false, Fn_Sigmoid);
     }
     void encoder(const Tensor &img, Tensor &mu, Tensor &sigma)
     {

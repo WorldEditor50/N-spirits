@@ -9,6 +9,8 @@ namespace LinAlg {
 
 struct Random {
     static std::default_random_engine engine;
+    static std::random_device device;
+    static std::mt19937 generator;
 };
 void add(Tensor &y, const Tensor &x1, const Tensor &x2);
 void sub(Tensor &y, const Tensor &x1, const Tensor &x2);
@@ -21,6 +23,13 @@ Tensor exp(const Tensor &x);
 Tensor sin(const Tensor &x);
 Tensor cos(const Tensor &x);
 Tensor tanh(const Tensor &x);
+
+Tensor lerp(const Tensor &x1, const Tensor &x2, float alpha);
+
+namespace Interplate {
+    float lagrange(const Tensor &x, const Tensor &y, float xi, int n);
+    float newton(const Tensor &x, const Tensor &y, float xi, int n);
+}
 
 template<typename T>
 inline void uniform(T &x, float x1, float x2)
@@ -77,7 +86,8 @@ namespace LU {
 /* QR */
 namespace QR {
     int solve(const Tensor &x, Tensor &q, Tensor &r);
-    int eigen(const Tensor &x, Tensor &e);
+    int iterate(const Tensor &x, Tensor &q, Tensor &r);
+    int eigen(const Tensor &x, Tensor &, float eps=1e-8);
 };
 /* svd */
 namespace SVD {

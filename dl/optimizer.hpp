@@ -13,6 +13,8 @@ public:
     using Layers = typename Net::Layers;
     using Grads = typename Net::Grads;
     using Optimizers = typename Net::template OptimzeBlocks<OptimizeMethod>;
+    bool clipGrad;
+    float decay;
     float learningRate;
     Net &net;
     Grads grads;
@@ -140,33 +142,50 @@ public:
     /* update */
     template< typename Optimizers, typename Layers, typename Grads, std::size_t N>
     struct Update {
-        inline static void impl(Optimizers &optimizers, Layers& layers, Grads &grads, float learningRate)
+        inline static void impl(Optimizers &optimizers,
+                                Layers& layers,
+                                Grads &grads,
+                                float learningRate,
+                                float decay,
+                                bool clipGrad)
         {
-            Update<Optimizers, Layers, Grads, N - 1>::impl(optimizers, layers, grads, learningRate);
+            Update<Optimizers, Layers, Grads, N - 1>::impl(optimizers,
+                                                           layers,
+                                                           grads,
+                                                           learningRate,
+                                                           decay,
+                                                           clipGrad);
             auto &layer = std::get<N - 1>(layers);
             auto &grad = std::get<N - 1>(grads);
             auto &opt = std::get<N - 1>(optimizers);
-            opt(layer, grad, learningRate);
+            opt(layer, grad, learningRate, decay, clipGrad);
             return;
         }
     };
 
     template< typename Optimizers, typename Layers, typename Grads>
     struct Update<Optimizers, Layers, Grads, 1> {
-        inline static void impl(Optimizers &optimizers, Layers& layers, Grads &grads, float learningRate)
+        inline static void impl(Optimizers &optimizers,
+                                Layers& layers,
+                                Grads &grads,
+                                float learningRate,
+                                float decay,
+                                bool clipGrad)
         {
             auto &layer = std::get<0>(layers);
             auto &grad = std::get<0>(grads);
             auto &opt = std::get<0>(optimizers);
-            opt(layer, grad, learningRate);
+            opt(layer, grad, learningRate, decay, clipGrad);
             return;
         }
     };
 public:
-    explicit Optimizer(Net &net_, float learningRate_)
-        :learningRate(learningRate_),net(net_)
+    explicit Optimizer(Net &net_, float learningRate_, float decay_=0, bool clipGrad_=true)
+        :clipGrad(clipGrad_),decay(decay_),learningRate(learningRate_),net(net_)
     {
-        Generate<Layers, Grads, Optimizers, Net::N>::impl(net_.layers, grads, optimizers);
+        Generate<Layers, Grads, Optimizers, Net::N>::impl(net_.layers,
+                                                          grads,
+                                                          optimizers);
     }
 
     void backward(const Tensor &loss, const Tensor &x)
@@ -208,7 +227,12 @@ public:
     void update()
     {
         /* update */
-        Update<Optimizers, Layers, Grads, Net::N>::impl(optimizers, net.layers, grads, learningRate);
+        Update<Optimizers, Layers, Grads, Net::N>::impl(optimizers,
+                                                        net.layers,
+                                                        grads,
+                                                        learningRate,
+                                                        decay,
+                                                        clipGrad);
         return;
     }
 };

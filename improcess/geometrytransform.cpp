@@ -62,7 +62,6 @@ int imp::rotate(OutTensor xo, InTensor xi, float angle)
 {
     /*
         rotate center = (h/2, w/2)
-
     */
     float theta = angle*pi/180;
     float sinTheta = std::sin(theta);
@@ -102,7 +101,6 @@ int imp::nearestInterpolate(OutTensor xo, InTensor xi, const imp::Size &size)
             for (int k = 0; k < channels; k++) {
                 xo(i - 1, j - 1, k) = xi(u - 1, v - 1, k);
             }
-
         }
     }
     return 0;

@@ -4,13 +4,13 @@
 #include <map>
 #include "../basic/linalg.h"
 #include "../basic/tensor.hpp"
-enum ActiveType {
-    Active_Linear = 0,
-    Active_Sigmoid,
-    Active_Relu,
-    Active_LeakyRelu,
-    Active_Tanh,
-    Active_Gelu
+enum FnType {
+    Fn_Linear = 0,
+    Fn_Sigmoid,
+    Fn_Relu,
+    Fn_LeakyRelu,
+    Fn_Tanh,
+    Fn_Gelu
 };
 struct Sigmoid {
     inline static float f(float x) {return 1/(1 + std::exp(-x));}
@@ -213,15 +213,15 @@ struct Fn {
     inline static float f(int type, float x)
     {
         switch (type) {
-        case Active_Linear:
+        case Fn_Linear:
             return Linear::f(x);
-        case Active_Sigmoid:
+        case Fn_Sigmoid:
             return Sigmoid::f(x);
-        case Active_Relu:
+        case Fn_Relu:
             return Relu::f(x);
-        case Active_LeakyRelu:
+        case Fn_LeakyRelu:
             return LeakyRelu::f(x);
-        case Active_Tanh:
+        case Fn_Tanh:
             return Tanh::f(x);
         default:
             break;
@@ -231,15 +231,15 @@ struct Fn {
     inline static float df(int type, float y)
     {
         switch (type) {
-        case Active_Linear:
+        case Fn_Linear:
             return Linear::df(y);
-        case Active_Sigmoid:
+        case Fn_Sigmoid:
             return Sigmoid::df(y);
-        case Active_Relu:
+        case Fn_Relu:
             return Relu::df(y);
-        case Active_LeakyRelu:
+        case Fn_LeakyRelu:
             return LeakyRelu::df(y);
-        case Active_Tanh:
+        case Fn_Tanh:
             return Tanh::df(y);
         default:
             break;
@@ -249,15 +249,15 @@ struct Fn {
     inline static Tensor& f(int type, Tensor &x)
     {
         switch (type) {
-        case Active_Linear:
+        case Fn_Linear:
             return Linear::f(x);
-        case Active_Sigmoid:
+        case Fn_Sigmoid:
             return Sigmoid::f(x);
-        case Active_Relu:
+        case Fn_Relu:
             return Relu::f(x);
-        case Active_LeakyRelu:
+        case Fn_LeakyRelu:
             return LeakyRelu::f(x);
-        case Active_Tanh:
+        case Fn_Tanh:
             return Tanh::f(x);
         default:
             break;
@@ -268,15 +268,15 @@ struct Fn {
     inline static Tensor& df(int type, Tensor &y)
     {
         switch (type) {
-        case Active_Linear:
+        case Fn_Linear:
             return Linear::df(y);
-        case Active_Sigmoid:
+        case Fn_Sigmoid:
             return Sigmoid::df(y);
-        case Active_Relu:
+        case Fn_Relu:
             return Relu::df(y);
-        case Active_LeakyRelu:
+        case Fn_LeakyRelu:
             return LeakyRelu::df(y);
-        case Active_Tanh:
+        case Fn_Tanh:
             return Tanh::df(y);
         default:
             break;
@@ -286,15 +286,15 @@ struct Fn {
     inline static Tensor f(int type, const Tensor &x)
     {
         switch (type) {
-        case Active_Linear:
+        case Fn_Linear:
             return Linear::f(x);
-        case Active_Sigmoid:
+        case Fn_Sigmoid:
             return Sigmoid::f(x);
-        case Active_Relu:
+        case Fn_Relu:
             return Relu::f(x);
-        case Active_LeakyRelu:
+        case Fn_LeakyRelu:
             return LeakyRelu::f(x);
-        case Active_Tanh:
+        case Fn_Tanh:
             return Tanh::f(x);
         default:
             break;
@@ -305,15 +305,15 @@ struct Fn {
     inline static Tensor df(int type, const Tensor &y)
     {
         switch (type) {
-        case Active_Linear:
+        case Fn_Linear:
             return Linear::df(y);
-        case Active_Sigmoid:
+        case Fn_Sigmoid:
             return Sigmoid::df(y);
-        case Active_Relu:
+        case Fn_Relu:
             return Relu::df(y);
-        case Active_LeakyRelu:
+        case Fn_LeakyRelu:
             return LeakyRelu::df(y);
-        case Active_Tanh:
+        case Fn_Tanh:
             return Tanh::df(y);
         default:
             break;

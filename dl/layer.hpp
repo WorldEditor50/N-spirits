@@ -19,10 +19,10 @@ public:
     int activeType;
 public:
     FcParam():inputDim(0),outputDim(0),bias(false),
-    opType(OP_FORWARD),layerType(Layer_FullyConnection), activeType(Active_Sigmoid){}
+    opType(OP_FORWARD),layerType(Layer_FullyConnection), activeType(Fn_Sigmoid){}
     FcParam(int inDim_, int outDim_, bool bias_, int activeType_):
         inputDim(inDim_),outputDim(outDim_),bias(bias_),
-        opType(OP_FORWARD),layerType(Layer_FullyConnection), activeType(Active_Sigmoid){}
+        opType(OP_FORWARD),layerType(Layer_FullyConnection), activeType(Fn_Sigmoid){}
     FcParam(const FcParam &param):
         inputDim(param.inputDim),outputDim(param.outputDim),bias(param.bias),
         opType(param.opType),layerType(param.layerType), activeType(param.activeType){}
@@ -44,7 +44,7 @@ public:
             :FcParam(param)
         {
             dw = Tensor(outputDim, inputDim);
-            if (bias == true) {
+            if (bias) {
                 db = Tensor(outputDim, 1);
             }
             e = Tensor(outputDim, 1);
@@ -76,7 +76,7 @@ public:
             Tensor dy = Fn::df(activeType, o);
             dy *= e;
             Tensor::MM::ikjk(dw, dy, x);
-            if (bias == true) {
+            if (bias) {
                 db += dy;
             }
             e.zero();
@@ -97,15 +97,15 @@ public:
         OptimizeBlock(const FcLayer &layer)
         {
             optW = Optimizer(layer.w.shape);
-            if (layer.bias == true) {
+            if (layer.bias) {
                 optB = Optimizer(layer.b.shape);
             }
         }
-        inline void operator()(FcLayer& layer, Grad& grad, float learningRate)
+        inline void operator()(FcLayer& layer, Grad& grad, float learningRate, float decay, bool clipGrad)
         {
-            optW(layer.w, grad.dw, learningRate);
-            if (layer.bias == true) {
-                optB(layer.b, grad.db, learningRate);
+            optW(layer.w, grad.dw, learningRate, decay, clipGrad);
+            if (layer.bias) {
+                optB(layer.b, grad.db, learningRate, decay, clipGrad);
             }
             return;
         }
@@ -121,7 +121,7 @@ public:
         : FcParam(inputDim_, outputDim_, bias_, activeType_)
     {
         w = Tensor(outputDim, inputDim);
-        if (bias == true) {
+        if (bias) {
             b = Tensor(outputDim, 1);
         }
         o = Tensor(outputDim, 1);
@@ -141,7 +141,7 @@ public:
         */
         o.zero();
         Tensor::MM::ikkj(o, w, x);
-        if (bias == true) {
+        if (bias) {
             o += b;
         }
         Fn::f(activeType, o);
@@ -177,7 +177,7 @@ public:
     }
 };
 
-class SoftmaxLayer : public FcLayer
+class Softmax : public FcLayer
 {
 public:
     class Grad : public FcLayer::Grad
@@ -185,14 +185,14 @@ public:
     public:
         Grad(){}
         explicit Grad(const FcParam &param):FcLayer::Grad(param){}
-        void eval(SoftmaxLayer &layer, const Tensor &x, const Tensor &yt)
+        void eval(Softmax &layer, const Tensor &x, const Tensor &yt)
         {
             Tensor &o = layer.o;
             Tensor dy(o.shape);
             dy = o - yt;
             /* dw = dy*x^T */
             Tensor::MM::ikjk(dw, dy, x);
-            if (bias == true) {
+            if (bias) {
                 db += dy;
             }
             e.zero();
@@ -200,10 +200,10 @@ public:
         }
     };
 public:
-    SoftmaxLayer(){}
-    ~SoftmaxLayer(){}
-    explicit SoftmaxLayer(int inputDim_, int outputDim_, bool bias_)
-        :FcLayer(inputDim_, outputDim_, bias_, Active_Linear)
+    Softmax(){}
+    ~Softmax(){}
+    explicit Softmax(int inputDim_, int outputDim_, bool bias_)
+        :FcLayer(inputDim_, outputDim_, bias_, Fn_Linear)
     {
         layerType = Layer_Softmax;
     }
@@ -263,7 +263,7 @@ public:
     Tensor& forward(const Tensor &x) override
     {
         FcLayer::forward(x);
-        if (Grad::enable == true) {
+        if (Grad::enable) {
             LinAlg::bernoulli(mask, p);
             mask /= (1 - p);
             FcLayer::o *= mask;
@@ -295,16 +295,17 @@ public:
         {
             Tensor &o = layer.o;
             float gamma = layer.gamma;
-            Tensor dy = Fn::df(activeType, o);
-            Tensor error = dy*e;
+            Tensor dy(o.shape);
+            float r = 1.0 - 1.0/float(outputDim);
             for (std::size_t i = 0; i < dy.totalSize; i++) {
+                float error = Fn::df(layer.opType, o[i])*e[i];
                 float d = (layer.o1[i] - layer.u)*gamma;
-                dy[i] = (1.0 - 1.0/float(outputDim))*(1 - d*d)*gamma*error[i];
+                dy[i] = r*(1 - d*d)*gamma*error;
+                if (bias) {
+                    db[i] += error;
+                }
             }
             Tensor::MM::ikjk(dw, dy, x);
-            if (bias == true) {
-                db += error;
-            }
             e.zero();
             layer.o1.zero();
             return;
@@ -334,7 +335,7 @@ public:
         for (std::size_t i = 0; i < o.totalSize; i++) {
             o.val[i] = gamma*(o1.val[i] - u);
         }
-        if (bias == true) {
+        if (bias) {
             o += b;
         }
         Fn::f(activeType, o);
@@ -376,7 +377,7 @@ public:
              fcGrad2.eval(layer.fc2, layer.fc1.o);
              /* residual part differentiate */
              fcGrad2.dw += 1;
-             if (fcGrad2.bias == true) {
+             if (fcGrad2.bias) {
                  fcGrad2.db += 1;
              }
              return;
@@ -396,10 +397,10 @@ public:
             opt1 = FcLayer::OptimizeBlock<Optimizer>(layer.fc1);
             opt2 = FcLayer::OptimizeBlock<Optimizer>(layer.fc2);
         }
-        void operator()(ResidualLayer& layer, Grad& grad, float learningRate)
+        void operator()(ResidualLayer& layer, Grad& grad, float learningRate, float decay, bool clipGrad)
         {
-            opt1(layer.fc1, grad.fcGrad1, learningRate);
-            opt2(layer.fc2, grad.fcGrad2, learningRate);
+            opt1(layer.fc1, grad.fcGrad1, learningRate, decay, clipGrad);
+            opt2(layer.fc2, grad.fcGrad2, learningRate, decay, clipGrad);
             return;
         }
     };
@@ -491,10 +492,10 @@ public:
             optGamma = Optimizer(layer.gamma.shape);
             optBeta = Optimizer(layer.beta.shape);
         }
-        inline void operator()(BatchNorm1d& layer, Grad& grad, float learningRate)
+        inline void operator()(BatchNorm1d& layer, Grad& grad, float learningRate, float decay, bool clipGrad)
         {
-            optGamma(layer.gamma, grad.dGamma, learningRate);
-            optBeta(layer.beta, grad.dBeta, learningRate);
+            optGamma(layer.gamma, grad.dGamma, learningRate, decay, clipGrad);
+            optBeta(layer.beta, grad.dBeta, learningRate, decay, clipGrad);
             return;
         }
     };

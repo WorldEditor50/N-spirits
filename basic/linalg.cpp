@@ -1,5 +1,8 @@
 #include "linalg.h"
-std::default_random_engine LinAlg::Random::engine;
+
+std::random_device LinAlg::Random::device;
+std::default_random_engine LinAlg::Random::engine(LinAlg::Random::device());
+std::mt19937 LinAlg::Random::generator(LinAlg::Random::device());
 
 void LinAlg::add(Tensor &y, const Tensor &x1, const Tensor &x2)
 {
@@ -85,6 +88,64 @@ Tensor LinAlg::tanh(const Tensor &x)
         y.val[i] = std::tanh(x.val[i]);
     }
     return y;
+}
+
+Tensor LinAlg::lerp(const Tensor &x1, const Tensor &x2, float alpha)
+{
+    Tensor x(x1.shape);
+    for (std::size_t i = 0; i < x.totalSize; i++) {
+        x[i] = alpha*x1[i] + (1 - alpha)*x2[i];
+    }
+    return x;
+}
+
+float LinAlg::Interplate::lagrange(const Tensor &x, const Tensor &y, float xi, int n)
+{
+    /*
+        (xi, yi): interpolation point
+        li(x) = ∏（x - xi)/(xi - xj), i!=j
+        Ln(x) = Σ li(x)*yi
+    */
+    float ln = 0;
+    for (int i = 0; i < n; i++) {
+        float li = 1;
+        for (int j = 0; j < n; j++) {
+            if (i != j) {
+                li *= (xi - x[j])/(x[i] - x[j]);
+            }
+        }
+        ln += li*y[i];
+    }
+    return ln;
+}
+
+float LinAlg::Interplate::newton(const Tensor &x, const Tensor &y, float xi, int n)
+{
+    float s = 0;
+    int N = x.totalSize;
+    Tensor delta(N, N);
+    for (int i = 0; i < N; i++) {
+        delta(0, i) = y[i];
+    }
+    /* first order difference */
+    for (int i = 1; i < N; i++) {
+        delta(1, i) = (delta(0, i) - delta(0, i - 1))/(x[i] - x[i - 1]);
+    }
+    /* high order difference */
+    for (int i = 2; i < N; i++) {
+        for (int j = i; j < N; j++) {
+            delta(i, j) = (delta(i - 1, j) - delta(i - 1, j - 1))/(x[i] - x[0]);
+        }
+    }
+    /* approximate */
+    for (int i = 0; i < n; i++) {
+        float p = 1;
+        for (int j = 0; j < n; j++) {
+            p *= xi - x[j];
+        }
+        s += p*delta(i, i);
+    }
+    return s;
 }
 
 void LinAlg::bernoulli(Tensor &x, float p)
@@ -370,7 +431,7 @@ void LinAlg::GaussianElimination::evaluate(const Tensor &u, Tensor &x)
     Tensor a(u);
     int N = a.shape[0];
     for (int i = N - 1; i >= 0; i--) {
-        for (int j = i+1; j < N; j++) {
+        for (int j = i + 1; j < N; j++) {
             a(i, N) -= a(i, j) * a(j, N);
         }
         a(i, N) /= a(i, i);
@@ -550,8 +611,40 @@ int LinAlg::QR::solve(const Tensor &x, Tensor &q, Tensor &r)
     return 0;
 }
 
-int LinAlg::QR::eigen(const Tensor &x, Tensor &e)
+int LinAlg::QR::iterate(const Tensor &x, Tensor &q, Tensor &r)
 {
+    int N = x.shape[0];
+    q = LinAlg::eye(N);
+    r = x;
+    for (int k = 0; k < N - 1; k++) {
+        int i = k + 1;
+        float &rkk = r(k, k);
+        float &rik = r(i, k);
+        float tau = std::sqrt(rkk*rkk + rik*rik);
+        float c = rkk/tau;
+        float s = -rik/tau;
+        for (int j = k; j < N; j++) {
+            float &rij = r(i, j);
+            float rkj = r(k, j);
+            r(k, j) = c*rkj - s*rij;
+            rij = s*rkj + c*rij;
+        }
+        r(i, k) = 0;
+
+        for (int j = 0; j < N; j++) {
+            float &qji = q(j, i);
+            float qjk = q(j, k);
+            q(j, k) = c*qjk - s*qji;
+            qji = s*qjk + c*qji;
+        }
+    }
+    return 0;
+}
+
+int LinAlg::QR::eigen(const Tensor &x, Tensor &e, float eps)
+{
+    Tensor p = LinAlg::eye(x.shape[0]);
+
     return 0;
 }
 
