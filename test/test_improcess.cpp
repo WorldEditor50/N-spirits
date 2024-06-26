@@ -542,6 +542,37 @@ void test_concat()
     return;
 }
 
+void test_erode()
+{
+    Tensor img = imp::load("./images/dota2.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    imp::rgb2gray(gray, img);
+    Tensor out;
+    Tensor k33({3, 3}, {-1, 1, -1,
+                         1, 1,  1,
+                        -1, 1, -1 });
+    imp::erode(out, gray, k33);
+    Tensor erode;
+    imp::gray2rgb(erode, out);
+    imp::show(erode);
+    return;
+}
+
+void test_histogram()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    imp::showHistogram(img);
+    return;
+}
+
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -576,6 +607,8 @@ int main()
     test_entropyThreshold();
     test_show();
 #endif
-    test_sobel();
+    //test_sobel();
+    //test_erode();
+    test_histogram();
 	return 0;
 }

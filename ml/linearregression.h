@@ -1,7 +1,7 @@
 #ifndef LINEARREGRESSION_H
 #define LINEARREGRESSION_H
 #include "../basic/tensor.hpp"
-#include "../basic/util.hpp"
+#include "../basic/linalg.h"
 
 class LinearModel
 {
@@ -10,6 +10,10 @@ public:
     float b;
 public:
     LinearModel(){}
+    explicit LinearModel(int dim)
+    {
+        w = Tensor(dim, 1);
+    }
     static float sigmoid(float x)
     {
         return 1/(1 + exp(-x));
@@ -18,9 +22,9 @@ public:
     {
         return y*(1 - y);
     }
-    float operator()(const Mat &x)
+    float operator()(const Tensor &x)
     {
-        return sigmoid(Statistics::dot(w, x) + b);
+        return sigmoid(LinAlg::dot(w, x) + b);
     }
     void update(const Tensor &x, float y, float yt, float learningRate)
     {
@@ -36,7 +40,7 @@ public:
         for (std::size_t i = 0; i < maxEpoch; i++) {
             for (std::size_t j = 0; j < batchSize; j++) {
                 int k = rand() % x.size();
-                float y = sigmoid(Statistics::dot(w, x[k]) + b);
+                float y = sigmoid(LinAlg::dot(w, x[k]) + b);
                 update(x[k], y, yt[k], learningRate);
             }
         }

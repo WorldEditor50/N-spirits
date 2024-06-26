@@ -53,7 +53,7 @@ public:
     void init(const std::vector<Tensor> &x, std::size_t maxEpoch)
     {
         /* run kmeans to select centers */
-        KMeans model(componentDim);
+        Kmean model(componentDim);
         model.cluster(x, maxEpoch);
         std::vector<std::size_t> y;
         model(x, y);

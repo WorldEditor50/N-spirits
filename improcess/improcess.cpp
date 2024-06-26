@@ -29,6 +29,35 @@ std::shared_ptr<uint8_t[]> imp::tensor2Image(InTensor x)
     return img;
 }
 
+void imp::showHistogram(InTensor xi)
+{
+    Tensor x;
+    if (xi.shape[HWC_C] != 1) {
+        rgb2gray(x, xi);
+    } else {
+        x = xi;
+    }
+    Tensor hist;
+    histogram(hist, x);
+    float r = 512.0/hist.max();
+    hist *= r;
+    Tensor img(512, 512, 3);
+    img.fill(255);
+    int h = img.shape[HWC_H];
+    int w = img.shape[HWC_W];
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            if (i <= hist[j/2]) {
+                img(h - i - 1, j, 0) = 0;
+                img(h - i - 1, j, 1) = 191;
+                img(h - i - 1, j, 2) = 255;
+            }
+        }
+    }
+    imp::show(img);
+    return;
+}
+
 void imp::show(InTensor xi)
 {
     int h = xi.shape[HWC_H];
@@ -320,7 +349,7 @@ int imp::erode(OutTensor xo, InTensor xi, InTensor kernel)
                     }
                 }
             }
-            xo(i, j) = matched ? 0 : 255;
+            xo(i, j, 0) = matched ? 0 : xi(i, j, 0);
         }
     }
     return 0;
@@ -496,7 +525,7 @@ int imp::findConnectedRegion(OutTensor mask, InTensor xi, int connectCount, int 
         SE(2, 0) = -1;
         SE(2, 2) = -1;
     }
-    int label;
+    int label = 1;
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
             if (gray(i, j) != 0) {

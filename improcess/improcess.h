@@ -33,6 +33,7 @@ namespace imp {
     std::unique_ptr<uint8_t[]> fromTensor(InTensor x);
     std::shared_ptr<uint8_t[]> tensor2Image(InTensor x);
     /* show image */
+    void showHistogram(InTensor x);
     void show(InTensor x);
     void show(const std::string &fileName);
     /* copy */

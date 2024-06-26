@@ -75,13 +75,13 @@ void test_gaussSeidel()
 
 void test_gaussianElimination()
 {
-    Tensor a({3, 4}, { 3, -4, 6, 24,
+    Tensor a({3, 4}, { 3, -4,  6,  24,
                        5,  2, -8, -24,
-                      -1,  1, 2, 11 });
-    Tensor b;
-    LinAlg::GaussianElimination::solve(a, b);
+                      -1,  1,  2,  11 });
+    Tensor u;
+    LinAlg::GaussianElimination::solve(a, u);
     Tensor x(3, 1);
-    LinAlg::GaussianElimination::evaluate(b, x);
+    LinAlg::GaussianElimination::evaluate(u, x);
     x.printValue();
     return;
 }

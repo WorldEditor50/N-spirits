@@ -6,7 +6,7 @@ int imp::histogram(OutTensor hist, InTensor gray)
     if (gray.shape[HWC_C] != 1) {
         return -1;
     }
-    hist = Tensor(256);
+    hist = Tensor(256, 1);
     for (std::size_t i = 0; i < gray.totalSize; i++) {
         int pixel = gray.val[i];
         hist[pixel]++;
@@ -25,7 +25,7 @@ int imp::uniformHistogram(OutTensor hist, InTensor gray)
 
 int imp::moment0(OutTensor m0, InTensor hist)
 {
-    m0 = Tensor(256);
+    m0 = Tensor(256, 1);
     float s = 0;
     for (std::size_t i = 0; i < 256; i++) {
         s += hist[i];
@@ -36,7 +36,7 @@ int imp::moment0(OutTensor m0, InTensor hist)
 
 int imp::moment1(OutTensor m1, InTensor hist)
 {
-    m1 = Tensor(256);
+    m1 = Tensor(256, 1);
     float s = 0;
     for (std::size_t i = 0; i < 256; i++) {
         s += i*hist[i];
@@ -57,7 +57,7 @@ int imp::entropy(InTensor img, int &thres)
     Tensor m0;
     moment0(m0, hist);
     /* f = f1 + f2 */
-    Tensor f(256);
+    Tensor f(256, 1);
     for (std::size_t t = 0; t < 256; t++) {
         float f1 = 0;
         for (std::size_t i = 0; i < t + 1; i++) {
@@ -98,7 +98,7 @@ int imp::otsu(InTensor img, int &thres)
     moment1(m1, hist);
     float u = m1[255];
     /* variance */
-    Tensor sigma(256);
+    Tensor sigma(256, 1);
     for (int i = 0; i < 256; i++) {
         if (m0[i] == 0 || m0[i] == 1) {
             sigma[i] = 0;

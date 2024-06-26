@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include "../basic/vec.h"
-#include "../Statistics/dataset.h"
+#include "../utils/dataset.h"
 
 /*
     1. NaiveBayes

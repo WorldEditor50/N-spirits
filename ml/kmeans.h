@@ -8,15 +8,15 @@
 #include "../basic/tensor.hpp"
 #include "../basic/linalg.h"
 
-class KMeans
+class Kmean
 {
 public:
     std::size_t topicDim;
     std::size_t featureDim;
     std::vector<Tensor> centers;
 public:
-    KMeans(){}
-    explicit KMeans(std::size_t k):topicDim(k),featureDim(0){}
+    Kmean(){}
+    explicit Kmean(std::size_t k):topicDim(k),featureDim(0){}
 
     void cluster(const std::vector<Tensor> &x, std::size_t maxEpoch, float eps=1e-6)
     {
