@@ -13,11 +13,13 @@ public:
         Tensor sigma;
     public:
         Gaussian(){}
-        Gaussian(std::size_t featureDim)
+        explicit Gaussian(int featureDim)
         {
             u = Tensor(featureDim, 1);
             sigma = Tensor(featureDim, 1);
         }
+        Gaussian(const Gaussian &r)
+            :u(r.u),sigma(r.sigma){}
         float operator()(const Tensor &x)
         {
             /* N(x;u,sigma) = exp((x-u)^2/sigma)/sqrt(2*pi*sigma) */
@@ -53,7 +55,7 @@ public:
     void init(const std::vector<Tensor> &x, std::size_t maxEpoch)
     {
         /* run kmeans to select centers */
-        Kmean model(componentDim);
+        Kmeans model(componentDim, featureDim);
         model.cluster(x, maxEpoch);
         std::vector<std::size_t> y;
         model(x, y);

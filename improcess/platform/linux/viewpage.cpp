@@ -38,7 +38,7 @@ void imp::View2D::display(int h, int w, int c, uint8_t *data)
     xcb_create_pixmap_checked(connection,
                               screen->root_depth,
                               pixmap, window, w, h);
-    std::cout<<"depth:"<<(int)screen->root_depth<<std::endl;
+    //std::cout<<"depth:"<<(int)screen->root_depth<<std::endl;
     /* align image */
     std::unique_ptr<uint8_t[]> image(new uint8_t[h*w*4]);
     uint8_t* img = image.get();

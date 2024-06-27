@@ -14,7 +14,7 @@ void test_kmeans()
     std::vector<Tensor> x;
     db.load(x);
     /* clustering */
-    Kmean model(3);
+    Kmeans model(3, 10);
     model.cluster(x, 1000);
     /* predict */
     std::size_t label = model(x[0]);

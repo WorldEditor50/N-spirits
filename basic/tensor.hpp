@@ -277,13 +277,12 @@ public:
         return;
     }
 
-    std::vector<Tensor_> vectorlize() const
-    {
-        std::vector<Tensor_> vec;
-        for (std::size_t i = 0; shape[0]; i++) {
+    void toVector(std::vector<Tensor_> &vec) const
+    { 
+        for (std::size_t i = 0; i < shape[0]; i++) {
             vec.push_back(sub(i));
         }
-        return vec;
+        return;
     }
 
     static Tensor_ fromVector(const std::vector<Tensor_> &vec)

@@ -9,6 +9,9 @@
 #include "../improcess/improcess_def.h"
 #include "../improcess/improcess.h"
 #include "../improcess/bmp.hpp"
+#include "../ml/kmeans.h"
+#include "../ml/gmm.h"
+
 #ifdef ENABLE_JPEG
 #include "../improcess/jpegwrap/jpegwrap.h"
 
@@ -573,6 +576,51 @@ void test_histogram()
     return;
 }
 
+void test_pixelCluster()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    /* pixel cluster */
+    int h = img.shape[imp::HWC_H];
+    int w = img.shape[imp::HWC_W];
+    Tensor x = img;
+    x.reshape(h*w, 3, 1);
+    std::vector<Tensor> xi;
+    x.toVector(xi);
+    Kmeans model(4, 3);
+    model.cluster(xi, 1000, 1e-4);
+    /* classify */
+    Tensor result = img;
+    result.reshape(h, w, 3, 1);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            Tensor p = result.sub(i, j);
+            int k = model(p);
+            Tensor &c = model.centers[k];
+            result(i, j, 0, 0) = c(0, 0);
+            result(i, j, 1, 0) = c(1, 0);
+            result(i, j, 2, 0) = c(2, 0);
+        }
+    }
+    result.reshape(h, w, 3);
+    /* sobel */
+    Tensor s;
+    imp::sobel3x3(s, img);
+    /* gray */
+    Tensor gray;
+    imp::rgb2gray(gray, img);
+    Tensor b;
+    imp::otsuThreshold(b, gray, 255, 0);
+    Tensor rgb;
+    imp::gray2rgb(rgb, b);
+    Tensor dst = Tensor::concat(1, img, s, rgb, result);
+    imp::show(dst);
+    return;
+}
+
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -609,6 +657,7 @@ int main()
 #endif
     //test_sobel();
     //test_erode();
-    test_histogram();
+    //test_histogram();
+    test_pixelCluster();
 	return 0;
 }

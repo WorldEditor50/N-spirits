@@ -94,9 +94,17 @@ Tensor LinAlg::lerp(const Tensor &x1, const Tensor &x2, float alpha)
 {
     Tensor x(x1.shape);
     for (std::size_t i = 0; i < x.totalSize; i++) {
-        x[i] = alpha*x1[i] + (1 - alpha)*x2[i];
+        x[i] = (1 - alpha)*x1[i] + alpha*x2[i];
     }
     return x;
+}
+
+void LinAlg::lerp(Tensor &x1, const Tensor &x2, float alpha)
+{
+    for (std::size_t i = 0; i < x1.totalSize; i++) {
+        x1[i] = (1 - alpha)*x1[i] + alpha*x2[i];
+    }
+    return;
 }
 
 float LinAlg::Interplate::lagrange(const Tensor &x, const Tensor &y, float xi, int n)
@@ -181,7 +189,8 @@ float LinAlg::normL2(const Tensor &x1, const Tensor &x2)
 {
     float s = 0;
     for (std::size_t i = 0; i < x1.totalSize; i++) {
-        s += (x1.val[i] - x2.val[i])*(x1.val[i] - x2.val[i]);
+        float d = x1.val[i] - x2.val[i];
+        s += d*d;
     }
     return std::sqrt(s);
 }

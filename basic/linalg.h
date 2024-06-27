@@ -25,6 +25,7 @@ Tensor cos(const Tensor &x);
 Tensor tanh(const Tensor &x);
 
 Tensor lerp(const Tensor &x1, const Tensor &x2, float alpha);
+void lerp(Tensor &x1, const Tensor &x2, float alpha);
 
 namespace Interplate {
     float lagrange(const Tensor &x, const Tensor &y, float xi, int n);
