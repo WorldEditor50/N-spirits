@@ -48,6 +48,14 @@ float normL2(const Tensor &x1, const Tensor &x2);
 float normLp(const Tensor &x1, const Tensor &x2, float p);
 float normL8(const Tensor &x1, const Tensor &x2);
 float dot(const Tensor &x1, const Tensor &x2);
+float cosine(const Tensor &x1, const Tensor &x2);
+namespace Kernel {
+    float rbf(const Tensor &x1, const Tensor &x2);
+    float laplace(const Tensor &x1, const Tensor &x2);
+    float tanh(const Tensor &x1, const Tensor &x2);
+    float polynomial(const Tensor& x1, const Tensor& x2);
+}
+
 void mean(const Tensor &x, Tensor &u);
 void variance(const Tensor &x, const Tensor &u, Tensor &sigma);
 void mean(const std::vector<Tensor> &x, Tensor &u);

@@ -15,14 +15,14 @@ void runLBM()
     ICylinder icylinder(H/2, W/5, R);
     LBM2d<Cylinder> lbm(H, W, // shape
                         cylinder,
-                        1e-2, // relaxtion
+                        1e-3, // relaxtion
                         /* boundary type : in coming direction (top, right, bottom, left) */
                         Tensor({4}, {0, 1, 0, 0}),
                         /* boundary value : wave reflection (ny, nx) */
                         Tensor({4, 2}, {0.0, 0.0,
-                                         0.0, 0.0,
-                                         0.0, 0.0,
-                                         0.0, 0.1}));
+                                        0.0, 0.0,
+                                        0.0, 0.0,
+                                        0.0, 0.1}));
 
     std::shared_ptr<uint8_t[]> rgb = nullptr;
     std::size_t totalsize = imp::BMP::size(H, W, 3);
@@ -45,6 +45,7 @@ void runLBM()
         }
 
     });
+    return;
 }
 
 void runEuler()

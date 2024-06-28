@@ -226,6 +226,46 @@ float LinAlg::dot(const Tensor &x1, const Tensor &x2)
     return s;
 }
 
+float LinAlg::cosine(const Tensor &x1, const Tensor &x2)
+{
+    float s = 0;
+    float s1 = 0;
+    float s2 = 0;
+    for (std::size_t i = 0; i < x1.totalSize; i++) {
+        s += x1[i]*x2[i];
+        s1 += x1[i]*x1[i];
+        s2 += x2[i]*x2[i];
+    }
+    return s/(std::sqrt(s1*s2) + 1e-8);
+}
+
+float LinAlg::Kernel::rbf(const Tensor &x1, const Tensor &x2)
+{
+    float s = 0;
+    for (std::size_t i = 0; i < x1.totalSize; i++) {
+        float d = x1.val[i] - x2.val[i];
+        s += d*d;
+    }
+    return std::exp(-0.5*s);
+}
+
+float LinAlg::Kernel::laplace(const Tensor &x1, const Tensor &x2)
+{
+    return std::exp(-0.5*normL2(x1, x2));
+}
+
+float LinAlg::Kernel::tanh(const Tensor &x1, const Tensor &x2)
+{
+    return std::tanh(0.5*dot(x1, x2) - 1);
+}
+
+float LinAlg::Kernel::polynomial(const Tensor& x1, const Tensor& x2)
+{
+    float d = 1.0;
+    float p = 10;
+    return std::pow(LinAlg::dot(x1, x2) + d, p);
+}
+
 void LinAlg::mean(const Tensor &x, Tensor &u)
 {
     for (int i = 0; i < x.shape[1]; i++) {

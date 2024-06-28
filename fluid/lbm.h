@@ -318,9 +318,7 @@ public:
 #if 0
                 m += (meq - m) * sigma;
 #endif
-                Tensor mi = fromMoment(m);
-                std::copy(mi.begin(), mi.end(), f.at(i, j));
-
+                f.at(i, j) = fromMoment(m);
             }
         }
         return;

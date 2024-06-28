@@ -11,6 +11,7 @@
 #include "../improcess/bmp.hpp"
 #include "../ml/kmeans.h"
 #include "../ml/gmm.h"
+#include "../ml/svm.h"
 
 #ifdef ENABLE_JPEG
 #include "../improcess/jpegwrap/jpegwrap.h"
@@ -590,33 +591,101 @@ void test_pixelCluster()
     x.reshape(h*w, 3, 1);
     std::vector<Tensor> xi;
     x.toVector(xi);
-    Kmeans model(4, 3);
-    model.cluster(xi, 1000, 1e-4);
+#if 0
+    Kmeans model(16, 3, LinAlg::normL2);
+    Kmeans model(16, 3, LinAlg::cosine);
+    Kmeans model(16, 3, LinAlg::Kernel::rbf);
+#endif
+    Kmeans model(16, 3, LinAlg::Kernel::laplace);
+    model.cluster(xi, 1000, 0.5, 1e-6);
     /* classify */
-    Tensor result = img;
-    result.reshape(h, w, 3, 1);
+    Tensor result(h, w, 3, 1);
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
-            Tensor p = result.sub(i, j);
+            Tensor p = img.sub(i, j);
             int k = model(p);
             Tensor &c = model.centers[k];
-            result(i, j, 0, 0) = c(0, 0);
-            result(i, j, 1, 0) = c(1, 0);
-            result(i, j, 2, 0) = c(2, 0);
+            result.at(i, j) = c;
         }
     }
     result.reshape(h, w, 3);
-    /* sobel */
-    Tensor s;
-    imp::sobel3x3(s, img);
-    /* gray */
-    Tensor gray;
-    imp::rgb2gray(gray, img);
-    Tensor b;
-    imp::otsuThreshold(b, gray, 255, 0);
-    Tensor rgb;
-    imp::gray2rgb(rgb, b);
-    Tensor dst = Tensor::concat(1, img, s, rgb, result);
+    /* pixels */
+    Tensor pixels[16];
+    for (int k = 0; k < 16; k++) {
+        pixels[k] = Tensor(80, 80, 3);
+        for (int i = 0; i < 80; i++) {
+            for (int j = 0; j < 80; j++) {
+                pixels[k].at(i, j) = model.centers[k];
+            }
+        }
+    }
+    Tensor pixelRow1 = Tensor::concat(1, pixels[0], pixels[1], pixels[2], pixels[3]);
+    Tensor pixelRow2 = Tensor::concat(1, pixels[4], pixels[5], pixels[6], pixels[7]);
+    Tensor pixelRow3 = Tensor::concat(1, pixels[8], pixels[9], pixels[10], pixels[11]);
+    Tensor pixelRow4 = Tensor::concat(1, pixels[12], pixels[13], pixels[14], pixels[15]);
+
+    Tensor pixelTable = Tensor::concat(0, pixelRow1, pixelRow2, pixelRow3, pixelRow4);
+    Tensor dst = Tensor::concat(1, img, result, pixelTable);
+    imp::save(dst, "cluster.bmp");
+    /* centers */
+    for (int i = 0; i < 16; i++) {
+        model.centers[i].printValue();
+    }
+    imp::show(dst);
+    return;
+}
+
+void test_svmSegmentation()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    int h = img.shape[imp::HWC_H];
+    int w = img.shape[imp::HWC_W];
+    Tensor x({16, 3, 1}, {192.809,102.132,60.0544,
+                          137.285,115.915,119.617,
+                          55.2037,31.1758,20.0327,
+                          30.3464,18.6829,22.2349,
+                          154.731,80.5239,48.0519,
+                          232.267,237.611,236.204,
+                          232.292,139.758,80.9688,
+                          73.3562,46.9485,36.1936,
+                          62.8855,124.351,170.202,
+                          111.413,59.3942,34.6949,
+                          25.2693,38.096,45.0215,
+                          177.55,182.591,185.713,
+                          14.2886,10.1763,11.6879,
+                          38.6168,61.2919,75.1922,
+                          120.659,79.6996,65.7762,
+                          84.55,77.4764,80.6302,
+                           0, 191, 220});
+    Tensor y({16, 1}, {-1, -1, -1, 1,
+                       -1,  1, -1, 1,
+                       -1, -1,  1, 1,
+                        1, -1,  1, 1,
+                        1});
+    std::vector<Tensor> xi;
+    x.toVector(xi);
+    /* classifier */
+    SVM svm(LinAlg::Kernel::laplace, 1e-4, 1);
+    svm.fit(xi, y, 10000);
+    /* segment */
+    Tensor result(h, w, 3, 1);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            Tensor p = img.sub(i, j);
+            float s = svm(p);
+            if (s > 0) {
+                result.at(i, j) = p;
+            }
+        }
+    }
+    result.reshape(h, w, 3);
+    /* display */
+    Tensor dst = Tensor::concat(1, img, result);
+    imp::save(dst, "cluster.bmp");
     imp::show(dst);
     return;
 }
@@ -658,6 +727,7 @@ int main()
     //test_sobel();
     //test_erode();
     //test_histogram();
-    test_pixelCluster();
+    //test_pixelCluster();
+    test_svmSegmentation();
 	return 0;
 }

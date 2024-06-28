@@ -4,95 +4,64 @@
 #include <cmath>
 #include <vector>
 #include <random>
+#include <functional>
 #include "../basic/linalg.h"
 #include "../basic/tensor.hpp"
 
-
-namespace kernel {
-
-struct RBF {
-    static float f(const Tensor& x1, const Tensor& x2)
-    {
-        float sigma = 1;
-        float xL2 = LinAlg::dot(x1, x1) + LinAlg::dot(x2, x2) - 2*LinAlg::dot(x1, x2);
-        xL2 = xL2/(-2*sigma*sigma);
-        return std::exp(xL2);
-    }
-};
-struct Laplace {
-    static float f(const Tensor& x1, const Tensor& x2)
-    {
-        float sigma = 1;
-        float xL2 = LinAlg::dot(x1, x1) + LinAlg::dot(x2, x2) - 2*LinAlg::dot(x1, x2);
-        xL2 = -sqrt(xL2)/sigma;
-        return exp(xL2);
-    }
-};
-
-struct Sigmoid {
-    static float f(const Tensor& x1, const Tensor& x2)
-    {
-        float beta1 = 1;
-        float theta = -1;
-        return std::tanh(beta1 * LinAlg::dot(x1, x2) + theta);
-    }
-};
-
-struct Polynomial {
-    static float f(const Tensor& x1, const Tensor& x2)
-    {
-        float d = 1.0;
-        float p = 100;
-        return std::pow(LinAlg::dot(x1, x2) + d, p);
-    }
-};
-
-struct Linear {
-    static float f(const Tensor& x1, const Tensor& x2)
-    {
-        return LinAlg::dot(x1, x2);
-    }
-};
-
-}
-
-template<typename Kernel>
 class SVM
 {
 public:
+    using FnKernel = std::function<float(const Tensor &x1, const Tensor &x2)>;
     struct Vector {
         float alpha;
         float y;
         Tensor x;
     };
+protected:
     float b;
     float c;
     float tolerance;
+    FnKernel kernel;
     std::vector<Vector> vectors;
-public:
-    SVM():c(1),b(0),tolerance(1e-3){}
-
-    int operator()(const Tensor& xi)
+protected:
+    bool KKT(float yi, float Ei, float alpha_i)
     {
-        int label = 0.0;
-        float s = 0.0;
-        for (std::size_t j = 0; j < vectors.size(); j++) {
-            s += vectors[j].alpha * vectors[j].y * Kernel::f(vectors[j].x, xi);
-        }
-        s += b;
-        /* f(x) = sign(sum(alpha_j * yj * K(xj, x))) */
-        if (s >= 0) {
-            label = 1.0;
-        } else {
-            label = -1.0;
-        }
-        return label;
+        return ((yi*Ei < -tolerance) &&
+                (alpha_i < c)) || ((yi*Ei > tolerance) &&
+                                   (alpha_i > 0));
     }
 
-    void SMO(const std::vector<Tensor> &x, const Tensor &y, int maxEpoch)
+    float g(const Tensor &alpha, const std::vector<Tensor> &x,
+            const Tensor& xi, const Tensor &y)
     {
+        float s = 0.0;
+        for (std::size_t j = 0; j < x.size(); j++) {
+            s += alpha[j]*y[j]*kernel(x[j], xi);
+        }
+        s += b;
+        return s;
+    }
+
+    static int random(std::size_t s, int i)
+    {
+        int j = 0;
+        j = rand() % s;
+        while (j == i) {
+            j = rand() % s;
+        }
+        return j;
+    }
+
+public:
+    SVM():c(1),b(0),tolerance(1e-3),kernel(LinAlg::Kernel::rbf){}
+    explicit SVM(const FnKernel &func, float tolerance_, float c_=1)
+        :c(c_),b(0),tolerance(tolerance_),kernel(func){}
+
+    void fit(const std::vector<Tensor> &x, const Tensor &y, int maxEpoch)
+    {
+        /* smo */
         int k = 0;
-        Tensor alpha(x.size(), 0);
+        Tensor alpha(x.size(), 1);
         while (k < maxEpoch) {
             bool alphaOptimized = false;
             for (std::size_t i = 0; i < x.size(); i++) {
@@ -118,10 +87,10 @@ public:
                 if (L == H) {
                     continue;
                 }
-                float Kii = Kernel::f(x[i], x[i]);
-                float Kjj = Kernel::f(x[j], x[j]);
-                float Kij = Kernel::f(x[i], x[j]);
-                float eta = Kii + Kjj - 2 * Kij;
+                float Kii = kernel(x[i], x[i]);
+                float Kjj = kernel(x[j], x[j]);
+                float Kij = kernel(x[i], x[j]);
+                float eta = Kii + Kjj - 2*Kij;
                 if (eta <= 0) {
                     continue;
                 }
@@ -168,31 +137,15 @@ public:
         return;
     }
 
-    bool KKT(float yi, float Ei, float alpha_i)
+    float operator()(const Tensor& xi)
     {
-        return ((yi*Ei < -tolerance) && (alpha_i < c)) || ((yi*Ei > tolerance) && (alpha_i > 0));
-    }
-
-    float g(const Tensor &alpha, const std::vector<Tensor> &x,
-            const Tensor& xi, const Tensor &y)
-    {
+        /* f(x) = sign(sum(alpha_i * yi * K(xi, x))) */
         float s = 0.0;
-        for (std::size_t j = 0; j < x.size(); j++) {
-            s += alpha[j]*y[j]*Kernel::f(x[j], xi);
+        for (std::size_t i = 0; i < vectors.size(); i++) {
+            s += vectors[i].alpha * vectors[i].y * kernel(vectors[i].x, xi);
         }
         s += b;
         return s;
     }
-
-    static int random(std::size_t s, int i)
-    {
-        int j = 0;
-        j = rand() % s;
-        while (j == i) {
-            j = rand() % s;
-        }
-        return j;
-    }
-
 };
 #endif // SVM_H

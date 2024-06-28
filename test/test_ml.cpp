@@ -68,9 +68,36 @@ void test_kdtree()
     return;
 }
 
+void test_svm()
+{
+    Tensor x({4, 2, 1}, {1, 1,
+                         1, 0,
+                         0, 1,
+                         0, 0});
+    Tensor y({4, 1}, {-1, 1, 1, -1});
+    std::vector<Tensor> xi;
+    x.toVector(xi);
+    SVM svm(LinAlg::Kernel::polynomial, 1e-4, 1);
+    svm.fit(xi, y, 1000);
+    /* predict */
+    Tensor p(4, 1);
+    for (int i = 0; i < 4; i++) {
+        float s = svm(xi[i]);
+        if (s > 0) {
+            p[i] = 1;
+        } else {
+            p[i] = 0;
+        }
+        std::cout<<s<<std::endl;
+    }
+    p.printValue();
+    return;
+}
+
 int main()
 {
     //test_kmeans();
-    test_kdtree();
+    //test_kdtree();
+    test_svm();
 	return 0;
 }

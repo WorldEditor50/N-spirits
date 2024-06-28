@@ -5,21 +5,26 @@
 #include <cmath>
 #include <string>
 #include <random>
+#include <functional>
 #include "../basic/tensor.hpp"
 #include "../basic/linalg.h"
 
 class Kmeans
 {
 public:
+    using FnDistance = std::function<float(const Tensor &x1, const Tensor &x2)>;
+public:
+    FnDistance distance;
     std::size_t topicDim;
     std::size_t featureDim;
     std::vector<Tensor> centers;
 public:
     Kmeans(){}
     explicit Kmeans(std::size_t k, std::size_t featureDim_)
-        :topicDim(k),featureDim(featureDim_){}
-
-    void cluster(const std::vector<Tensor> &x, std::size_t maxEpoch, float eps=1e-6)
+        :distance(LinAlg::normL2),topicDim(k),featureDim(featureDim_){}
+    explicit Kmeans(std::size_t k, std::size_t featureDim_, const FnDistance &func)
+        :distance(func),topicDim(k),featureDim(featureDim_){}
+    void cluster(const std::vector<Tensor> &x, std::size_t maxEpoch, float alpha=0, float eps=1e-6)
     {
         /* init center */
         std::uniform_int_distribution<int> uniform(0, x.size() - 1);
@@ -39,7 +44,7 @@ public:
                 float maxD = -1;
                 std::size_t topic = 0;
                 for (std::size_t j = 0; j < centers.size(); j++) {
-                    float d = LinAlg::normL2(x[i], centers[j]);
+                    float d = distance(x[i], centers[j]);
                     if (d > maxD) {
                         maxD = d;
                         topic = j;
@@ -63,13 +68,19 @@ public:
             }
             delta /= float(topicDim);
             std::cout<<"epoch:"<<epoch<<", error:"<<delta<<std::endl;
-            if (delta < eps && epoch > maxEpoch/4) {
+            if (delta < eps && epoch > maxEpoch/2) {
                 /* finished */
                 std::cout<<"finished"<<std::endl;
                 break;
             }
             /* update center */
-            centers = centers_;
+            if (alpha == 0) {
+                centers = centers_;
+            } else {
+                for (std::size_t i = 0; i < centers.size(); i++) {
+                    LinAlg::lerp(centers[i], centers_[i], alpha);
+                }
+            }
             /* clear */
             for (std::size_t i = 0; i < centers.size(); i++) {
                 groups[i].clear();
@@ -85,7 +96,7 @@ public:
             float maxD = -1;
             std::size_t topic = 0;
             for (std::size_t j = 0; j < centers.size(); j++) {
-                float d = LinAlg::normL2(x[i], centers[j]);
+                float d = distance(x[i], centers[j]);
                 if (d > maxD) {
                     maxD = d;
                     topic = j;
@@ -101,7 +112,7 @@ public:
         float maxD = -1;
         std::size_t topic = 0;
         for (std::size_t i = 0; i < centers.size(); i++) {
-            float d = LinAlg::normL2(x, centers[i]);
+            float d = distance(x, centers[i]);
             if (d > maxD) {
                 maxD = d;
                 topic = i;

@@ -12,12 +12,47 @@ template<typename T, template<typename Ti> class Alloc=std::allocator>
 class Tensor_
 {
 public:
+    class SubTensor
+    {
+    public:
+        Tensor_ *pointer;
+        std::size_t pos;
+    public:
+        SubTensor():pointer(nullptr),pos(0){}
+        SubTensor(const SubTensor &r):pointer(r.pointer),pos(r.pos){}
+        SubTensor& operator=(const SubTensor &r)
+        {
+            if (this == &r) {
+                return *this;
+            }
+            pointer = r.pointer;
+            pos = r.pos;
+            return *this;
+        }
+        inline void operator=(const Tensor_ &x)
+        {
+            for (std::size_t i = 0; i < x.totalSize; i++) {
+                pointer->val[i + pos] = x.val[i];
+            }
+            return;
+        }
+        inline void operator=(const std::vector<T> &x)
+        {
+            for (std::size_t i = 0; i < x.size(); i++) {
+                pointer->val[i + pos] = x[i];
+            }
+            return;
+        }
+    };
+
     using ValueType = T;
     using Vector = std::vector<T, Alloc<T> >;
     using Shape = std::vector<int>;
     using Size = std::vector<int>;
     using iterator = typename Vector::iterator;
     using const_iterator = typename Vector::const_iterator;
+protected:
+    SubTensor subTensor;
 public:
     std::size_t totalSize;
     Vector val;
@@ -232,9 +267,11 @@ public:
     }
 
     template<typename ...Index>
-    iterator at(Index ...index)
+    inline SubTensor& at(Index ...index)
     {
-        return val.begin() + posOf(index...);
+        subTensor.pointer = this;
+        subTensor.pos = posOf(index...);
+        return subTensor;
     }
 
     Tensor_ block(const std::vector<int> &offset, const std::vector<int> &blockShape) const
@@ -934,6 +971,11 @@ public:
     inline static Tensor_ concat(int dim, const Arg & ...args)
     {
         std::vector<Tensor_> xi = {args...};
+        return concats(dim, xi);
+    }
+
+    inline static Tensor_ concats(int dim, const std::vector<Tensor_> &xi)
+    {
         std::vector<int> newShape(xi[0].shape.size(), 0);
         for (std::size_t i = 0; i < xi.size(); i++) {
             newShape[dim] += xi[i].shape[dim];
@@ -946,7 +988,7 @@ public:
         Tensor_ x = Tensor_(newShape);
         int offset = 0;
         for (std::size_t i = 0; i < xi.size(); i++) {
-            Tensor_ &x_ = xi[i];
+            const Tensor_ &x_ = xi[i];
             /* set value */
             std::vector<int> indexs(x.shape.size(), 0);
             for (std::size_t j = 0; j < x_.totalSize; j++) {
