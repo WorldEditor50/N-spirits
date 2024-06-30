@@ -92,16 +92,14 @@ void test_det()
     Tensor x1({3, 3}, {1, 1, 1,
                        1, 2, 3,
                        1, 5, 1});
-    LinAlg::det(x1, value);
+    value = LinAlg::det(x1);
     std::cout<<"det:"<<value<<std::endl;
 
-
-
     Tensor x2({4, 4}, {1, 1, 1, 2,
-                  1, 2, 3, 0,
-                  0, 5, 1, -1,
-                  1, 0, -3, 1});
-    LinAlg::det(x2, value);
+                       1, 2, 3, 0,
+                       0, 5, 1, -1,
+                       1, 0, -3, 1});
+    value = LinAlg::det(x2);
     std::cout<<"det:"<<value<<std::endl;
     return;
 }

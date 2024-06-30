@@ -1,180 +1,160 @@
 #ifndef GMM_H
 #define GMM_H
-#include "kmeans.h"
+#include <vector>
+#include "../basic/tensor.hpp"
 #include "../basic/linalg.h"
 
 class GMM
 {
 public:
-    class Gaussian
-    {
-    public:
-        Tensor u;
-        Tensor sigma;
-    public:
-        Gaussian(){}
-        explicit Gaussian(int featureDim)
-        {
-            u = Tensor(featureDim, 1);
-            sigma = Tensor(featureDim, 1);
-        }
-        Gaussian(const Gaussian &r)
-            :u(r.u),sigma(r.sigma){}
-        float operator()(const Tensor &x)
-        {
-            /* N(x;u,sigma) = exp((x-u)^2/sigma)/sqrt(2*pi*sigma) */
-            float p = 1;
-            for (std::size_t i = 0; i < u.totalSize; i++) {
-                p *= std::exp(-0.5*(x[i] - u[i])*(x[i] - u[i])/sigma[i])/std::sqrt(2*3.14159*sigma[i]);
-            }
-            return p;
-        }
-
-        void zero()
-        {
-            u.zero();
-            sigma.zero();
-            return;
-        }
-    };
+    int topicDim;
+    int featureDim;
+    Tensor alpha;
+    std::vector<Tensor> u;
+    std::vector<Tensor> sigma;
 public:
-    std::size_t componentDim;
-    std::size_t featureDim;
-    Tensor priors;
-    Tensor minSigma;
-    std::vector<Gaussian> gaussians;
-public:
-    GMM():componentDim(0), featureDim(0){}
-    explicit GMM(std::size_t k, std::size_t featureDim_)
-        :componentDim(k), featureDim(featureDim_)
+    GMM(){}
+    explicit GMM(int topicDim_, int featureDim_)
+        :topicDim(topicDim_),featureDim(featureDim_)
     {
-        priors = Tensor(componentDim, 1);
-        minSigma = Tensor(componentDim, 1);
-        gaussians = std::vector<Gaussian>(componentDim, Gaussian(featureDim));
+        alpha = Tensor(topicDim, 1);
+        u = std::vector<Tensor>(topicDim, Tensor(featureDim, 1));
+        sigma = std::vector<Tensor>(topicDim, Tensor(featureDim, 1));
     }
-    void init(const std::vector<Tensor> &x, std::size_t maxEpoch)
+
+    static float gaussian(const Tensor &x, const Tensor &u, const Tensor &sigma)
     {
-        /* run kmeans to select centers */
-        Kmeans model(componentDim, featureDim);
-        model.cluster(x, maxEpoch);
-        std::vector<std::size_t> y;
-        model(x, y);
-        /* mean of all data */
-        Tensor u(componentDim, 1);
-        for (std::size_t i = 0; i < x.size(); i++) {
-            u += x[i];
-        }
-        u /= float(x.size());
-        /* variance of all data */
-        for (std::size_t i = 0; i < x.size(); i++) {
-            std::size_t topic = y[i];
-            minSigma[topic] += LinAlg::dot(x[i], x[i]);
-        }
-        for (std::size_t i = 0; i < u.totalSize; i++) {
-            minSigma[i] = std::max(1e-10, 0.01*(minSigma[i]/float(x.size()) - u[i]*u[i]));
-        }
-        /* prior of each topic */
-        Tensor N(componentDim, 1);
-        for (std::size_t i = 0; i < x.size(); i++) {
-            std::size_t topic = y[i];
-            N[topic]++;
-        }
-        for (std::size_t i = 0; i < priors.totalSize; i++) {
-            priors[i] = float(N[i])/float(x.size());
-        }
-        /* mean of each topic */
-        for (std::size_t i = 0; i < model.centers.size(); i++) {
-            gaussians[i].u = model.centers[i];
-        }
-        /* variance of each topic */
-        for (std::size_t i = 0; i < x.size(); i++) {
-            std::size_t topic = y[i];
-            Tensor& uc = model.centers[topic];
-            for (std::size_t j = 0; j < gaussians[topic].sigma.totalSize; j++) {
-                gaussians[topic].sigma[j] += (x[i][j] - uc[j])*(x[i][j] - uc[j]);
+        /*
+            x:(featureDim, 1)
+            u:(featureDim, 1)
+            sigma:(featureDim, featureDim)
+            delta = x - u
+        */
+        int n = x.shape[0];
+        Tensor delta(x.shape);
+        LinAlg::sub(delta, x, u);
+        /* r = (x - u)^T*isigma*(x - u) */
+        Tensor r(x.shape[1], x.shape[1]);
+        LinAlg::xTAx(r, delta, LinAlg::diagInv(sigma));
+        float coeff = std::pow(2*LinAlg::pi, float(n)/2)*std::sqrt(LinAlg::det(sigma));
+        return 1.0/(coeff + 1e-6)*std::exp(-0.5*r[0]);
+    }
+
+    void estimate(const std::vector<Tensor> &x, Tensor &nk, Tensor &gamma)
+    {
+        /*
+           likelyhood
+           x:(n, featureDim)
+           u:(topicDim, featureDim)
+           sigma:(topicDim, featureDim)
+        */
+        int n = x.size();
+        Tensor p(n, topicDim);
+        Tensor sp(n, 1);
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < topicDim; j++) {
+                float pij = alpha[j]*gaussian(x[i], u[j], LinAlg::diag(sigma[j]));
+                p(i, j) = pij;
+                sp[i] += pij;
             }
         }
-        /* constraint */
-        for (std::size_t i = 0; i < gaussians.size(); i++) {
-            if (priors[i] > 0) {
-                for (std::size_t j = 0; j < gaussians[i].sigma.totalSize; j++) {
-                    gaussians[i].sigma[j] /= N[i];
-                    if (gaussians[i].sigma[j] < minSigma[i]) {
-                        gaussians[i].sigma[j] = minSigma[i];
-                    }
-                }
-            } else {
-                gaussians[i].sigma = minSigma;
+        /* gamma:(n, topicDim) */
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < topicDim; j++) {
+                gamma(i, j) = p(i, j)/(sp[i] + 1e-6);
+            }
+        }
+        /* pk = gamma.sum(1) */
+        for (int i = 0; i < topicDim; i++) {
+            for (int j = 0; j < n; j++) {
+                nk[i] += gamma(j, i);
             }
         }
         return;
     }
 
-    void cluster(const std::vector<Tensor> &x, std::size_t maxEpoch, float eps)
+    void maximize(const std::vector<Tensor> &x, const Tensor &nk, const Tensor &gamma)
     {
+        int n = x.size();
+        /* pi */
+        alpha = nk/float(n);
+        /* sigma:(topicDim, featureDim)
+           nk:(topicDim, 1)
+           gamma:(n, topicDim)
+           x:(n, featureDim)
+           u:(topicDim, featureDim)
+        */
+        for (int i = 0; i < topicDim; i++) {
+            sigma[i].zero();
+        }
+
+        for (int k = 0; k < topicDim; k++) {
+            for (int j = 0; j < featureDim; j++) {
+                for (int i = 0; i < n; i++) {
+                    float d = x[i][j] - u[k][j];
+                    sigma[k][j] += gamma(i, k)*d*d;
+                }
+            }
+            sigma[k] /= nk[k];
+        }
+        /* u:(topicDim, featureDim)
+           nk:(topicDim, 1)
+           gamma:(n, topicDim)
+           x:(n, featureDim)
+        */
+        for (int i = 0; i < topicDim; i++) {
+            u[i].zero();
+        }
+        for (int k = 0; k < topicDim; k++) {
+            for (int j = 0; j < featureDim; j++) {
+                for (int i = 0; i < n; i++) {
+                    u[k][j] += gamma(i, k)*x[i][j];
+                }
+            }
+            u[k] /= nk[k];
+        }
+        return;
+    }
+
+    void cluster(const std::vector<Tensor> &x, std::size_t maxEpoch)
+    {
+        int n = x.size();
         /* init */
-        init(x, maxEpoch);
-        /* estiTensore */
-        Tensor priors_(componentDim, 1);
-        std::vector<Gaussian> s(x.size(), Gaussian(featureDim));
+        alpha.fill(1.0/float(topicDim));
+        std::uniform_int_distribution<int> uniform(0, n - 1);
+        for (int i = 0; i < topicDim; i++) {
+            int k = uniform(LinAlg::Random::engine);
+            u[i] = x[k];
+        }
+        for (int k = 0; k < topicDim; k++) {
+            for (int j = 0; j < featureDim; j++) {
+                for (int i = 0; i < n; i++) {
+                    float d = x[i][j] - u[k][j];
+                    sigma[k][j] += d*d;
+                }
+            }
+            sigma[k] /= featureDim;
+        }
+        /* iteration */
+        Tensor nk(topicDim, 1);
+        Tensor gamma(n, topicDim);
         for (std::size_t epoch = 0; epoch < maxEpoch; epoch++) {
-            for (std::size_t i = 0; i < s.size(); i++) {
-                s[i].zero();
-                priors_.zero();
-            }
-            for (std::size_t i = 0; i < x.size(); i++) {
-                /*
-                   E-Step:
-                       γ(i, k) = pi_k*N(x_i | u_k, sigma_k)/sum_(j=1)^K pi_j*N(x_i | u_j, sigma_j)
-                   M-Step:
-                       N_k = Σ γ(i,k)
-                       pi_k = N_k/N
-                       u_k = Σ γ(i,k)*x_i/N_k
-                       sigma_k = Σ γ(i,k)*(x_i - u_k)*(x_i - u_k)/N_k
-                */
-                /* E-Step */
-                float sp = 0;
-                for (std::size_t j = 0; j < gaussians.size(); j++) {
-                    sp += gaussians[j](x[i]);
-                }
-                for (std::size_t j = 0; j < s.size(); j++) {
-                    /* E-Step */
-                    float gamma = priors[i]*gaussians[j](x[i])/sp;
-                    priors_[j] += gamma;
-                    /* M-Step */
-                    for (std::size_t k = 0; k < gaussians[j].u.totalSize; k++) {
-                        s[j].u[k] += gamma*x[i][k];
-                        s[j].sigma[k] += gamma*x[i][k]*x[i][k];
-                    }
-                }
-            }
-            /* update */
-            for (std::size_t i = 0; i < gaussians.size(); i++) {
-                /* M-Step */
-                priors[i] = priors_[i]/float(x.size());
-                if (priors[i] <= 0) {
-                    continue;
-                }
-                Tensor& u = gaussians[i].u;
-                for (std::size_t j = 0; j < u.totalSize; j++) {
-                    u[j] = s[i].u[j]/priors_[i];
-                    /* Cov(X，Y)=E(XY)-E(X)E(Y) */
-                    gaussians[i].sigma[j] = s[i].sigma[j]/priors_[i] - u[j]*u[j];
-                    if (gaussians[i].sigma[j] < minSigma[i]) {
-                        gaussians[i].sigma[j] = minSigma[i];
-                    }
-                }
-            }
+            /* estimation */
+            nk.zero();
+            estimate(x, nk, gamma);
+            /* maximization */
+            maximize(x, nk, gamma);
+            std::cout<<"epoch:"<<epoch<<std::endl;
         }
         return;
     }
 
-    std::size_t operator()(const Tensor &x)
+    int operator()(const Tensor &xi)
     {
         float maxP = -1;
-        std::size_t topic = 0;
-        for (std::size_t i = 0; i < gaussians.size(); i++) {
-            float p = gaussians[i](x);
+        int topic = 0;
+        for (int i = 0; i < topicDim; i++) {
+            float p = alpha[i]*gaussian(xi, u[i], LinAlg::diag(sigma[i]));
             if (p > maxP) {
                 maxP = p;
                 topic = i;

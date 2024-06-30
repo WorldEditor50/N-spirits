@@ -53,9 +53,12 @@ protected:
     }
 
 public:
-    SVM():c(1),b(0),tolerance(1e-3),kernel(LinAlg::Kernel::rbf){}
+    SVM():c(1),b(0),tolerance(1e-3){}
     explicit SVM(const FnKernel &func, float tolerance_, float c_=1)
-        :c(c_),b(0),tolerance(tolerance_),kernel(func){}
+        :c(c_),b(0),tolerance(tolerance_),kernel(func)
+    {
+
+    }
 
     void fit(const std::vector<Tensor> &x, const Tensor &y, int maxEpoch)
     {
@@ -66,14 +69,14 @@ public:
             bool alphaOptimized = false;
             for (std::size_t i = 0; i < x.size(); i++) {
                 float Ei = g(alpha, x, x[i], y) - y[i];
-                float alpha_i = alpha[i];
+                float alphai = alpha[i];
                 /* KKT */
                 if (KKT(y[i], Ei, alpha[i]) == false) {
                     continue;
                 }
                 int j = random(x.size(), i);
                 float Ej = g(alpha, x, x[j], y) - y[j];
-                float alpha_j = alpha[j];
+                float alphaj = alpha[j];
                 /* optimize alpha[j] */
                 float L = 0;
                 float H = 0;
@@ -100,14 +103,14 @@ public:
                 } else if (alpha[j] < L) {
                     alpha[j] = L;
                 }
-                if (std::abs(alpha[j] - alpha_j) < tolerance) {
+                if (std::abs(alpha[j] - alphaj) < tolerance) {
                     continue;
                 }
                 /* optimize alpha[i] */
-                alpha[i] += y[i]*y[j]*(alpha_j - alpha[j]);
+                alpha[i] += y[i]*y[j]*(alphaj - alpha[j]);
                 /* update b */
-                float b1 = b - Ei - y[i]*Kii*(alpha[i] - alpha_i) - y[j]*Kij*(alpha[j] - alpha_j);
-                float b2 = b - Ej - y[i]*Kij*(alpha[i] - alpha_i) - y[j]*Kjj*(alpha[j] - alpha_j);
+                float b1 = b - Ei - y[i]*Kii*(alpha[i] - alphai) - y[j]*Kij*(alpha[j] - alphaj);
+                float b2 = b - Ej - y[i]*Kij*(alpha[i] - alphai) - y[j]*Kjj*(alpha[j] - alphaj);
                 if (alpha[i] > 0 && alpha[i] < c) {
                     b = b1;
                 } else if (alpha[j] > 0 && alpha[j] < c) {
@@ -118,7 +121,7 @@ public:
                 alphaOptimized = true;
             }
 
-            if (alphaOptimized == false) {
+            if (!alphaOptimized) {
                 k++;
             } else {
                 k = 0;

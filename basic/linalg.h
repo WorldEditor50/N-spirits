@@ -6,7 +6,7 @@
 #include "tensor.hpp"
 
 namespace LinAlg {
-
+constexpr static float pi = 3.1415926;
 struct Random {
     static std::default_random_engine engine;
     static std::random_device device;
@@ -50,10 +50,10 @@ float normL8(const Tensor &x1, const Tensor &x2);
 float dot(const Tensor &x1, const Tensor &x2);
 float cosine(const Tensor &x1, const Tensor &x2);
 namespace Kernel {
-    float rbf(const Tensor &x1, const Tensor &x2);
-    float laplace(const Tensor &x1, const Tensor &x2);
-    float tanh(const Tensor &x1, const Tensor &x2);
-    float polynomial(const Tensor& x1, const Tensor& x2);
+    float rbf(const Tensor &x1, const Tensor &x2, float gamma);
+    float laplace(const Tensor &x1, const Tensor &x2, float gamma);
+    float tanh(const Tensor &x1, const Tensor &x2, float c1, float c2);
+    float polynomial(const Tensor& x1, const Tensor& x2, float d, float p);
 }
 
 void mean(const Tensor &x, Tensor &u);
@@ -63,6 +63,7 @@ void variance(const std::vector<Tensor> &x, const Tensor &u, Tensor &sigma);
 Tensor mean(const std::vector<Tensor> &x);
 Tensor variance(const std::vector<Tensor> &x, const Tensor &u);
 void cov(const Tensor &x, Tensor &y);
+float gaussian(const Tensor &xi, const Tensor &ui, const Tensor &sigmai);
 /* exchange */
 void exchangeRow(Tensor &x, int i1, int i2);
 void exchangeCol(Tensor &x, int j1, int j2);
@@ -77,6 +78,11 @@ Tensor transpose(const Tensor &x);
 int trace(const Tensor& x, float &value);
 /* diag */
 Tensor diag(const Tensor &x);
+Tensor diagInv(const Tensor &x);
+/* inverse */
+Tensor inverse(const Tensor &x);
+/* xTAx */
+void xTAx(Tensor &y, const Tensor &x, const Tensor a);
 /* gaussian elimination */
 namespace GaussianElimination {
     void solve(const Tensor &a, Tensor &u);
@@ -84,7 +90,7 @@ namespace GaussianElimination {
 }
 int gaussSeidel(const Tensor &a, const Tensor &b, Tensor &x, int iteration, float eps=1e-4);
 /* det */
-int det(const Tensor &x, float &value);
+float det(const Tensor &x);
 /* rank */
 int rank(const Tensor &x);
 /* LU */

@@ -43,6 +43,38 @@ public:
             }
             return;
         }
+
+        inline void operator+=(const Tensor_ &x)
+        {
+            for (std::size_t i = 0; i < x.totalSize; i++) {
+                pointer->val[i + pos] += x.val[i];
+            }
+            return;
+        }
+
+        inline void operator-=(const Tensor_ &x)
+        {
+            for (std::size_t i = 0; i < x.totalSize; i++) {
+                pointer->val[i + pos] -= x.val[i];
+            }
+            return;
+        }
+
+        inline void operator*=(const Tensor_ &x)
+        {
+            for (std::size_t i = 0; i < x.totalSize; i++) {
+                pointer->val[i + pos] *= x.val[i];
+            }
+            return;
+        }
+
+        inline void operator/=(const Tensor_ &x)
+        {
+            for (std::size_t i = 0; i < x.totalSize; i++) {
+                pointer->val[i + pos] /= x.val[i];
+            }
+            return;
+        }
     };
 
     using ValueType = T;
@@ -833,7 +865,7 @@ public:
         }
         return std::sqrt(s);
     }
-    struct MM2 {
+    struct MM {
         inline static void ikkj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
             for (std::size_t i = 0; i < x.shape[0]; i++) {
@@ -889,7 +921,7 @@ public:
             return;
         }
     };
-    struct MM {
+    struct MM1 {
         inline static void ikkj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
         {
             std::size_t rows = x.shape[0];

@@ -77,7 +77,9 @@ void test_svm()
     Tensor y({4, 1}, {-1, 1, 1, -1});
     std::vector<Tensor> xi;
     x.toVector(xi);
-    SVM svm(LinAlg::Kernel::polynomial, 1e-4, 1);
+    SVM svm([](const Tensor &x1, const Tensor &x2)->float{
+        return LinAlg::Kernel::polynomial(x1, x2, 1, 10);
+    }, 1e-4, 1);
     svm.fit(xi, y, 1000);
     /* predict */
     Tensor p(4, 1);
@@ -94,10 +96,28 @@ void test_svm()
     return;
 }
 
+void test_gaussian()
+{
+    Tensor x({3, 3, 1}, {2, 4, 10,
+                         3, 1, 2,
+                         7, 10, 5});
+    Tensor u({3, 1}, {4, 5, 6});
+    Tensor s({3, 1}, {13/3, 14, 14});
+    std::vector<Tensor> x_;
+    x.toVector(x_);
+    for (int i = 0; i < 3; i++) {
+        float p = GMM::gaussian(x_[i], u, LinAlg::diag(s));
+        std::cout<<p<<", ";
+    }
+    std::cout<<std::endl;
+    return;
+}
+
 int main()
 {
     //test_kmeans();
     //test_kdtree();
-    test_svm();
+    //test_svm();
+    test_gaussian();
 	return 0;
 }

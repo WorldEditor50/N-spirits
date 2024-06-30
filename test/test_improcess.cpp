@@ -577,7 +577,7 @@ void test_histogram()
     return;
 }
 
-void test_pixelCluster()
+void test_kmeansPixelCluster()
 {
     Tensor img = imp::load("./images/crystalmaiden.bmp");
     if (img.empty()) {
@@ -596,7 +596,9 @@ void test_pixelCluster()
     Kmeans model(16, 3, LinAlg::cosine);
     Kmeans model(16, 3, LinAlg::Kernel::rbf);
 #endif
-    Kmeans model(16, 3, LinAlg::Kernel::laplace);
+    Kmeans model(16, 3, [](const Tensor &x1, const Tensor &x2)->float{
+        return LinAlg::Kernel::laplace(x1, x2, 1.0);
+    });
     model.cluster(xi, 1000, 0.5, 1e-6);
     /* classify */
     Tensor result(h, w, 3, 1);
@@ -635,6 +637,58 @@ void test_pixelCluster()
     return;
 }
 
+void test_gmmPixelCluster()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    /* pixel cluster */
+    int h = img.shape[imp::HWC_H];
+    int w = img.shape[imp::HWC_W];
+    Tensor x = img;
+    x.reshape(h*w, 3, 1);
+    std::vector<Tensor> xi;
+    x.toVector(xi);
+    GMM model(16, 3);
+    model.cluster(xi, 200);
+    for (int i = 0; i < 16; i++) {
+        model.u[i].printValue();
+    }
+    /* classify */
+    x.reshape(h, w, 3, 1);
+    Tensor result(h, w, 3, 1);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            Tensor p = x.sub(i, j);
+            int k = model(p);
+            result.at(i, j) = model.u[k];
+        }
+    }
+    result.reshape(h, w, 3);
+    /* pixels */
+    Tensor pixels[16];
+    for (int k = 0; k < 16; k++) {
+        pixels[k] = Tensor(80, 80, 3);
+        for (int i = 0; i < 80; i++) {
+            for (int j = 0; j < 80; j++) {
+                pixels[k].at(i, j) = model.u[k];
+            }
+        }
+    }
+    Tensor pixelRow1 = Tensor::concat(1, pixels[0], pixels[1], pixels[2], pixels[3]);
+    Tensor pixelRow2 = Tensor::concat(1, pixels[4], pixels[5], pixels[6], pixels[7]);
+    Tensor pixelRow3 = Tensor::concat(1, pixels[8], pixels[9], pixels[10], pixels[11]);
+    Tensor pixelRow4 = Tensor::concat(1, pixels[12], pixels[13], pixels[14], pixels[15]);
+
+    Tensor pixelTable = Tensor::concat(0, pixelRow1, pixelRow2, pixelRow3, pixelRow4);
+    Tensor dst = Tensor::concat(1, img, result, pixelTable);
+    imp::save(dst, "gmm_pixel_cluster.bmp");
+    imp::show(dst);
+    return;
+}
+
 void test_svmSegmentation()
 {
     Tensor img = imp::load("./images/crystalmaiden.bmp");
@@ -644,7 +698,7 @@ void test_svmSegmentation()
     }
     int h = img.shape[imp::HWC_H];
     int w = img.shape[imp::HWC_W];
-    Tensor x({16, 3, 1}, {192.809,102.132,60.0544,
+    Tensor x({32, 3, 1}, {192.809,102.132,60.0544,
                           137.285,115.915,119.617,
                           55.2037,31.1758,20.0327,
                           30.3464,18.6829,22.2349,
@@ -660,17 +714,64 @@ void test_svmSegmentation()
                           38.6168,61.2919,75.1922,
                           120.659,79.6996,65.7762,
                           84.55,77.4764,80.6302,
-                           0, 191, 220});
-    Tensor y({16, 1}, {-1, -1, -1, 1,
+
+                          137.159,116.533,120.635,
+                          171.312,182.065,188.31,
+                          33.5789,23.4374,25.038,
+                          227.257,131.947,76.4435,
+                          194.274,103.003,60.3912,
+                          238.604,150.567,88.0304,
+                          67.3103,41.4888,30.2706,
+                          134.466,72.6122,48.2335,
+                          16.0664,10.9622,12.9307,
+                          232.469,236.613,234.68,
+                          62.0919,123.628,169.949,
+                          116.126,82.1803,70.5809,
+                          66.7037,71.3558,85.0584,
+                          162.679,84.56,49.9659,
+                          30.9546,51.1428,59.5971,
+                          99.9761,57.4912,36.9727
+
+//                          230.556,238.295,237.882,
+//                          154.325,80.3832,48.1483,
+//                          31.2625,18.9064,21.894,
+//                          71.2946,141.31,184.135,
+//                          138.148,116.637,120.032,
+//                          191.235,181.286,178.447,
+//                          119.182,79.7098,66.0631,
+//                          79.3307,80.369,94.2726,
+//                          37.9445,60.8348,73.7385,
+//                          14.4002,10.2842,11.967,
+//                          74.0245,49.3418,39.3594,
+//                          57.7311,32.6839,20.9997,
+//                          232.279,139.495,80.554,
+//                          192.738,102.061,59.9891,
+//                          111.175,59.0094,34.305,
+//                          24.9936,37.6517,44.5468
+
+             });
+    Tensor y({32, 1}, {-1, -1, -1, 1,
                        -1,  1, -1, 1,
                        -1, -1,  1, 1,
                         1, -1,  1, 1,
-                        1});
+
+                       -1,  1,  1, -1,
+                       -1, -1,  1, -1,
+                        1,  1,  1, -1,
+                       -1,  1,  1, -1
+
+//                        1, -1,  1, -1,
+//                       -1,  -1, 1, 1,
+//                        1,  1,  1, -1,
+//                       -1, -1, -1, 1
+             });
     std::vector<Tensor> xi;
     x.toVector(xi);
     /* classifier */
-    SVM svm(LinAlg::Kernel::laplace, 1e-4, 1);
-    svm.fit(xi, y, 10000);
+    SVM svm([](const Tensor &x1, const Tensor &x2)->float{
+        return LinAlg::Kernel::laplace(x1, x2, 1.0);
+    }, 1e-4, 1);
+    svm.fit(xi, y, 6000);
     /* segment */
     Tensor result(h, w, 3, 1);
     for (int i = 0; i < h; i++) {
@@ -727,7 +828,8 @@ int main()
     //test_sobel();
     //test_erode();
     //test_histogram();
-    //test_pixelCluster();
-    test_svmSegmentation();
+    //test_svmSegmentation();
+    //test_kmeansPixelCluster();
+    test_gmmPixelCluster();
 	return 0;
 }

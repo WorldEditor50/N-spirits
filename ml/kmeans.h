@@ -89,9 +89,9 @@ public:
         return;
     }
 
-    void operator()(const std::vector<Tensor> &x, std::vector<std::size_t> &y)
+    Tensor operator()(const std::vector<Tensor> &x)
     {
-        y = std::vector<std::size_t>(topicDim);
+        Tensor y(x.size(), 1);
         for (std::size_t i = 0; i < x.size(); i++) {
             float maxD = -1;
             std::size_t topic = 0;
@@ -104,7 +104,7 @@ public:
             }
             y[i] = topic;
         }
-        return;
+        return y;
     }
 
     std::size_t operator()(const Tensor &x)

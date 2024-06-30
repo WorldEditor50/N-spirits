@@ -15,7 +15,7 @@ void LinAlg::add(Tensor &y, const Tensor &x1, const Tensor &x2)
 void LinAlg::sub(Tensor &y, const Tensor &x1, const Tensor &x2)
 {
     for (std::size_t i = 0; i < y.totalSize; i++) {
-        y.val[i] = x1.val[i] + x2.val[i];
+        y.val[i] = x1.val[i] - x2.val[i];
     }
     return;
 }
@@ -239,30 +239,28 @@ float LinAlg::cosine(const Tensor &x1, const Tensor &x2)
     return s/(std::sqrt(s1*s2) + 1e-8);
 }
 
-float LinAlg::Kernel::rbf(const Tensor &x1, const Tensor &x2)
+float LinAlg::Kernel::rbf(const Tensor &x1, const Tensor &x2, float gamma)
 {
     float s = 0;
     for (std::size_t i = 0; i < x1.totalSize; i++) {
         float d = x1.val[i] - x2.val[i];
         s += d*d;
     }
-    return std::exp(-0.5*s);
+    return std::exp(-0.5*gamma*s);
 }
 
-float LinAlg::Kernel::laplace(const Tensor &x1, const Tensor &x2)
+float LinAlg::Kernel::laplace(const Tensor &x1, const Tensor &x2, float gamma)
 {
-    return std::exp(-0.5*normL2(x1, x2));
+    return std::exp(-0.5*gamma*normL2(x1, x2));
 }
 
-float LinAlg::Kernel::tanh(const Tensor &x1, const Tensor &x2)
+float LinAlg::Kernel::tanh(const Tensor &x1, const Tensor &x2, float c1, float c2)
 {
-    return std::tanh(0.5*dot(x1, x2) - 1);
+    return std::tanh(c1*dot(x1, x2) + c2);
 }
 
-float LinAlg::Kernel::polynomial(const Tensor& x1, const Tensor& x2)
+float LinAlg::Kernel::polynomial(const Tensor& x1, const Tensor& x2, float d, float p)
 {
-    float d = 1.0;
-    float p = 10;
     return std::pow(LinAlg::dot(x1, x2) + d, p);
 }
 
@@ -359,6 +357,12 @@ void LinAlg::cov(const Tensor &x, Tensor &y)
     return;
 }
 
+float LinAlg::gaussian(const Tensor &xi, const Tensor &ui, const Tensor &sigmai)
+{
+
+    return 0;
+}
+
 Tensor LinAlg::transpose(const Tensor &x)
 {
     Tensor y(x.shape[1], x.shape[0]);
@@ -430,12 +434,44 @@ int LinAlg::trace(const Tensor &x, float &value)
 
 Tensor LinAlg::diag(const Tensor &x)
 {
-    std::size_t N = std::min(x.shape[0], x.shape[1]);
-    Tensor d(N, 1);
-    for (std::size_t i = 0; i < N; i++) {
-        d[i] = x(i, i);
+    /* x(n, 1) -> d(n, n) */
+    int n = x.shape[0];
+    Tensor d(n, n);
+    for (int i = 0; i < n; i++) {
+        d(i, i) = x[i];
     }
     return d;
+}
+
+Tensor LinAlg::diagInv(const Tensor &x)
+{
+    Tensor ix(x.shape);
+    int n = x.shape[0];
+    for (int i = 0; i < n; i++) {
+        ix(i, i) = 1.0/(x(i, i) + 1e-6);
+    }
+    return ix;
+}
+
+Tensor LinAlg::inverse(const Tensor &x)
+{
+    Tensor xi(x);
+
+    return xi;
+}
+
+void LinAlg::xTAx(Tensor &y, const Tensor &x, const Tensor a)
+{
+    /*
+        x:(m, n)
+        xT:(n, m)
+        A:(m, m)
+        xTAx:(n, n)
+    */
+    Tensor xTa(x.shape[1], x.shape[0]);
+    Tensor::MM::kikj(xTa, x, a);
+    Tensor::MM::ikkj(y, xTa, x);
+    return;
 }
 
 void LinAlg::GaussianElimination::solve(const Tensor &a, Tensor &u)
@@ -530,11 +566,9 @@ int LinAlg::gaussSeidel(const Tensor &a, const Tensor &b, Tensor &x, int iterati
     return 0;
 }
 
-int LinAlg::det(const Tensor &x, float &value)
+float LinAlg::det(const Tensor &x)
 {
-    if (x.shape[0]!= x.shape[1]) {
-        return -1;
-    }
+    float value = 0;
     /* 1-order */
     if (x.shape[0] == 1) {
         value = x(0, 0);
@@ -581,7 +615,7 @@ int LinAlg::det(const Tensor &x, float &value)
             }
         }
     }
-    return 0;
+    return value;
 }
 
 int LinAlg::rank(const Tensor &x)
