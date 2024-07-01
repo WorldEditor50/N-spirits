@@ -111,6 +111,11 @@ void test_gaussian()
         std::cout<<p<<", ";
     }
     std::cout<<std::endl;
+    for (int i = 0; i < 3; i++) {
+        float p = GMM::quickGaussian(x_[i], u, s);
+        std::cout<<p<<", ";
+    }
+    std::cout<<std::endl;
     return;
 }
 

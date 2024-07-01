@@ -6,7 +6,8 @@
 #include "tensor.hpp"
 
 namespace LinAlg {
-constexpr static float pi = 3.1415926;
+constexpr static float pi = 3.1415926535897932384626433832795;
+constexpr static float pi2 = 2*pi;
 struct Random {
     static std::default_random_engine engine;
     static std::random_device device;
@@ -48,6 +49,7 @@ float normL2(const Tensor &x1, const Tensor &x2);
 float normLp(const Tensor &x1, const Tensor &x2, float p);
 float normL8(const Tensor &x1, const Tensor &x2);
 float dot(const Tensor &x1, const Tensor &x2);
+float product(const Tensor &x);
 float cosine(const Tensor &x1, const Tensor &x2);
 namespace Kernel {
     float rbf(const Tensor &x1, const Tensor &x2, float gamma);

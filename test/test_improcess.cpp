@@ -548,21 +548,17 @@ void test_concat()
 
 void test_erode()
 {
-    Tensor img = imp::load("./images/dota2.bmp");
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
     }
-    Tensor gray;
-    imp::rgb2gray(gray, img);
     Tensor out;
-    Tensor k33({3, 3}, {-1, 1, -1,
-                         1, 1,  1,
-                        -1, 1, -1 });
-    imp::erode(out, gray, k33);
-    Tensor erode;
-    imp::gray2rgb(erode, out);
-    imp::show(erode);
+    Tensor k33({3, 3}, { -1, 1,  -1,
+                          1, 1,  1,
+                         -1, 1,  -1 });
+    imp::erode(out, img, k33);
+    imp::show(out);
     return;
 }
 
@@ -652,7 +648,7 @@ void test_gmmPixelCluster()
     std::vector<Tensor> xi;
     x.toVector(xi);
     GMM model(16, 3);
-    model.cluster(xi, 500, 1e-5);
+    model.cluster(xi, 2000, 1e-6);
     for (int i = 0; i < 16; i++) {
         model.u[i].printValue();
     }

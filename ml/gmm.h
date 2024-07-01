@@ -37,7 +37,26 @@ public:
         Tensor r(x.shape[1], x.shape[1]);
         LinAlg::xTAx(r, delta, LinAlg::diagInv(sigma));
         float coeff = std::pow(2*LinAlg::pi, float(n)/2)*std::sqrt(LinAlg::det(sigma));
-        return 1.0/(coeff + 1e-6)*std::exp(-0.5*r[0]);
+        return 1.0/(coeff + 1e-8)*std::exp(-0.5*r[0]);
+    }
+
+    static float quickGaussian(const Tensor &x, const Tensor &u, const Tensor &sigma)
+    {
+        /*
+            x:(featureDim, 1)
+            u:(featureDim, 1)
+            sigma:(featureDim, 1)
+        */
+        /* xTAx = (x - u)^T*isigma*(x - u) */
+        float xTAx = 0;
+        for (std::size_t i = 0; i < sigma.totalSize; i++) {
+            float d = x[i] - u[i];
+            xTAx += d*d/sigma[i];
+        }
+        float det = LinAlg::product(sigma);
+        float n = x.shape[0];
+        float coeff = std::pow(LinAlg::pi2, n/2)*std::sqrt(det);
+        return std::exp(-0.5*xTAx)/coeff;
     }
 
     void estimate(const std::vector<Tensor> &x, Tensor &nk, Tensor &gamma)
@@ -53,7 +72,8 @@ public:
         Tensor sp(n, 1);
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < topicDim; j++) {
-                float pij = alpha[j]*gaussian(x[i], u[j], LinAlg::diag(sigma[j]));
+                //float pij = alpha[j]*gaussian(x[i], u[j], LinAlg::diag(sigma[j]));
+                float pij = alpha[j]*quickGaussian(x[i], u[j], sigma[j]);
                 p(i, j) = pij;
                 sp[i] += pij;
             }
@@ -166,7 +186,8 @@ public:
         float maxP = -1;
         int topic = 0;
         for (int i = 0; i < topicDim; i++) {
-            float p = alpha[i]*gaussian(xi, u[i], LinAlg::diag(sigma[i]));
+            //float p = alpha[i]*gaussian(xi, u[i], LinAlg::diag(sigma[i]));
+            float p = alpha[i]*quickGaussian(xi, u[i], sigma[i]);
             if (p > maxP) {
                 maxP = p;
                 topic = i;

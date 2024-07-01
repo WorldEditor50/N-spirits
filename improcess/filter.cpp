@@ -180,9 +180,7 @@ int imp::FFT(CTensor &xf, const CTensor &xt, int t)
         w[i] = Complex(std::cos(theta), std::sin(theta));
     }
     /* align */
-    for (std::size_t i = 0; i < x1.totalSize; i++) {
-        x1[i] = xt[i];
-    }
+    x1 = xt;
     /* FFT */
     for (int k = 0; k < t; k++) {
         for (int j = 0; j < (1 << k); j++) {
@@ -214,9 +212,7 @@ int imp::IFFT(CTensor &xt, const CTensor &xf, int t)
 {
     int length = 1 << t;
     CTensor x(length);
-    for (std::size_t i = 0; i < x.totalSize; i++) {
-        x[i] = xf[i];
-    }
+    x = xf;
     for (std::size_t i = 0; i < x.totalSize; i++) {
         x[i] = x[i].conjugate();
     }
@@ -229,7 +225,6 @@ int imp::IFFT(CTensor &xt, const CTensor &xf, int t)
 
 int imp::FFT2D(Tensor &dst, CTensor &f, const Tensor &img, bool expand, unsigned char color)
 {
-
     int w = 1;
     int h = 1;
     int wp = 0;

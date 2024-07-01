@@ -226,6 +226,15 @@ float LinAlg::dot(const Tensor &x1, const Tensor &x2)
     return s;
 }
 
+float LinAlg::product(const Tensor &x)
+{
+    float p = 1;
+    for (std::size_t i = 0; i < x.totalSize; i++) {
+        p *= x[i];
+    }
+    return p;
+}
+
 float LinAlg::cosine(const Tensor &x1, const Tensor &x2)
 {
     float s = 0;

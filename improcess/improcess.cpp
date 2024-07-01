@@ -321,9 +321,6 @@ int imp::resize(OutTensor xo, InTensor xi, const imp::Size &size, int type)
 */
 int imp::erode(OutTensor xo, InTensor xi, InTensor kernel)
 {
-    if (xi.shape[HWC_C] != 1) {
-        return -1;
-    }
     int width = xi.shape[HWC_W];
     int height = xi.shape[HWC_H];
     int kernelSize = kernel.shape[HWC_H];
@@ -331,25 +328,27 @@ int imp::erode(OutTensor xo, InTensor xi, InTensor kernel)
     for (int i = 1; i < height - 1; i++) {
         for (int j = 1; j < width - 1; j++) {
             bool matched = true;
-            for (int h = 0; h < kernelSize; h++) {
-                for (int k = 0; k < kernelSize; k++) {
-                    if (kernel(h, k) == -1) {
-                        continue;
-                    }
-                    if (kernel(h, k) == 1) {
-                        if (xi(i - 1 + h, j - 1 + k, 0) != 0) {
-                            matched = false;
-                            break;
+            for (int c = 0; c < xi.shape[HWC_C]; c++) {
+                for (int h = 0; h < kernelSize; h++) {
+                    for (int k = 0; k < kernelSize; k++) {
+                        if (kernel(h, k) == -1) {
+                            continue;
                         }
-                    } else if (kernel(h, k) == 0) {
-                        if (xi(i - 1 + h, j - 1 + k, 0) != 255) {
-                            matched = false;
-                            break;
+                        if (kernel(h, k) == 1) {
+                            if (xi(i - 1 + h, j - 1 + k, c) != 0) {
+                                matched = false;
+                                break;
+                            }
+                        } else if (kernel(h, k) == 0) {
+                            if (xi(i - 1 + h, j - 1 + k, c) != 255) {
+                                matched = false;
+                                break;
+                            }
                         }
                     }
                 }
+                xo(i, j, c) = matched ? 0 : xi(i, j, c);
             }
-            xo(i, j, 0) = matched ? 0 : xi(i, j, 0);
         }
     }
     return 0;
@@ -360,25 +359,23 @@ int imp::erode(OutTensor xo, InTensor xi, InTensor kernel)
 */
 int imp::dilate(OutTensor xo, InTensor xi, InTensor kernel)
 {
-    if (xi.shape[HWC_C] != 1) {
-        return -1;
-    }
     int width = xi.shape[HWC_W];
     int height = xi.shape[HWC_H];
     int kernelSize = kernel.shape[HWC_H];
-    xo = Tensor(xi.shape);
-    xo.fill(255);
+    xo = xi;
     for (int i = 1; i < height - 1; i++) {
         for (int j = 1; j < width - 1; j++) {
-            for (int h = 0; h < kernelSize; h++) {
-                for (int k = 0; k < kernelSize; k++) {
-                    if (kernel(h, k) == -1) {
-                        continue;
-                    }
-                    if (kernel(h, k) == 1) {
-                        if (xi(i - 1 + h, j - 1 + k) == 0) {
-                            xo(i, j) = 0;
-                            break;
+            for (int c = 0; c < xi.shape[HWC_C]; c++) {
+                for (int h = 0; h < kernelSize; h++) {
+                    for (int k = 0; k < kernelSize; k++) {
+                        if (kernel(h, k) == -1) {
+                            continue;
+                        }
+                        if (kernel(h, k) == 1) {
+                            if (xi(i - 1 + h, j - 1 + k, c) == 0) {
+                                xo(i, j, c) = 255;
+                                break;
+                            }
                         }
                     }
                 }
