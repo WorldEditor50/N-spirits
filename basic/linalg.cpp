@@ -448,7 +448,7 @@ Tensor LinAlg::diagInv(const Tensor &x)
     Tensor ix(x.shape);
     int n = x.shape[0];
     for (int i = 0; i < n; i++) {
-        ix(i, i) = 1.0/(x(i, i) + 1e-6);
+        ix(i, i) = 1.0/x(i, i);
     }
     return ix;
 }

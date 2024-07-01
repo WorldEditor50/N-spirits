@@ -599,7 +599,11 @@ void test_kmeansPixelCluster()
     Kmeans model(16, 3, [](const Tensor &x1, const Tensor &x2)->float{
         return LinAlg::Kernel::laplace(x1, x2, 1.0);
     });
-    model.cluster(xi, 1000, 0.5, 1e-6);
+    model.cluster(xi, 1000, 0, 1e-6);
+    /* centers */
+    for (int i = 0; i < 16; i++) {
+        model.centers[i].printValue();
+    }
     /* classify */
     Tensor result(h, w, 3, 1);
     for (int i = 0; i < h; i++) {
@@ -628,11 +632,7 @@ void test_kmeansPixelCluster()
 
     Tensor pixelTable = Tensor::concat(0, pixelRow1, pixelRow2, pixelRow3, pixelRow4);
     Tensor dst = Tensor::concat(1, img, result, pixelTable);
-    imp::save(dst, "cluster.bmp");
-    /* centers */
-    for (int i = 0; i < 16; i++) {
-        model.centers[i].printValue();
-    }
+    imp::save(dst, "kmeans_pixels_cluster.bmp");
     imp::show(dst);
     return;
 }
@@ -652,7 +652,7 @@ void test_gmmPixelCluster()
     std::vector<Tensor> xi;
     x.toVector(xi);
     GMM model(16, 3);
-    model.cluster(xi, 200);
+    model.cluster(xi, 500, 1e-5);
     for (int i = 0; i < 16; i++) {
         model.u[i].printValue();
     }
@@ -786,7 +786,7 @@ void test_svmSegmentation()
     result.reshape(h, w, 3);
     /* display */
     Tensor dst = Tensor::concat(1, img, result);
-    imp::save(dst, "cluster.bmp");
+    imp::save(dst, "svm_segmentation.bmp");
     imp::show(dst);
     return;
 }

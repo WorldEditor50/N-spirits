@@ -123,6 +123,4 @@ public:
 
 };
 
-
-
 #endif // KMEANS_H

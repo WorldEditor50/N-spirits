@@ -3,6 +3,7 @@
 #include "../ml/kmeans.h"
 #include "../ml/svm.h"
 #include "../ml/gmm.h"
+#include "../ml/hmm.h"
 #include "../ml/kdtree.hpp"
 #include "../utils/dataset.h"
 
@@ -113,11 +114,29 @@ void test_gaussian()
     return;
 }
 
+void test_hmm()
+{
+    Tensor A({4, 4}, {0,1,0,0,
+                      0.4,0,0.6,0,
+                      0,0.4,0,0.6,
+                      0,0,0.5,0.5});
+    Tensor B({4, 2}, {0.5,0.5,
+                      0.3,0.7,
+                      0.6,0.4,
+                      0.8,0.2});
+    Tensor Pi({4, 1}, {0.25,0.25,0.25,0.25});
+    Tensor O({8, 1}, {1, 0, 0, 1, 1, 0, 1, 1});
+    HMM model(A, B, Pi);
+    Tensor I = model(O);
+    I.printValue();
+    return;
+}
 int main()
 {
     //test_kmeans();
     //test_kdtree();
     //test_svm();
-    test_gaussian();
-	return 0;
+    //test_gaussian();
+    test_hmm();
+    return 0;
 }

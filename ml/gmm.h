@@ -61,10 +61,10 @@ public:
         /* gamma:(n, topicDim) */
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < topicDim; j++) {
-                gamma(i, j) = p(i, j)/(sp[i] + 1e-6);
+                gamma(i, j) = p(i, j)/sp[i];
             }
         }
-        /* pk = gamma.sum(1) */
+        /* nk = gamma.sum(1) */
         for (int i = 0; i < topicDim; i++) {
             for (int j = 0; j < n; j++) {
                 nk[i] += gamma(j, i);
@@ -87,7 +87,6 @@ public:
         for (int i = 0; i < topicDim; i++) {
             sigma[i].zero();
         }
-
         for (int k = 0; k < topicDim; k++) {
             for (int j = 0; j < featureDim; j++) {
                 for (int i = 0; i < n; i++) {
@@ -116,7 +115,7 @@ public:
         return;
     }
 
-    void cluster(const std::vector<Tensor> &x, std::size_t maxEpoch)
+    void cluster(const std::vector<Tensor> &x, std::size_t maxEpoch, float eps=1e-4)
     {
         int n = x.size();
         /* init */
@@ -135,16 +134,29 @@ public:
             }
             sigma[k] /= featureDim;
         }
+
         /* iteration */
         Tensor nk(topicDim, 1);
         Tensor gamma(n, topicDim);
         for (std::size_t epoch = 0; epoch < maxEpoch; epoch++) {
-            /* estimation */
+            /* E-step */
             nk.zero();
             estimate(x, nk, gamma);
-            /* maximization */
+            /* M-step */
+            std::vector<Tensor> u_ = u;
             maximize(x, nk, gamma);
-            std::cout<<"epoch:"<<epoch<<std::endl;
+            /* error */
+            float delta = 0;
+            for (std::size_t i = 0; i < topicDim; i++) {
+                delta += LinAlg::normL2(u[i], u_[i]);
+            }
+            delta /= float(topicDim);
+            if (delta < eps && epoch > maxEpoch/2) {
+                /* finished */
+                std::cout<<"finished"<<std::endl;
+                break;
+            }
+            std::cout<<"epoch:"<<epoch<<", error:"<<delta<<std::endl;
         }
         return;
     }
