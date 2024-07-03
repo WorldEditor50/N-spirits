@@ -322,6 +322,7 @@ void test_rotate()
     Tensor dst;
     imp::rotate(dst, img, 45);
     imp::save(dst, "rotate_45.bmp");
+    imp::show(dst);
     return;
 }
 
@@ -648,7 +649,7 @@ void test_gmmPixelCluster()
     std::vector<Tensor> xi;
     x.toVector(xi);
     GMM model(16, 3);
-    model.cluster(xi, 2000, 1e-6);
+    model.cluster(xi, 1000, 1e-6);
     for (int i = 0; i < 16; i++) {
         model.u[i].printValue();
     }
@@ -821,11 +822,12 @@ int main()
     test_entropyThreshold();
     test_show();
 #endif
+    //test_rotate();
     //test_sobel();
     //test_erode();
     //test_histogram();
     //test_svmSegmentation();
     //test_kmeansPixelCluster();
     test_gmmPixelCluster();
-	return 0;
+    return 0;
 }

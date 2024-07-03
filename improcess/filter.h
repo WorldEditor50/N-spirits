@@ -60,6 +60,7 @@ int medianFilter(OutTensor xo, InTensor xi, const Size &size);
 int sobel3x3(OutTensor xo, InTensor xi);
 int sobel5x5(OutTensor xo, InTensor xi);
 int laplacian3x3(OutTensor xo, InTensor xi);
+int laplacian5x5(OutTensor xo, InTensor xi);
 int prewitt3x3(OutTensor xo, InTensor xi);
 
 int adaptiveMedianFilter(OutTensor xo, InTensor xi, std::size_t kernelSize);

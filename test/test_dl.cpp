@@ -477,6 +477,6 @@ int main()
     test_alexnet();
     test_vgg16();
 #endif
-    test_xor();
+    test_mnist();
 	return 0;
 }

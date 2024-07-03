@@ -63,7 +63,7 @@ int imp::rotate(OutTensor xo, InTensor xi, float angle)
     /*
         rotate center = (h/2, w/2)
     */
-    float theta = angle*pi/180;
+    float theta = 45.0*pi/180.0;
     float sinTheta = std::sin(theta);
     float cosTheta = std::cos(theta);
     int h = xi.shape[HWC_H];
@@ -71,13 +71,39 @@ int imp::rotate(OutTensor xo, InTensor xi, float angle)
     int c = xi.shape[HWC_C];
     int ho = float(h*cosTheta + w*sinTheta + 0.5);
     int wo = float(w*cosTheta + h*sinTheta + 0.5);
+    Tensor p({3, 3}, {1,  0, 0,
+                      0, -1, 0,
+                      float(h/2), float(w/2), 1});
+    Tensor r({3, 3}, {cosTheta, -sinTheta, 0,
+                      sinTheta,  cosTheta, 0,
+                      0,         0,        1});
+    Tensor q({3, 3}, {1,  0, 0,
+                      0, -1, 0,
+                      float(ho/2), float(wo/2), 1});
+    Tensor pr(3, 3);
+    Tensor::MM::ikkj(pr, p, r);
+    Tensor prq(3, 3);
+    Tensor::MM::ikkj(prq, pr, q);
+
     xo = Tensor(ho, wo, c);
-    for (int i = 0; i < ho; i++) {
-        for (int j = 0; j < wo; j++) {
-            int u = imp::bound(i*cosTheta - j*sinTheta + 0.5, 0, h);
-            int v = imp::bound(j*cosTheta + i*sinTheta + 0.5, 0, w);
+    Tensor px(3, 1);
+    Tensor qx(3, 1);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            px[0] = i;
+            px[1] = j;
+            px[2] = 1;
+            qx[0] = 0;
+            qx[1] = 0;
+            qx[2] = 0;
+            Tensor::MM::kikj(qx, px, prq);
+            int u = float(qx[0]);
+            int v = float(qx[1]);
+            if (u >= ho && v >= wo && u < 0 && v < 0) {
+                continue;
+            }
             for (int k = 0; k < c; k++) {
-                xo(i, j, k) = xi(u, v, k);
+                xo(u, v, k) = xi(i, j, k);
             }
         }
     }

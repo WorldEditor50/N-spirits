@@ -82,7 +82,11 @@ int trace(const Tensor& x, float &value);
 Tensor diag(const Tensor &x);
 Tensor diagInv(const Tensor &x);
 /* inverse */
-Tensor inverse(const Tensor &x);
+int invert(const Tensor &x, Tensor &ix);
+Tensor inv(const Tensor &x);
+/* eigen */
+float eigen(const Tensor &x, Tensor &vec, int maxIterateCount=1000, float eps=1e-8);
+void eigen(const Tensor &x, Tensor &vec, Tensor &value, int maxIterateCount=1000, float eps=1e-8);
 /* xTAx */
 void xTAx(Tensor &y, const Tensor &x, const Tensor a);
 /* gaussian elimination */

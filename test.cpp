@@ -544,6 +544,41 @@ void test_quaternion()
 {
     Quaternion q1, q2;
     Quaternion q = Quaternion::slerp(q1, q2, 0.8);
+    return;
+}
+
+void test_inv()
+{
+    Tensor x({3, 3}, {8, 0, 1,
+                      0, 2, 6,
+                      1, 1, 3 });
+    Tensor ix = LinAlg::inv(x);
+    ix.printValue();
+    Tensor I(3, 3);
+    Tensor::MM::ikkj(I, x, ix);
+    I.printValue();
+    Tensor adjugate = ix*LinAlg::det(x);
+    adjugate.printValue();
+    return;
+}
+
+void test_eigen()
+{
+    Tensor x1({3, 3}, {8, 0, 1,
+                       0, 2, 6,
+                       1, 1, 3 });
+    Tensor x2({3, 3}, {1, 1, 1,
+                       1, 2, 10,
+                       1, 10, 100 });
+
+    Tensor vec(3, 3);
+    Tensor value(3, 1);
+    LinAlg::eigen(x2, vec, value, 2000);
+    std::cout<<"eigen value:";
+    value.printValue();
+    std::cout<<"eigen vector:"<<std::endl;
+    vec.printValue2D();
+    return;
 }
 
 int main()
@@ -565,10 +600,12 @@ int main()
     //test_fft1d();
     //test_dft2d();
 
-    test_gaussianElimination();
+    //test_gaussianElimination();
     //test_cholesky();
     //test_gaussSeidel();
 
+    //test_inv();
+    test_eigen();
     return 0;
 }
 

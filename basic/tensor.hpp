@@ -1081,6 +1081,21 @@ public:
         return;
     }
 
+    void printValue2D() const
+    {
+        std::cout<<"[";
+        for (std::size_t i = 0; i < shape[0]; i++) {
+            for (std::size_t j = 0; j < shape[1]; j++) {
+                std::cout<<val[i*shape[1] + j];
+                if (i < totalSize - 1) {
+                    std::cout<<",";
+                }
+            }
+            std::cout<<std::endl;
+        }
+        std::cout<<"]"<<std::endl;
+        return;
+    }
     void printShape() const
     {
         std::cout<<"(";

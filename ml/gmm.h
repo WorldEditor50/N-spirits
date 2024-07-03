@@ -51,15 +51,16 @@ public:
         float xTAx = 0;
         for (std::size_t i = 0; i < sigma.totalSize; i++) {
             float d = x[i] - u[i];
-            xTAx += d*d/sigma[i];
+            float isigma = 1.0/sigma[i];
+            xTAx += d*d*isigma;
         }
         float det = LinAlg::product(sigma);
         float n = x.shape[0];
         float coeff = std::pow(LinAlg::pi2, n/2)*std::sqrt(det);
-        return std::exp(-0.5*xTAx)/coeff;
+        return 1.0/coeff*std::exp(-0.5*xTAx);
     }
 
-    void estimate(const std::vector<Tensor> &x, Tensor &nk, Tensor &gamma)
+    void estimate(const std::vector<Tensor> &x, Tensor &gamma)
     {
         /*
            likelyhood
@@ -84,20 +85,21 @@ public:
                 gamma(i, j) = p(i, j)/sp[i];
             }
         }
+
+        return;
+    }
+
+    void maximize(const std::vector<Tensor> &x, const Tensor &gamma)
+    {
+        int n = x.size();
         /* nk = gamma.sum(1) */
+        Tensor &nk = alpha;
+        nk.zero();
         for (int i = 0; i < topicDim; i++) {
             for (int j = 0; j < n; j++) {
                 nk[i] += gamma(j, i);
             }
         }
-        return;
-    }
-
-    void maximize(const std::vector<Tensor> &x, const Tensor &nk, const Tensor &gamma)
-    {
-        int n = x.size();
-        /* pi */
-        alpha = nk/float(n);
         /* sigma:(topicDim, featureDim)
            nk:(topicDim, 1)
            gamma:(n, topicDim)
@@ -132,6 +134,8 @@ public:
             }
             u[k] /= nk[k];
         }
+        /* alpha */
+        alpha /= float(n);
         return;
     }
 
@@ -156,15 +160,13 @@ public:
         }
 
         /* iteration */
-        Tensor nk(topicDim, 1);
         Tensor gamma(n, topicDim);
         for (std::size_t epoch = 0; epoch < maxEpoch; epoch++) {
             /* E-step */
-            nk.zero();
-            estimate(x, nk, gamma);
+            estimate(x, gamma);
             /* M-step */
             std::vector<Tensor> u_ = u;
-            maximize(x, nk, gamma);
+            maximize(x, gamma);
             /* error */
             float delta = 0;
             for (std::size_t i = 0; i < topicDim; i++) {

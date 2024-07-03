@@ -116,6 +116,16 @@ int imp::laplacian3x3(OutTensor xo, InTensor xi)
     return 0;
 }
 
+int imp::laplacian5x5(OutTensor xo, InTensor xi)
+{
+    Tensor kernel({5, 5}, {0,   0, -1,  0,  0,
+                           0,  -1, -2, -1,  0,
+                          -1,  -2, 16, -2, -1,
+                           0,  -1, -2, -1,  0,
+                           0,   0, -1,  0,  0});
+    conv2d(xo, kernel, xi, 1);
+    return 0;
+}
 
 int imp::prewitt3x3(OutTensor xo, InTensor xi)
 {

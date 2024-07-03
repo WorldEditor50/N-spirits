@@ -245,7 +245,7 @@ float LinAlg::cosine(const Tensor &x1, const Tensor &x2)
         s1 += x1[i]*x1[i];
         s2 += x2[i]*x2[i];
     }
-    return s/(std::sqrt(s1*s2) + 1e-8);
+    return s/std::sqrt(s1*s2);
 }
 
 float LinAlg::Kernel::rbf(const Tensor &x1, const Tensor &x2, float gamma)
@@ -462,11 +462,190 @@ Tensor LinAlg::diagInv(const Tensor &x)
     return ix;
 }
 
-Tensor LinAlg::inverse(const Tensor &x)
+int LinAlg::invert(const Tensor &x, Tensor &ix)
 {
-    Tensor xi(x);
+    /* gauss-jordan */
+    if (x.shape[0] != x.shape[1]) {
+        return -1;
+    }
+    int N = x.shape[0];
+    ix = x;
+    std::vector<int> row(N, 0);
+    std::vector<int> col(N, 0);
+    for (int k = 0; k < N; k++) {
+        float d = 0;
+        for (int i = k; i < N; i++) {
+            for (int j = k; j < N; j++) {
+                float p = std::abs(ix(i, j));
+                if (p > d) {
+                    d = p;
+                    row[k] = i;
+                    col[k] = j;
+                }
+            }
+        }
+        if (d + 1 == 1) {
+            return -2;
+        }
+        if (row[k] != k) {
+            exchangeCol(ix, k, col[k]);
+        }
+        if (col[k] != k) {
+            exchangeRow(ix, k, row[k]);
+        }
+        ix(k, k) = 1.0/ix(k, k);
 
-    return xi;
+        for (int j = 0; j < N; j++) {
+            if (j != k) {
+                ix(k, j) *= ix(k, k);
+            }
+        }
+
+        for (int i = 0; i < N; i++) {
+            if (i != k) {
+                for (int j = 0; j < N; j++) {
+                    if (j != k) {
+                        ix(i, j) -= ix(i, k)*ix(k, j);
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < N; i++) {
+            if (i != k) {
+                ix(i, k) *= -ix(k, k);
+            }
+        }
+
+    }
+
+    for (int k = N - 1; k >= 0; k--) {
+        if (col[k] != k) {
+            exchangeRow(ix, k, row[k]);
+        }
+        if (row[k] != k) {
+            exchangeCol(ix, k, col[k]);
+        }
+    }
+    return 0;
+}
+
+Tensor LinAlg::inv(const Tensor &x)
+{
+    Tensor ix(x.shape);
+    invert(x, ix);
+    return ix;
+}
+
+float LinAlg::eigen(const Tensor &x, Tensor &vec, int maxIterateCount, float eps)
+{
+    int N = x.shape[0];
+    vec = Tensor(N, 1);
+    vec.fill(1.0);
+    float value = 0;
+    float value_ = 0;
+    Tensor vec_(N, 1);
+    for (int it = 0; it < maxIterateCount; it++) {
+        vec_.zero();
+        Tensor::MM::ikkj(vec_, x, vec);
+        vec = vec_;
+        value_ = value;
+        value = vec.max();
+        vec /= value;
+        float delta = std::sqrt((value - value_)*(value - value_));
+        if (delta < eps) {
+            break;
+        }
+    }
+    return value;
+}
+
+void LinAlg::eigen(const Tensor &x, Tensor &vec, Tensor &value, int maxIterateCount, float eps)
+{
+    /* jacobi iteration */
+    int N = x.shape[0];
+    Tensor a = x;
+    vec = eye(N);
+    value = Tensor(N, 1);
+
+    for (int it = 0; it < maxIterateCount; it++) {
+        /* find max value on non pivot position */
+        float maxVal = 0;
+        int p = 0;
+        int q = 0;
+        for (int i = 0; i < N; i++) {
+            for (int j = i + 1; j < N; j++) {
+                float val = std::abs(a(i, j));
+                if (i != j && val > maxVal) {
+                    maxVal = val;
+                    p = j;
+                    q = i;
+                }
+            }
+        }
+        if (maxVal < eps) {
+            //std::cout<<"iterate count:"<<it<<std::endl;
+            break;
+        }
+        float app = a(p, p);
+        float apq = a(p, q);
+        float aqq = a(q, q);
+        /* rotate */
+        float theta = 0.5*std::atan2(-2*apq, aqq - app);
+        float sinTheta = std::sin(theta);
+        float cosTheta = std::cos(theta);
+        float sin2Theta = std::sin(2*theta);
+        float cos2Theta = std::cos(2*theta);
+
+        a(p, p) = app*cosTheta*cosTheta + aqq*sinTheta*sinTheta + 2*apq*cosTheta*sinTheta;
+        a(q, q) = app*sinTheta*sinTheta + aqq*cosTheta*cosTheta - 2*apq*cosTheta*sinTheta;
+        a(p, q) = 0.5*(aqq- app)*sin2Theta + apq*cos2Theta;
+        a(q, p) = a(p, q);
+
+        for (int i = 0; i < N; i ++) {
+            if (i != q && i != p) {
+                float u = a(i, p);
+                float v = a(i, q);
+                a(i, p) = v*sinTheta + u*cosTheta;
+                a(i, q) = v*cosTheta - u*sinTheta;
+            }
+        }
+
+        for (int j = 0; j < N; j ++) {
+            if (j != q && j != p) {
+                float u = a(p, j);
+                float v = a(q, j);
+                a(p, j) = v*sinTheta + u*cosTheta;
+                a(q, j) = v*cosTheta - u*sinTheta;
+            }
+        }
+
+        /* eigen vector */
+        for (int i = 0; i < N; i ++) {
+            float u = vec(i, p);
+            float v = vec(i, q);
+            vec(i, p) = v*sinTheta + u*cosTheta;
+            vec(i, q) = v*cosTheta - u*sinTheta;
+        }
+
+    }
+    /* eigen value */
+    for (int i = 0; i < N; i ++) {
+        value[i] = a(i, i);
+    }
+    /* sign */
+    for(int i = 0; i < N; i ++) {
+        float s = 0;
+        for(int j = 0; j < N; j ++) {
+            s += vec(j, i);
+        }
+        if (s < 0) {
+            for(int j = 0; j < N; j ++) {
+                vec(j, i) *= -1;
+            }
+        }
+    }
+    return;
 }
 
 void LinAlg::xTAx(Tensor &y, const Tensor &x, const Tensor a)
