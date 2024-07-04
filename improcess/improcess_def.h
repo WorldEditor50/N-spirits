@@ -86,6 +86,14 @@ public:
 using Rect = Rect_<int>;
 using Rectf = Rect_<float>;
 
+namespace Hough {
+    struct Line {
+        int rho;
+        int angle;
+        int pixels;
+    };
+}
+
 inline static Size imageSize(const Tensor &x)
 {
     return Size(x.shape[HWC_H], x.shape[HWC_W]);

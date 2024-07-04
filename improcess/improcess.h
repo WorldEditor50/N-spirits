@@ -74,6 +74,8 @@ namespace imp {
     int regionGrow(OutTensor mask, float label, InTensor xi,  const Point2i &seed, uint8_t thres);
     /* template match */
     int templateMatch(InTensor xi, InTensor xt, Rect &rect);
+    /* houghLine */
+    int houghLine(OutTensor xo, InTensor xi, float thres, int lineNo, const Color3 &color);
 }
 
 

@@ -107,8 +107,8 @@ void test_det()
 void test_qr()
 {
     Tensor x({3, 3}, {1, 1, 1,
-                 1, 2, 3,
-                 1, 5, 1});
+                      1, 2, 3,
+                      1, 5, 1});
     Tensor q;
     Tensor r;
     LinAlg::QR::solve(x, q, r);
@@ -351,8 +351,8 @@ void test_tensor()
         x = 7;
         x.printValue();
         std::cout<<"size = "<<x.size(1, 2)<<std::endl;
-        std::cout<<"sum(1, 2) = "<<x.sum(1, 2)<<std::endl;
-        std::cout<<"sum(1) = "<<x.sum(1)<<std::endl;
+        std::cout<<"sum(1, 2) = "<<x.at(1, 2).sum()<<std::endl;
+        std::cout<<"sum(1) = "<<x.at(1).sum()<<std::endl;
         std::cout<<"sum = "<<x.sum()<<std::endl;
     }
     /* max */
@@ -370,9 +370,9 @@ void test_tensor()
                              2, 19, 2,
                              2, 2, 2
                         });
-        std::cout<<"max 0 = "<<x.max(0)<<std::endl;
-        std::cout<<"max 1 = "<<x.max(1)<<std::endl;
-        std::cout<<"max 2 = "<<x.max(2)<<std::endl;
+        std::cout<<"max 0 = "<<x.at(0).max()<<std::endl;
+        std::cout<<"max 1 = "<<x.at(1).max()<<std::endl;
+        std::cout<<"max 2 = "<<x.at(2).max()<<std::endl;
         x.printValue(2, 1);
         x.sub(1, 1).printValue();
         std::cout<<"(1, 1, 1) = "<<x(1, 1, 1)<<std::endl;

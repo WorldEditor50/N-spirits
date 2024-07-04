@@ -12,14 +12,21 @@ template<typename T, template<typename Ti> class Alloc=std::allocator>
 class Tensor_
 {
 public:
+    using ValueType = T;
+    using Vector = std::vector<T, Alloc<T> >;
+    using Shape = std::vector<int>;
+    using Size = std::vector<int>;
+    using iterator = typename Vector::iterator;
+    using const_iterator = typename Vector::const_iterator;
     class SubTensor
     {
     public:
         Tensor_ *pointer;
         std::size_t pos;
+        std::size_t totalSize;
     public:
-        SubTensor():pointer(nullptr),pos(0){}
-        SubTensor(const SubTensor &r):pointer(r.pointer),pos(r.pos){}
+        SubTensor():pointer(nullptr),pos(0),totalSize(0){}
+        SubTensor(const SubTensor &r):pointer(r.pointer),pos(r.pos),totalSize(r.totalSize){}
         SubTensor& operator=(const SubTensor &r)
         {
             if (this == &r) {
@@ -27,6 +34,7 @@ public:
             }
             pointer = r.pointer;
             pos = r.pos;
+            totalSize = r.totalSize;
             return *this;
         }
         inline void operator=(const Tensor_ &x)
@@ -40,6 +48,14 @@ public:
         {
             for (std::size_t i = 0; i < x.size(); i++) {
                 pointer->val[i + pos] = x[i];
+            }
+            return;
+        }
+
+        inline void operator=(T x)
+        {
+            for (std::size_t i = 0; i < totalSize; i++) {
+                pointer->val[i + pos] = x;
             }
             return;
         }
@@ -75,14 +91,109 @@ public:
             }
             return;
         }
+
+        inline void operator+=(T x)
+        {
+            for (std::size_t i = 0; i < totalSize; i++) {
+                pointer->val[i + pos] += x;
+            }
+            return;
+        }
+
+        inline void operator-=(T x)
+        {
+            for (std::size_t i = 0; i < totalSize; i++) {
+                pointer->val[i + pos] -= x;
+            }
+            return;
+        }
+
+        inline void operator*=(T x)
+        {
+            for (std::size_t i = 0; i < totalSize; i++) {
+                pointer->val[i + pos] *= x;
+            }
+            return;
+        }
+
+        inline void operator/=(T x)
+        {
+            for (std::size_t i = 0; i < totalSize; i++) {
+                pointer->val[i + pos] /= x;
+            }
+            return;
+        }
+
+        inline T sum() const
+        {
+            T s = 0;
+            for (std::size_t i = 0; i < totalSize; i++) {
+                s += pointer->val[i + pos];
+            }
+            return s;
+        }
+
+        inline T mean() const
+        {
+            T s = 0;
+            for (std::size_t i = 0; i < totalSize; i++) {
+                s += pointer->val[i + pos];
+            }
+            return s/T(totalSize);
+        }
+        inline T max() const
+        {
+            T maxVal = 0;
+            for (std::size_t i = 0; i < totalSize; i++) {
+                T val = pointer->val[i + pos];
+                if (maxVal < val) {
+                    maxVal = val;
+                }
+            }
+            return maxVal;
+        }
+
+        inline std::size_t argmax() const
+        {
+            T maxVal = 0;
+            std::size_t index = 0;
+            for (std::size_t i = 0; i < totalSize; i++) {
+                T val = pointer->val[i + pos];
+                if (maxVal < val) {
+                    maxVal = val;
+                    index = i;
+                }
+            }
+            return index;
+        }
+
+        inline T min() const
+        {
+            T minVal = 0;
+            for (std::size_t i = 0; i < totalSize; i++) {
+                T val = pointer->val[i + pos];
+                if (minVal > val) {
+                    minVal = val;
+                }
+            }
+            return minVal;
+        }
+
+        inline std::size_t argmin() const
+        {
+            T minVal = 0;
+            std::size_t index = 0;
+            for (std::size_t i = 0; i < totalSize; i++) {
+                T val = pointer->val[i + pos];
+                if (minVal > val) {
+                    minVal = val;
+                    index = i;
+                }
+            }
+            return index;
+        }
     };
 
-    using ValueType = T;
-    using Vector = std::vector<T, Alloc<T> >;
-    using Shape = std::vector<int>;
-    using Size = std::vector<int>;
-    using iterator = typename Vector::iterator;
-    using const_iterator = typename Vector::const_iterator;
 protected:
     SubTensor subTensor;
 public:
@@ -303,6 +414,7 @@ public:
     {
         subTensor.pointer = this;
         subTensor.pos = posOf(index...);
+        subTensor.totalSize = size(index...);
         return subTensor;
     }
 
@@ -677,18 +789,6 @@ public:
     }
 
     /* statistics */
-    template<typename ...Index>
-    T sum(Index ...index) const
-    {
-        std::size_t totalsize = size(index...);
-        std::size_t pos = posOf(index...);
-        T s = 0;
-        for (std::size_t i = 0; i < totalsize; i++) {
-            s += val[i + pos];
-        }
-        return s;
-    }
-
     T sum() const
     {
         T s = 0;
@@ -698,29 +798,10 @@ public:
         return s;
     }
 
-    template<typename ...Index>
-    T mean(Index ...index) const
-    {
-        T N = T(size(index...));
-        return sum(index...)/N;
-    }
-
     T mean() const
     {
         T s = sum();
         return s/T(totalSize);
-    }
-
-    template<typename ...Index>
-    T variance(T u, Index ...index) const
-    {
-        T N = T(size(index...));
-        std::size_t pos = posOf(index...);
-        T s = 0;
-        for (std::size_t i = 0; i < N; i++) {
-            s += (val[i + pos] - u)*(val[i + pos] - u);
-        }
-        return s/N;
     }
 
     T variance(T u) const
@@ -732,19 +813,6 @@ public:
         return s/T(totalSize);
     }
 
-    template<typename ...Index>
-    T max(Index ...index) const
-    {
-        std::size_t N = size(index...);
-        std::size_t pos = posOf(index...);
-        T value = val[0];
-        for (std::size_t i = 0; i < N; i++) {
-            if (value < val[i + pos]) {
-                value = val[i + pos];
-            }
-        }
-        return value;
-    }
     T max() const
     {
         T value = val[0];
@@ -756,19 +824,6 @@ public:
         return value;
     }
 
-    template<typename ...Index>
-    T min(Index ...index) const
-    {
-        std::size_t N = size(index...);
-        std::size_t pos = posOf(index...);
-        T value = val[0];
-        for (std::size_t i = 0; i < N; i++) {
-            if (value > val[i + pos]) {
-                value = val[i + pos];
-            }
-        }
-        return value;
-    }
     T min() const
     {
         T value = val[0];
@@ -780,26 +835,10 @@ public:
         return value;
     }
 
-    template<typename ...Index>
-    std::size_t argmax(Index ...index) const
-    {
-        std::size_t N = size(index...);
-        std::size_t pos = posOf(index...);
-        T value = val[0];
-        std::size_t index_ = 0;
-        for (std::size_t i = 0; i < N; i++) {
-            if (value < val[i + pos]) {
-                value = val[i + pos];
-                index_ = i;
-            }
-        }
-        return index_ + pos;
-    }
-
-    int argmax() const
+    std::size_t argmax() const
     {
         T value = val[0];
-        int index = 0;
+        std::size_t index = 0;
         for (std::size_t i = 0; i < val.size(); i++) {
             if (value < val[i]) {
                 value = val[i];
@@ -809,26 +848,10 @@ public:
         return index;
     }
 
-    template<typename ...Index>
-    std::size_t argmin(Index ...index) const
-    {
-        std::size_t N = size(index...);
-        std::size_t pos = posOf(index...);
-        T value = val[0];
-        std::size_t index_ = 0;
-        for (std::size_t i = 0; i < N; i++) {
-            if (value > val[i + pos]) {
-                value = val[i + pos];
-                index_ = i;
-            }
-        }
-        return index_ + pos;
-    }
-
-    int argmin() const
+    std::size_t argmin() const
     {
         T value = val[0];
-        int index = 0;
+        std::size_t index = 0;
         for (std::size_t i = 0; i < val.size(); i++) {
             if (value > val[i]) {
                 value = val[i];

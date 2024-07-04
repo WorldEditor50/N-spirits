@@ -788,6 +788,27 @@ void test_svmSegmentation()
     return;
 }
 
+void test_houghLine()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor xo;
+    int thres = 200;
+    Tensor xs;
+    imp::sobel3x3(xs, img);
+    int ret = imp::houghLine(xo, xs, thres, 12, imp::Color3(0, 255, 0));
+    if (ret != 0) {
+        std::cout<<"no lines"<<std::endl;
+        return;
+    }
+    Tensor result = Tensor::concat(imp::HWC_W, xo, img);
+    imp::show(result);
+    return;
+}
+
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -828,6 +849,7 @@ int main()
     //test_histogram();
     //test_svmSegmentation();
     //test_kmeansPixelCluster();
-    test_gmmPixelCluster();
+    //test_gmmPixelCluster();
+    test_houghLine();
     return 0;
 }

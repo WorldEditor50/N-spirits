@@ -60,52 +60,49 @@ int imp::verticalFlip(OutTensor xo, InTensor xi)
 
 int imp::rotate(OutTensor xo, InTensor xi, float angle)
 {
-    /*
-        rotate center = (h/2, w/2)
-    */
-    float theta = 45.0*pi/180.0;
+    /* rotate center = (h/2, w/2) */
+    float theta = angle*pi/180.0;
     float sinTheta = std::sin(theta);
     float cosTheta = std::cos(theta);
     int h = xi.shape[HWC_H];
     int w = xi.shape[HWC_W];
     int c = xi.shape[HWC_C];
-    int ho = float(h*cosTheta + w*sinTheta + 0.5);
-    int wo = float(w*cosTheta + h*sinTheta + 0.5);
-    Tensor p({3, 3}, {1,  0, 0,
-                      0, -1, 0,
-                      float(h/2), float(w/2), 1});
-    Tensor r({3, 3}, {cosTheta, -sinTheta, 0,
-                      sinTheta,  cosTheta, 0,
-                      0,         0,        1});
-    Tensor q({3, 3}, {1,  0, 0,
-                      0, -1, 0,
-                      float(ho/2), float(wo/2), 1});
-    Tensor pr(3, 3);
-    Tensor::MM::ikkj(pr, p, r);
-    Tensor prq(3, 3);
-    Tensor::MM::ikkj(prq, pr, q);
 
+    /* original image's corners */
+    float wi1 = -(w - 1)*0.5;
+    float hi1 =  (h - 1)*0.5;
+    float wi2 =  (w - 1)*0.5;
+    float hi2 =  (h - 1)*0.5;
+    float wi3 = -(w - 1)*0.5;
+    float hi3 = -(h - 1)*0.5;
+    float wi4 =  (w - 1)*0.5;
+    float hi4 = -(h - 1)*0.5;
+    /* output image's corners */
+    float wo1 =  cosTheta*wi1 + sinTheta*hi1;
+    float ho1 = -sinTheta*wi1 + cosTheta*hi1;
+    float wo2 =  cosTheta*wi2 + sinTheta*hi2;
+    float ho2 = -sinTheta*wi2 + cosTheta*hi2;
+    float wo3 =  cosTheta*wi3 + sinTheta*hi3;
+    float ho3 = -sinTheta*wi3 + cosTheta*hi3;
+    float wo4 =  cosTheta*wi4 + sinTheta*hi4;
+    float ho4 = -sinTheta*wi4 + cosTheta*hi4;
+    /* output size */
+    int wo = float(std::max(std::abs(wo4 - wo1), std::abs(wo3 - wo2)) + 0.5);
+    int ho = float(std::max(std::abs(ho4 - ho1), std::abs(ho3 - ho2)) + 0.5);
+    /* offset */
+    float f1 = -0.5*(ho - 1)*cosTheta - 0.5*(wo - 1)*sinTheta + 0.5*(w - 1);
+    float f2 =  0.5*(wo - 1)*sinTheta - 0.5*(ho - 1)*cosTheta + 0.5*(h - 1);
     xo = Tensor(ho, wo, c);
-    Tensor px(3, 1);
-    Tensor qx(3, 1);
-    for (int i = 0; i < h; i++) {
-        for (int j = 0; j < w; j++) {
-            px[0] = i;
-            px[1] = j;
-            px[2] = 1;
-            qx[0] = 0;
-            qx[1] = 0;
-            qx[2] = 0;
-            Tensor::MM::kikj(qx, px, prq);
-            int u = float(qx[0]);
-            int v = float(qx[1]);
-            if (u >= ho && v >= wo && u < 0 && v < 0) {
-                continue;
+    for (int i = 0; i < ho; i++) {
+        for(int j = 0; j < wo; j++) {
+            int u = float(-j*sinTheta + i*cosTheta + f2 + 0.5);
+            int v = float( j*cosTheta + i*sinTheta + f1 + 0.5);
+            if (v >= 0 && v < w && u >= 0 && u < h) {
+                for (int k = 0; k < c; k++) {
+                    xo(ho - 1 - i, j, k) = xi(h - 1 - u, v, k);
+                }
             }
-            for (int k = 0; k < c; k++) {
-                xo(u, v, k) = xi(i, j, k);
-            }
-        }
+       }
     }
     return 0;
 }

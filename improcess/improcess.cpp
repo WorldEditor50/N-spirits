@@ -740,3 +740,122 @@ int imp::templateMatch(InTensor xi, InTensor xt, Rect &rect)
     }
     return 0;
 }
+
+int imp::houghLine(OutTensor xo, InTensor xi, float thres, int lineNo, const Color3 &color)
+{
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    int c = xi.shape[HWC_C];
+    /* binary image */
+    Tensor xb;
+    if (c != 1) {
+        Tensor xg;
+        rgb2gray(xg, xi);
+        threshold(xb, xg, thres, 255, 0);
+    } else {
+        threshold(xb, xi, thres, 255, 0);
+    }
+    /* convert to polar coordinate  */
+    int maxRho = std::sqrt(h*h + w*w);
+    int maxAngle = 90;
+    std::size_t areaNum = maxAngle*maxRho*2;
+    /* area: (rho, theta) */
+    Tensori transArea(2*maxRho, maxAngle);
+
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            float p = xb(i, j, 0);
+            if (p == 255) {
+                for (int angle = 0; angle < maxAngle; angle++) {
+                    float theta = 2*angle*pi/180.0;
+                    int rho = float(j*std::cos(theta) + i*std::sin(theta));
+                    if (rho >= 0) {
+                        transArea(rho, angle) += 1;
+                    } else {
+                        rho = std::abs(rho);
+                        transArea(maxRho + rho, angle) += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    int maxRhoTolorance = 20;
+    int maxAngleTolorance = 5;
+    /* detect lines */
+    std::vector<Hough::Line> lines(lineNo);
+    Hough::Line maxValue;
+    for (int k = 0; k < lineNo; k++) {
+        maxValue.pixels = 0;
+        for (std::size_t i = 0; i < areaNum; i++) {
+            if (transArea[i] > maxValue.pixels) {
+                maxValue.pixels = transArea[i];
+                maxValue.angle = i;
+            }
+        }
+        if (maxValue.pixels == 0) {
+            return -1;
+        }
+        if (maxValue.angle < maxAngle*maxRho) {
+            maxValue.rho = maxValue.angle/maxAngle;
+            maxValue.angle = maxValue.angle%maxAngle;
+        } else {
+            maxValue.angle -= maxAngle*maxRho;
+            maxValue.rho = -1*maxValue.angle/maxAngle;
+            maxValue.angle = maxValue.angle%maxAngle;
+        }
+        lines[k].angle = 2*maxValue.angle;
+        lines[k].rho = maxValue.rho;
+        lines[k].pixels = maxValue.pixels;
+        if (lines[k].rho < 0) {
+            lines[k].angle -= 180;
+            lines[k].rho *= -1;
+        }
+
+        for (int r = -1*maxRhoTolorance; r <= maxRhoTolorance; r++) {
+            for (int a = -1*maxAngleTolorance; a <= maxAngleTolorance; a++) {
+                int rho = maxValue.rho + r;
+                int angle = 2*(maxValue.angle + a);
+                if (angle < 0 && angle >= -180) {
+                    angle += 180;
+                    rho *= -1;
+                }
+                if (angle >= 180 && angle < 360) {
+                    angle -= 180;
+                    rho *= -1;
+                }
+                if (std::abs(rho) < maxRho &&
+                        angle >= 0 && angle <= maxAngle*2) {
+                    angle /= 2;
+                    if (rho >= 0) {
+                        transArea(rho, angle) = 0;
+                    } else {
+                        rho = std::abs(rho);
+                        transArea(maxRho + rho, angle) = 0;
+                    }
+                }
+            }
+        }
+    }
+
+    /* draw line */
+    xo = xi;
+    for (int k = 0; k < lineNo; k++) {
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                float theta = lines[k].angle*pi/180.0;
+                int rho = float(j*std::cos(theta) + i*std::sin(theta));
+                if (rho == lines[k].rho) {
+                    if (c != 1) {
+                        xo(i, j, 0) = color.r;
+                        xo(i, j, 1) = color.g;
+                        xo(i, j, 2) = color.b;
+                    } else {
+                        xo(i, j, 0) = 255;
+                    }
+                }
+            }
+        }
+    }
+    return 0;
+}

@@ -172,7 +172,7 @@ protected:
             alpha_(0, i) = Pi[i]*B(i, O[0]);
         }
 
-        c[0] = 1.0 / alpha_.sum(0);
+        c[0] = 1.0 / alpha_.at(0).sum();
 
         for (int i = 0; i < T; i++) {
             alpha(0, i) = c[0]*alpha_(0, i);
@@ -186,7 +186,7 @@ protected:
                     alpha_(t+1, i) = s * B(i, O[t+1]);
                 }
             }
-            c[t + 1] = 1.0 / alpha_.sum(t + 1);
+            c[t + 1] = 1.0 / alpha_.at(t + 1).sum();
 
             for (int i = 0; i < N; i++) {
                 alpha(t + 1, i) = c[t + 1] * alpha_(t + 1, i);
