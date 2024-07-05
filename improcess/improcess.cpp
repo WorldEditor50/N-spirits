@@ -110,6 +110,24 @@ int imp::copy(OutTensor &xo, InTensor xi, const imp::Rect &rect)
     return 0;
 }
 
+int imp::copy(OutTensor &xo, InTensor xi, InTensor mask)
+{
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    int c = xi.shape[HWC_C];
+    xo = Tensor(h, w, c);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            for (int k = 0; k < c; k++) {
+                if (mask(i, j, 0)) {
+                    xo(i, j, k) = xi(i, j, k);
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 int imp::rgb2gray(OutTensor gray, InTensor rgb)
 {
     if (rgb.shape[HWC_C] != 3) {
@@ -122,6 +140,58 @@ int imp::rgb2gray(OutTensor gray, InTensor rgb)
         for (int j = 0; j < w; j++) {
             float avg = (rgb(i, j, 0) + rgb(i, j, 1) + rgb(i, j, 2))/3;
             gray(i, j, 0) = avg;
+        }
+    }
+    return 0;
+}
+
+int imp::maxGray(OutTensor gray, InTensor rgb)
+{
+    if (rgb.shape[HWC_C] != 3) {
+        return -1;
+    }
+    int h = rgb.shape[HWC_H];
+    int w = rgb.shape[HWC_W];
+    gray = Tensor(h, w, 1);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            float p = std::max(rgb(i, j, 0),
+                               std::max(rgb(i, j, 1), rgb(i, j, 2)));
+            gray(i, j, 0) = p;
+        }
+    }
+    return 0;
+}
+
+int imp::minGray(OutTensor gray, InTensor rgb)
+{
+    if (rgb.shape[HWC_C] != 3) {
+        return -1;
+    }
+    int h = rgb.shape[HWC_H];
+    int w = rgb.shape[HWC_W];
+    gray = Tensor(h, w, 1);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            float p = std::min(rgb(i, j, 0),
+                               std::min(rgb(i, j, 1), rgb(i, j, 2)));
+            gray(i, j, 0) = p;
+        }
+    }
+    return 0;
+}
+int imp::meanGray(OutTensor gray, InTensor rgb)
+{
+    if (rgb.shape[HWC_C] != 3) {
+        return -1;
+    }
+    int h = rgb.shape[HWC_H];
+    int w = rgb.shape[HWC_W];
+    gray = Tensor(h, w, 1);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            float p = rgb(i, j, 0)*0.3 + rgb(i, j, 1)*0.59 + rgb(i, j, 2)*0.11;
+            gray(i, j, 0) = p;
         }
     }
     return 0;
@@ -260,12 +330,20 @@ int imp::save(InTensor img, const std::string &fileName)
     int w = img.shape[HWC_W];
     int c = img.shape[HWC_C];
     /* rgb image */
-    if (c != 3) {
-        std::cout<<"c="<<c<<std::endl;
+    Tensor rgb;
+    if (c == 1) {
+        gray2rgb(rgb, img);
+    } else if (c == 3) {
+        rgb = img;
+    } else if (c == 4) {
+        rgba2rgb(rgb, img);
+    } else {
+        std::cout<<"unknown channel"<<std::endl;
         return -2;
     }
+
     /* clamp */
-    std::shared_ptr<uint8_t[]> data = tensor2Image(img);
+    std::shared_ptr<uint8_t[]> data = tensor2Image(rgb);
     /* save */
     if (fileName.find(".jpg") != std::string::npos) {
 #ifdef ENABLE_JPEG
@@ -314,124 +392,78 @@ int imp::resize(OutTensor xo, InTensor xi, const imp::Size &size, int type)
     }
     return 0;
 }
-/*
-    kernel: -1 --> ignore,
-             0 --> background,
-             1 --> roi
-*/
-int imp::erode(OutTensor xo, InTensor xi, InTensor kernel)
+
+int imp::erode(OutTensor xo, InTensor xi, InTensor kernel, int maxIterateTimes)
 {
+    /*
+        kernel:  0 --> ignore,
+                 1 --> roi
+    */
     int width = xi.shape[HWC_W];
     int height = xi.shape[HWC_H];
+    int channel = xi.shape[HWC_C];
     int kernelSize = kernel.shape[HWC_H];
-    xo = Tensor(xi.shape);
-    for (int i = 1; i < height - 1; i++) {
-        for (int j = 1; j < width - 1; j++) {
-            bool matched = true;
-            for (int c = 0; c < xi.shape[HWC_C]; c++) {
-                for (int h = 0; h < kernelSize; h++) {
-                    for (int k = 0; k < kernelSize; k++) {
-                        if (kernel(h, k) == -1) {
-                            continue;
-                        }
-                        if (kernel(h, k) == 1) {
-                            if (xi(i - 1 + h, j - 1 + k, c) != 0) {
-                                matched = false;
-                                break;
-                            }
-                        } else if (kernel(h, k) == 0) {
-                            if (xi(i - 1 + h, j - 1 + k, c) != 255) {
-                                matched = false;
-                                break;
-                            }
-                        }
-                    }
-                }
-                xo(i, j, c) = matched ? 0 : xi(i, j, c);
-            }
-        }
-    }
-    return 0;
-}
-/*
-    kernel: -1 --> ignore,
-             1 --> roi
-*/
-int imp::dilate(OutTensor xo, InTensor xi, InTensor kernel)
-{
-    int width = xi.shape[HWC_W];
-    int height = xi.shape[HWC_H];
-    int kernelSize = kernel.shape[HWC_H];
+    int h = kernelSize/2;
     xo = xi;
-    for (int i = 1; i < height - 1; i++) {
-        for (int j = 1; j < width - 1; j++) {
-            for (int c = 0; c < xi.shape[HWC_C]; c++) {
-                for (int h = 0; h < kernelSize; h++) {
-                    for (int k = 0; k < kernelSize; k++) {
-                        if (kernel(h, k) == -1) {
-                            continue;
+    for (int it = 0; it < maxIterateTimes; it++) {
+        Tensor xt = xo;
+        for (int i = h; i < height - h; i++) {
+            for (int j = h; j < width - h; j++) {
+                for (int k = 0; k < channel; k++) {
+                    float s = 0;
+                    float minValue = 255;
+                    for (int u = 0; u < kernelSize; u++) {
+                        for (int v = 0; v < kernelSize; v++) {
+                           float p = xt(i - h + u, j - h + v, k)*kernel(u, v);
+                           if (p < minValue) {
+                               minValue = p;
+                           }
+                           s += p;
                         }
-                        if (kernel(h, k) == 1) {
-                            if (xi(i - 1 + h, j - 1 + k, c) == 0) {
-                                xo(i, j, c) = 255;
-                                break;
+                    }
+                    if (s < 255) {
+                        xo(i, j, k) = minValue;
+                    }
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+int imp::dilate(OutTensor xo, InTensor xi, InTensor kernel, int maxIterateTimes)
+{
+    /*
+        kernel:  0 --> ignore,
+                 1 --> roi
+    */
+    int width = xi.shape[HWC_W];
+    int height = xi.shape[HWC_H];
+    int channel = xi.shape[HWC_C];
+    int kernelSize = kernel.shape[HWC_H];
+    int h = kernelSize/2;
+    xo = xi;
+    for (int it = 0; it < maxIterateTimes; it++) {
+        Tensor xt = xo;
+        for (int i = h; i < height - h; i++) {
+            for (int j = h; j < width - h; j++) {
+                for (int k = 0; k < channel; k++) {
+                    float s = 0;
+                    float maxValue = 0;
+                    for (int u = 0; u < kernelSize; u++) {
+                        for (int v = 0; v < kernelSize; v++) {
+                            float p = xt(i - h + u, j - h + v, k)*kernel(u, v);
+                            if (p > maxValue) {
+                                maxValue = p;
                             }
+                            s += p;
                         }
+                    }
+                    if (s > 255) {
+                        xo(i, j, k) = maxValue;
                     }
                 }
             }
-        }
-    }
-    return 0;
-}
-
-int imp::grayDilate(OutTensor xo, const Point2i &offset, InTensor xi, InTensor kernel)
-{
-    int w = xi.shape[HWC_W];
-    int h = xi.shape[HWC_H];
-    int kh = kernel.shape[0];
-    int kw = kernel.shape[1];
-    xo = Tensor(xi.shape);
-    for (int i = offset.x; i < h - kh + offset.x + 1; i++) {
-        for (int j = offset.y; j < w - kw + offset.y + 1; j++) {
-            float maxVal = 0;
-            for (int u = 0; u < kh; u++) {
-                for (int v = 0; v < kw; v++) {
-                    if (kernel(u, v) == 1) {
-                        float gray = xi(i - offset.x + u, j - offset.y + v);
-                        if (gray > maxVal) {
-                            maxVal = gray;
-                        }
-                    }
-                }
-            }
-            xo(i, j) = maxVal;
-        }
-    }
-    return 0;
-}
-
-int imp::grayErode(OutTensor xo, const Point2i &offset, InTensor xi, InTensor kernel)
-{
-    int w = xi.shape[HWC_W];
-    int h = xi.shape[HWC_H];
-    int kh = kernel.shape[0];
-    int kw = kernel.shape[1];
-    xo = Tensor(xi.shape);
-    for (int i = offset.x; i < h - kh + offset.x + 1; i++) {
-        for (int j = offset.y; j < w - kw + offset.y + 1; j++) {
-            float minVal = 255.0;
-            for (int u = 0; u < kh; u++) {
-                for (int v = 0; v < kw; v++) {
-                    if (kernel(u, v) == 1) {
-                        float gray = xi(i - offset.x + u, j - offset.y + v);
-                        if (gray < minVal) {
-                            minVal = gray;
-                        }
-                    }
-                }
-            }
-            xo(i, j) = minVal;
         }
     }
     return 0;

@@ -88,7 +88,9 @@ Tensor inv(const Tensor &x);
 float eigen(const Tensor &x, Tensor &vec, int maxIterateCount=1000, float eps=1e-8);
 void eigen(const Tensor &x, Tensor &vec, Tensor &value, int maxIterateCount=1000, float eps=1e-8);
 /* xTAx */
-void xTAx(Tensor &y, const Tensor &x, const Tensor a);
+void xTAx(Tensor &y, const Tensor &x, const Tensor &a);
+void USVT(Tensor &y, const Tensor &u, const Tensor &s, const Tensor &v);
+Tensor USVT(const Tensor &u, const Tensor &s, const Tensor &v);
 /* gaussian elimination */
 namespace GaussianElimination {
     void solve(const Tensor &a, Tensor &u);

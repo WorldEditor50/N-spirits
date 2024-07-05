@@ -3,6 +3,8 @@
 #include <cmath>
 #include <vector>
 #include <functional>
+#include <fstream>
+#include <string>
 #include <iostream>
 #include <assert.h>
 #include "alignallocator.hpp"
@@ -1130,7 +1132,34 @@ public:
         }
         std::cout<<")"<<std::endl;
         return;
-    }  
+    }
+
+    void save(const std::string &fileName) const
+    {
+        std::fstream file(fileName, std::ios::out);
+        if (!file.is_open()) {
+            return;
+        }
+        for (std::size_t i = 0; i < totalSize; i++) {
+            file<<val[i]<<" ";
+        }
+        std::cout<<std::endl;
+        file.close();
+        return;
+    }
+
+    void load(const std::string &fileName) const
+    {
+        std::fstream file(fileName, std::ios::in);
+        if (!file.is_open()) {
+            return;
+        }
+        for (std::size_t i = 0; i < totalSize; i++) {
+            file>>val[i];
+        }
+        file.close();
+        return;
+    }
 };
 
 using Tensorc  = Tensor_<char>;

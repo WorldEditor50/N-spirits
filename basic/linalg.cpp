@@ -648,7 +648,7 @@ void LinAlg::eigen(const Tensor &x, Tensor &vec, Tensor &value, int maxIterateCo
     return;
 }
 
-void LinAlg::xTAx(Tensor &y, const Tensor &x, const Tensor a)
+void LinAlg::xTAx(Tensor &y, const Tensor &x, const Tensor &a)
 {
     /*
         x:(m, n)
@@ -660,6 +660,23 @@ void LinAlg::xTAx(Tensor &y, const Tensor &x, const Tensor a)
     Tensor::MM::kikj(xTa, x, a);
     Tensor::MM::ikkj(y, xTa, x);
     return;
+}
+
+void LinAlg::USVT(Tensor &y, const Tensor &u, const Tensor &s, const Tensor &v)
+{
+    Tensor r(u.shape[1], s.shape[0]);
+    Tensor::MM::ikkj(r, u, s);
+    Tensor::MM::ikjk(y, r, v);
+    return;
+}
+
+Tensor LinAlg::USVT(const Tensor &u, const Tensor &s, const Tensor &v)
+{
+    Tensor r(u.shape[1], s.shape[0]);
+    Tensor::MM::ikkj(r, u, s);
+    Tensor y(r.shape[1], v.shape[0]);
+    Tensor::MM::ikjk(y, r, v);
+    return y;
 }
 
 void LinAlg::GaussianElimination::solve(const Tensor &a, Tensor &u)

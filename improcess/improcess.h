@@ -39,8 +39,12 @@ namespace imp {
     /* copy */
     int copyMakeBorder(OutTensor xo, InTensor xi, int padding);
     int copy(OutTensor &xo, InTensor xi, const Rect &rect);
+    int copy(OutTensor &xo, InTensor xi, InTensor mask);
     /* gray */
     int rgb2gray(OutTensor gray, InTensor rgb);
+    int maxGray(OutTensor gray, InTensor rgb);
+    int minGray(OutTensor gray, InTensor rgb);
+    int meanGray(OutTensor gray, InTensor rgb);
     int gray2rgb(OutTensor rgb, InTensor gray);
     /* rgb <--> rgba */
     int rgb2rgba(OutTensor rgba, InTensor rgb, int alpha=120);
@@ -49,13 +53,9 @@ namespace imp {
     /* resize */
     int resize(OutTensor xo, InTensor xi, const Size &size, int type=INTERPOLATE_NEAREST);
     /* erode */
-    int erode(OutTensor xo, InTensor xi, InTensor kernel);
+    int erode(OutTensor xo, InTensor xi, InTensor kernel, int maxIterateTimes=3);
     /* dilate */
-    int dilate(OutTensor xo, InTensor xi, InTensor kernel);
-    /* gray dilate */
-    int grayDilate(OutTensor xo, const Point2i &offset, InTensor xi, InTensor kernel);
-    /* gray erode */
-    int grayErode(OutTensor xo, const Point2i &offset, InTensor xi, InTensor kernel);
+    int dilate(OutTensor xo, InTensor xi, InTensor kernel, int maxIterateTimes=3);
     /* trace boundary */
     int traceBoundary(OutTensor xo, InTensor xi, std::vector<Point2i> &boundary);
     /* connected region */

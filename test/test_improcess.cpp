@@ -554,11 +554,39 @@ void test_erode()
         std::cout<<"failed to load image."<<std::endl;
         return;
     }
+    Tensor k33({3, 3}, {  0, 1, 0,
+                          1, 1, 1,
+                          0, 1, 0 });
+    Tensor k55({5, 5}, {  0, 0, 1, 0, 0,
+                          0, 1, 1, 1, 0,
+                          1, 1, 1, 1, 1,
+                          0, 1, 1, 1, 0,
+                          0, 0, 1, 0, 0});
     Tensor out;
-    Tensor k33({3, 3}, { -1, 1,  -1,
-                          1, 1,  1,
-                         -1, 1,  -1 });
-    imp::erode(out, img, k33);
+    imp::erode(out, img, k33, 6);
+    imp::save(out, "erode.bmp");
+    imp::show(out);
+    return;
+}
+
+void test_dilate()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor out;
+    Tensor k33({3, 3}, {  0, 1, 0,
+                          1, 1, 1,
+                          0, 1, 0 });
+    Tensor k55({5, 5}, {  0, 0, 1, 0, 0,
+                          0, 1, 1, 1, 0,
+                          1, 1, 1, 1, 1,
+                          0, 1, 1, 1, 0,
+                          0, 0, 1, 0, 0});
+    imp::dilate(out, img, k33, 6);
+    imp::save(out, "dilate.bmp");
     imp::show(out);
     return;
 }
@@ -819,33 +847,28 @@ void test_regionGrow()
     int h = img.shape[imp::HWC_H];
     int w = img.shape[imp::HWC_W];
     Tensor gray;
-    imp::rgb2gray(gray, img);
+    imp::minGray(gray, img);
     Tensor mask(h, w);
     Point2i seed;
     imp::barycenter(gray, seed);
     uint8_t thres = 60;
     imp::otsu(gray, thres);
-    std::cout<<"otsu thres:"<<thres<<",seed:"<<seed.x<<","<<seed.y<<std::endl;
-    imp::regionGrow(mask, gray, seed, {30, thres, 120});
+    std::cout<<"otsu thres:"<<(int)thres<<",seed:"<<seed.x<<","<<seed.y<<std::endl;
+    imp::regionGrow(mask, gray, seed, {25, thres, 255});
     Tensor xo(h, w, 3);
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
             if (mask(i, j) == 1) {
-                xo(i, j, 0) = 255;
-                xo(i, j, 1) = 0;
-                xo(i, j, 2) = 0;
+                xo.at(i, j) = {255, 0, 0};
             } else if (mask(i, j) == 2) {
-                xo(i, j, 0) = 0;
-                xo(i, j, 1) = 255;
-                xo(i, j, 2) = 0;
+                xo.at(i, j) = {0, 255, 0};
             } else if (mask(i, j) == 3) {
-                xo(i, j, 0) = 0;
-                xo(i, j, 1) = 0;
-                xo(i, j, 2) = 255;
+                xo.at(i, j) = {0, 0, 255};
             }
         }
     }
-    imp::show(xo);
+    Tensor result = Tensor::concat(1, xo, img);
+    imp::show(result);
     return;
 }
 
@@ -868,6 +891,7 @@ void test_LBP()
     Tensor lbp3;
     imp::multiScaleBlockLBP(lbp3, gray, 9);
     Tensor result = Tensor::concat(1, lbp1, lbp2, lbp3, gray);
+    imp::save(result, "lbp.bmp");
     imp::show(result);
     return;
 }
@@ -885,7 +909,13 @@ void test_SVD()
     Tensor s;
     Tensor v;
     LinAlg::SVD::solve(gray, u, s, v, 1e-4, 100);
-    s(0, 0) *= 0.5;
+    int n = s.argmax();
+    s[n] *= 0.6;
+    int N = std::min(s.shape[0], s.shape[1]);
+    Tensor eigen(N, 1);
+    for (int i = 0; i < N; i++) {
+        eigen[i] = s(i, i);
+    }
     /* img = u*s*v^T */
     Tensor r1(gray.shape);
     Tensor::MM::ikkj(r1, u, s);
@@ -919,7 +949,6 @@ int main()
     test_prewitt();
     test_nearest_interpolation();
     test_bilinear_interpolation();
-    //test_rotate();
     test_make_border();
     test_cut();
     test_autoThreshold();
@@ -933,7 +962,6 @@ int main()
 #endif
     //test_rotate();
     //test_sobel();
-    //test_erode();
     //test_histogram();
     //test_svmSegmentation();
     //test_kmeansPixelCluster();
@@ -941,6 +969,8 @@ int main()
     //test_houghLine();
     //test_regionGrow();
     //test_LBP();
-    test_SVD();
+    //test_SVD();
+    //test_erode();
+    test_dilate();
     return 0;
 }
