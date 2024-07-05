@@ -458,7 +458,7 @@ int imp::traceBoundary(OutTensor xo, InTensor xi, std::vector<Point2i> &boundary
     Point2i currentPoint;
     bool isAtStartPoint = true;
     int k = 0;
-    Point2i directs[8] = {{-1, 0}, {-1, 1}, {0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}};
+    Point2i d[8] = {{-1, 0}, {-1, 1}, {0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}};
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             if (gray(i, j) != 0) {
@@ -470,11 +470,11 @@ int imp::traceBoundary(OutTensor xo, InTensor xi, std::vector<Point2i> &boundary
             while ((startPoint.x != currentPoint.x || startPoint.y != currentPoint.y) ||
                    isAtStartPoint) {
                 isAtStartPoint = false;
-                Point2i pos = currentPoint + directs[k];
+                Point2i pos = currentPoint + d[k];
                 int searchTime = 1;
                 while (gray(pos.x, pos.y) == 255) {
                     k = (k + 1)%8;
-                    pos = currentPoint + directs[k];
+                    pos = currentPoint + d[k];
                     if (++searchTime >= 8) {
                         pos = currentPoint;
                         break;
@@ -625,7 +625,7 @@ int imp::autoThreshold(OutTensor xo, InTensor xi, float max_, float min_)
 
 int imp::otsuThreshold(OutTensor xo, InTensor xi, float max_, float min_)
 {
-    int thres = 0;
+    uint8_t thres = 0;
     int ret = otsu(xi, thres);
     std::cout<<"otsu thres:"<<thres<<std::endl;
     if (ret != 0) {
@@ -637,7 +637,7 @@ int imp::otsuThreshold(OutTensor xo, InTensor xi, float max_, float min_)
 
 int imp::entropyThreshold(OutTensor xo, InTensor xi, float max_, float min_)
 {
-    int thres = 0;
+    uint8_t thres = 0;
     int ret = entropy(xi, thres);
     std::cout<<"entropy thres:"<<thres<<std::endl;
     if (ret != 0) {
@@ -646,9 +646,9 @@ int imp::entropyThreshold(OutTensor xo, InTensor xi, float max_, float min_)
     return threshold(xo, xi, thres, max_, min_);
 }
 
-int imp::regionGrow(OutTensor mask, float label, InTensor xi, const Point2i &seed, uint8_t thres)
+int imp::regionGrow(OutTensor mask, InTensor xi, const Point2i &seed, const std::vector<uint8_t>& thres)
 {
-    if (xi.shape[HWC_C] != 1 || mask.shape[HWC_C] != 1) {
+    if (xi.shape[HWC_C] != 1) {
         return -1;
     }
     int h = xi.shape[HWC_H];
@@ -665,17 +665,23 @@ int imp::regionGrow(OutTensor mask, float label, InTensor xi, const Point2i &see
         count = 0;
         for (int i = 1; i < h - 1; i++) {
             for (int j = 1; j < w - 1; j++) {
-                if (xi(i, j) != 255.0) {
-                    continue;
-                }
-                /* 8 neighbourhood */
+
                 for (int u = i - 1; u < i + 1; u++) {
                     for (int v = j - 1; v < j + 1; v++) {
-                        float delta = std::abs(xi(u, v) - seedVal);
-                        if (mask(u, v) == 0 && delta <= thres) {
-                            mask(u, v) = label;
-                            count++;
-                            s += xi(u, v);
+                        if (mask(u, v) == 0) {
+                            float delta = std::abs(xi(u, v) - seedVal);
+                            if (delta <= thres[0]) {
+                                mask(u, v) = 1;
+                            }
+                            for (std::size_t k = 1; k < thres.size(); k++) {
+                                if (delta <= thres[k] && delta > thres[k - 1]) {
+                                    mask(u, v) = k + 1;
+                                }
+                            }
+                            if (mask(u, v) != 0) {
+                                count++;
+                                s += xi(u, v);
+                            }
                         }
                     }
                 }

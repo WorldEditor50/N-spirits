@@ -71,7 +71,7 @@ namespace imp {
     /* entropy threshold */
     int entropyThreshold(OutTensor xo, InTensor xi, float max_, float min_);
     /* region grow */
-    int regionGrow(OutTensor mask, float label, InTensor xi,  const Point2i &seed, uint8_t thres);
+    int regionGrow(OutTensor mask, InTensor xi,  const Point2i &seed, const std::vector<uint8_t>& thres);
     /* template match */
     int templateMatch(InTensor xi, InTensor xt, Rect &rect);
     /* houghLine */

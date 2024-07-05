@@ -1037,7 +1037,7 @@ int LinAlg::SVD::solve(const Tensor &x, Tensor &u, Tensor &s, Tensor &v, float e
 {
     u = Tensor(x.shape[0], x.shape[0]);
     v = Tensor(x.shape[1], x.shape[1]);
-    s = Tensor(x.size());
+    s = Tensor(x.shape);
     /* column vectors */
     Tensor ur(x.shape[0], 1);
     Tensor nextUr(x.shape[0], 1);

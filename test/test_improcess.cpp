@@ -809,6 +809,94 @@ void test_houghLine()
     return;
 }
 
+void test_regionGrow()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    int h = img.shape[imp::HWC_H];
+    int w = img.shape[imp::HWC_W];
+    Tensor gray;
+    imp::rgb2gray(gray, img);
+    Tensor mask(h, w);
+    Point2i seed;
+    imp::barycenter(gray, seed);
+    uint8_t thres = 60;
+    imp::otsu(gray, thres);
+    std::cout<<"otsu thres:"<<thres<<",seed:"<<seed.x<<","<<seed.y<<std::endl;
+    imp::regionGrow(mask, gray, seed, {30, thres, 120});
+    Tensor xo(h, w, 3);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            if (mask(i, j) == 1) {
+                xo(i, j, 0) = 255;
+                xo(i, j, 1) = 0;
+                xo(i, j, 2) = 0;
+            } else if (mask(i, j) == 2) {
+                xo(i, j, 0) = 0;
+                xo(i, j, 1) = 255;
+                xo(i, j, 2) = 0;
+            } else if (mask(i, j) == 3) {
+                xo(i, j, 0) = 0;
+                xo(i, j, 1) = 0;
+                xo(i, j, 2) = 255;
+            }
+        }
+    }
+    imp::show(xo);
+    return;
+}
+
+void test_LBP()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    imp::rgb2gray(gray, img);
+    /* LBP */
+    Tensor lbp1;
+    imp::LBP(lbp1, gray);
+    /* circle LBP */
+    Tensor lbp2;
+    imp::circleLBP(lbp2, gray, 3, 8, false);
+    /* multi scale block LBP */
+    Tensor lbp3;
+    imp::multiScaleBlockLBP(lbp3, gray, 9);
+    Tensor result = Tensor::concat(1, lbp1, lbp2, lbp3, gray);
+    imp::show(result);
+    return;
+}
+
+void test_SVD()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    imp::rgb2gray(gray, img);
+    Tensor u;
+    Tensor s;
+    Tensor v;
+    LinAlg::SVD::solve(gray, u, s, v, 1e-4, 100);
+    s(0, 0) *= 0.5;
+    /* img = u*s*v^T */
+    Tensor r1(gray.shape);
+    Tensor::MM::ikkj(r1, u, s);
+    Tensor r2(gray.shape);
+    Tensor::MM::ikjk(r2, r1, v);
+    Tensor result = Tensor::concat(1, r2, gray);
+    imp::save(result, "svd.bmp");
+    imp::show(result);
+    return;
+}
+
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -850,6 +938,9 @@ int main()
     //test_svmSegmentation();
     //test_kmeansPixelCluster();
     //test_gmmPixelCluster();
-    test_houghLine();
+    //test_houghLine();
+    //test_regionGrow();
+    //test_LBP();
+    test_SVD();
     return 0;
 }

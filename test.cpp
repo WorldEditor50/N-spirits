@@ -147,11 +147,14 @@ void test_svd()
     std::cout<<"V:"<<std::endl;
     v.printValue();
     /* x = U*S*V^T */
-    Tensor y = u*s*v.tr();
+    Tensor y1(x.shape);
+    Tensor::MM::ikkj(y1, u, s);
+    Tensor y2(x.shape);
+    Tensor::MM::ikjk(y2, y1, v);
     std::cout<<"x:"<<std::endl;
     x.printValue();
     std::cout<<"y:"<<std::endl;
-    y.printValue();
+    y2.printValue();
     return;
 }
 
@@ -605,7 +608,8 @@ int main()
     //test_gaussSeidel();
 
     //test_inv();
-    test_eigen();
+    //test_eigen();
+    test_svd();
     return 0;
 }
 
