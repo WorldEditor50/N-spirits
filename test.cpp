@@ -16,12 +16,20 @@
 
 void test_rank()
 {
-    Tensor x({3, 3}, { 0, 1, 0,
-                       1, 0, 0,
-                       0, 0, 1 });
+    Tensor x1({4, 4}, {1,0,1,1,
+                      1,0,0,1,
+                      1,0,1,0,
+                      0,0,1,1});
 
-    int r = LinAlg::rank(x);
-    std::cout<<"rank:"<<r<<std::endl;
+    int r1 = LinAlg::rank(x1);
+    std::cout<<"rank:"<<r1<<std::endl;
+    Tensor x2({4, 4}, {1,0,1,1,
+                      1,2,0,1,
+                      1,0,1,0,
+                      0,0,1,1});
+
+    int r2 = LinAlg::rank(x2);
+    std::cout<<"rank:"<<r2<<std::endl;
     return;
 }
 
@@ -609,7 +617,8 @@ int main()
 
     //test_inv();
     //test_eigen();
-    test_svd();
+    //test_svd();
+    test_rank();
     return 0;
 }
 

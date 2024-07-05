@@ -927,6 +927,31 @@ void test_SVD()
     return;
 }
 
+void test_fft()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    imp::rgb2gray(gray, img);
+    /* FFT */
+    Tensor spectrum;
+    CTensor xf;
+    imp::FFT2D(spectrum, xf, gray);
+    /* filter */
+    Tensor filter = imp::gaussHPF(xf.shape[0], xf.shape[1], 1);
+    xf *= filter;
+    /* iFFT */
+    Tensor out;
+    imp::iFFT2D(out, xf);
+    Tensor result = Tensor::concat(1, spectrum, out, gray);
+    imp::show(result);
+    return;
+}
+
+
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -971,6 +996,7 @@ int main()
     //test_LBP();
     //test_SVD();
     //test_erode();
-    test_dilate();
+    //test_dilate();
+    test_fft();
     return 0;
 }

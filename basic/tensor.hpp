@@ -562,6 +562,15 @@ public:
         return *this;
     }
 
+    template<typename ...Index>
+    Tensor_ view(Index ...index) const
+    {
+        Tensor_ x = *this;
+        x.shape = {index...};
+        x.initParams(x.shape, x.sizes, x.totalSize);
+        return x;
+    }
+
     Tensor_ flatten() const
     {
         Tensor_ x(totalSize);

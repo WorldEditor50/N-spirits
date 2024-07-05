@@ -86,7 +86,7 @@ int invert(const Tensor &x, Tensor &ix);
 Tensor inv(const Tensor &x);
 /* eigen */
 float eigen(const Tensor &x, Tensor &vec, int maxIterateCount=1000, float eps=1e-8);
-void eigen(const Tensor &x, Tensor &vec, Tensor &value, int maxIterateCount=1000, float eps=1e-8);
+int eigen(const Tensor &x, Tensor &vec, Tensor &value, int maxIterateCount=1000, float eps=1e-8);
 /* xTAx */
 void xTAx(Tensor &y, const Tensor &x, const Tensor &a);
 void USVT(Tensor &y, const Tensor &u, const Tensor &s, const Tensor &v);
@@ -116,7 +116,7 @@ namespace QR {
 namespace SVD {
     float normalize(Tensor &x, float eps);
     float qrIteration(Tensor &a, const Tensor &q, float eps);
-    int solve(const Tensor &x, Tensor &u, Tensor &s, Tensor &v, float eps=1e-7, std::size_t maxEpoch=1e6);
+    int solve(const Tensor &x, Tensor &u, Tensor &s, Tensor &v, float eps=1e-7, std::size_t maxEpoch=100);
 };
 /* cholesky */
 namespace Cholesky {

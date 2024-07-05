@@ -65,17 +65,17 @@ int prewitt3x3(OutTensor xo, InTensor xi);
 
 int adaptiveMedianFilter(OutTensor xo, InTensor xi, std::size_t kernelSize);
 
-int extendSize(int size);
-int FFT(CTensor &xf, const CTensor &xt, int t);
-int IFFT(CTensor &xt, const CTensor &xf, int t);
-int FFT2D(Tensor &dst, CTensor &f, const Tensor &img, bool expand, unsigned char color);
-int IFFT2D(Tensor &dst, const CTensor &xf);
-Tensor freqLPF(const Tensor &img, int freq);
-Tensor freqGaussHPF(const Tensor &img, float sigma);
-Tensor freqLaplaceFilter(const Tensor &img);
-Tensor freqInvDegenerate(const Tensor &img);
-Tensor freqInvFilter(const Tensor &img, int rad);
-Tensor freqWienerFilter(const Tensor &img, float K);
+int FFT(Complex *xf, const Complex *xt, int t);
+int iFFT(Complex *xt, const Complex *xf, int t);
+int FFT2D(Tensor &spectrum, CTensor &xf, const Tensor &img);
+int iFFT2D(Tensor &img, const CTensor &xf);
+Tensor LPF(int h, int w, int freq);
+Tensor gaussHPF(int h, int w, float sigma);
+Tensor laplaceFilter(int h, int w);
+Tensor invDegenerate(int h, int w);
+Tensor invFilter(int h, int w, int rad);
+Tensor wienerFilter(int h, int w, float K);
+
 }
 
 #endif // FILTER_H

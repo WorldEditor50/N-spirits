@@ -21,6 +21,78 @@ public:
     explicit CTensor(Dim ...dim)
         :Tensor_<Complex>(dim...){}
 
+    CTensor operator +(const Tensorf &x) const
+    {
+        CTensor y(shape);
+        for (std::size_t i = 0; i < val.size(); i++) {
+            y.val[i] = val[i].re + x.val[i];
+        }
+        return y;
+    }
+
+    CTensor operator -(const Tensorf &x) const
+    {
+        CTensor y(shape);
+        for (std::size_t i = 0; i < val.size(); i++) {
+            y.val[i] = val[i].re - x.val[i];
+        }
+        return y;
+    }
+
+    CTensor operator *(const Tensorf &x) const
+    {
+        CTensor y(shape);
+        for (std::size_t i = 0; i < val.size(); i++) {
+            y.val[i] = val[i].re * x.val[i];
+            y.val[i] = val[i].im * x.val[i];
+        }
+        return y;
+    }
+
+    CTensor operator /(const Tensorf &x) const
+    {
+        CTensor y(shape);
+        for (std::size_t i = 0; i < val.size(); i++) {
+            y.val[i] = val[i].re / x.val[i];
+            y.val[i] = val[i].im / x.val[i];
+        }
+        return y;
+    }
+
+    CTensor &operator +=(const Tensorf &x)
+    {
+        for (std::size_t i = 0; i < val.size(); i++) {
+            val[i].re += x.val[i];
+        }
+        return *this;
+    }
+
+    CTensor &operator -=(const Tensorf &x)
+    {
+        for (std::size_t i = 0; i < val.size(); i++) {
+            val[i].re -= x.val[i];
+        }
+        return *this;
+    }
+
+    CTensor &operator *=(const Tensorf &x)
+    {
+        for (std::size_t i = 0; i < val.size(); i++) {
+            val[i].re *= x.val[i];
+            val[i].im *= x.val[i];
+        }
+        return *this;
+    }
+
+    CTensor operator /=(const Tensorf &x)
+    {
+        for (std::size_t i = 0; i < val.size(); i++) {
+            val[i].re /= x.val[i];
+            val[i].im /= x.val[i];
+        }
+        return *this;
+    }
+
     CTensor row(int i) const
     {
         CTensor r(shape[1]);
@@ -73,5 +145,17 @@ public:
         return x;
     }
 
+    void printValue() const
+    {
+        std::cout<<"[";
+        for (std::size_t i = 0; i < val.size(); i++) {
+            std::cout<<val[i].re<<" + "<<val[i].im<<"i";
+            if (i < totalSize - 1) {
+                std::cout<<",";
+            }
+        }
+        std::cout<<"]"<<std::endl;
+        return;
+    }
 };
 #endif // CTENSOR_HPP

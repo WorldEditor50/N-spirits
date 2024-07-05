@@ -459,6 +459,7 @@ int imp::dilate(OutTensor xo, InTensor xi, InTensor kernel, int maxIterateTimes)
                             s += p;
                         }
                     }
+
                     if (s > 255) {
                         xo(i, j, k) = maxValue;
                     }

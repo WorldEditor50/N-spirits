@@ -539,6 +539,9 @@ Tensor LinAlg::inv(const Tensor &x)
 
 float LinAlg::eigen(const Tensor &x, Tensor &vec, int maxIterateCount, float eps)
 {
+    if (x.shape[0] != x.shape[1]) {
+        return -1;
+    }
     int N = x.shape[0];
     vec = Tensor(N, 1);
     vec.fill(1.0);
@@ -560,8 +563,11 @@ float LinAlg::eigen(const Tensor &x, Tensor &vec, int maxIterateCount, float eps
     return value;
 }
 
-void LinAlg::eigen(const Tensor &x, Tensor &vec, Tensor &value, int maxIterateCount, float eps)
+int LinAlg::eigen(const Tensor &x, Tensor &vec, Tensor &value, int maxIterateCount, float eps)
 {
+    if (x.shape[0] != x.shape[1]) {
+        return -1;
+    }
     /* jacobi iteration */
     int N = x.shape[0];
     Tensor a = x;
@@ -645,7 +651,7 @@ void LinAlg::eigen(const Tensor &x, Tensor &vec, Tensor &value, int maxIterateCo
             }
         }
     }
-    return;
+    return 0;
 }
 
 void LinAlg::xTAx(Tensor &y, const Tensor &x, const Tensor &a)
@@ -827,41 +833,20 @@ int LinAlg::rank(const Tensor &x)
 {
     Tensor xi(x.shape);
     GaussianElimination::solve(x, xi);
-    xi.printValue();
-    int N = x.shape[0];
-    for (int i = 0; i < N; i++) {
-        if (xi(i, i) == 0) {
-            int j = i;
-            for (; j < N; j++) {
-                if (xi(j, i)) {
-                    break;
-                }
+    //xi.printValue2D();
+    int r = xi.shape[0];
+    for (int i = 0; i < xi.shape[0]; i++) {
+        int s = 0;
+        for (int j = 0; j < xi.shape[1]; j++) {
+            if (xi(i, j) == 0) {
+                s++;
             }
-            if (j == N) {
-                return N; // zero row
-            }
-            exchangeRow(xi, i, j);
+        }
+        if (s == xi.shape[1]) {
+            r = i;
         }
     }
-    for (int i = 0; i < N; i++) {
-        if (xi(i, i) != 1) {
-            int j = i + 1;
-            for (; j < N; j++) {
-                if (xi(j, i)) {
-                    break;
-                }
-            }
-            if (j == N) {
-                return N - 1;  // pivot == 0
-            }
-            exchangeRow(xi, i, j);
-            for (int j = i + 1; j < N; j++) {
-                xi(j, i) /= xi(i, i);
-            }
-            xi(i, i) = 1;
-        }
-    }
-    return N;
+    return r;
 }
 
 int LinAlg::QR::solve(const Tensor &x, Tensor &q, Tensor &r)

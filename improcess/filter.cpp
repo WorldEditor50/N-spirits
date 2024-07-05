@@ -165,19 +165,7 @@ int imp::adaptiveMedianFilter(OutTensor xo, InTensor xi, size_t kernelSize)
     return 0;
 }
 
-int imp::extendSize(int size)
-{
-    int extSize = 1;
-    while (extSize*2 <= size) {
-        extSize *= 2;
-    }
-    if (extSize != size) {
-        extSize *= 2;
-    }
-    return 0;
-}
-
-int imp::FFT(CTensor &xf, const CTensor &xt, int t)
+int imp::FFT(Complex *xf, const Complex *xt, int t)
 {
     int length = 1 << t;
     CTensor w(length/2);
@@ -190,7 +178,9 @@ int imp::FFT(CTensor &xf, const CTensor &xt, int t)
         w[i] = Complex(std::cos(theta), std::sin(theta));
     }
     /* align */
-    x1 = xt;
+    for (std::size_t i = 0; i < x1.totalSize; i++) {
+        x1[i] = xt[i];
+    }
     /* FFT */
     for (int k = 0; k < t; k++) {
         for (int j = 0; j < (1 << k); j++) {
@@ -218,77 +208,136 @@ int imp::FFT(CTensor &xf, const CTensor &xt, int t)
     return 0;
 }
 
-int imp::IFFT(CTensor &xt, const CTensor &xf, int t)
+int imp::iFFT(Complex *xt, const Complex *xf, int t)
 {
     int length = 1 << t;
-    CTensor x(length);
-    x = xf;
-    for (std::size_t i = 0; i < x.totalSize; i++) {
-        x[i] = x[i].conjugate();
+    std::unique_ptr<Complex> x_(new Complex[length]);
+    Complex *x = x_.get();
+    for (int i = 0; i < length; i++) {
+        x[i] = xf[i].conjugate();
     }
-    FFT(x, xt, t);
-    for (std::size_t i = 0; i < xt.totalSize; i++) {
+    FFT(xt, x, t);
+    for (int i = 0; i < length; i++) {
         xt[i] = xt[i].conjugate()/float(length);
     }
     return 0;
 }
 
-int imp::FFT2D(Tensor &dst, CTensor &f, const Tensor &img, bool expand, unsigned char color)
+int imp::FFT2D(Tensor &spectrum, CTensor &xf, const Tensor &img)
 {
-    int w = 1;
-    int h = 1;
-    int wp = 0;
-    int hp = 0;
-    while (w*2 <= img.shape[HWC_W]) {
-        w *= 2;
-        wp++;
+    if (img.shape[HWC_C] != 1) {
+        return -1;
     }
-    while (h*2 <= img.shape[HWC_H]) {
-        h *= 2;
-        hp++;
-    }
-    if (expand && w != img.shape[HWC_W] && h != img.shape[HWC_H]) {
-        w *= 2;
-        wp++;
-        h *= 2;
-        hp++;
-    }
-    
+    int th = std::floor(std::log2(img.shape[0])) + 1;
+    int tw = std::floor(std::log2(img.shape[1])) + 1;
+    int w = std::pow(2, tw);
+    int h = std::pow(2, th);
+    int ph = (h - img.shape[0])/2;
+    int pw = (w - img.shape[1])/2;
     CTensor xt(h, w);
-    CTensor xf(h, w);
-    
-    for (int i = 0; i < h; i++) {
-        for (int j = 0; j < w; j++) {
-            if (expand) {
-                if (i > img.shape[HWC_H] && j > img.shape[HWC_W]) {
-                    xt(i, j) = Complex(img(i, j), 0);
-                } else {
-                    xt(i, j) = Complex(color, 0);
-                }
-            } else {
-                xt(i, j) = Complex(img(i, j), 0);
-            }
+    xf = CTensor(h, w);
+    //std::cout<<"h:"<<h<<",w:"<<w<<std::endl;
+    /* copy image */
+    for (int i = 0; i < img.shape[0]; i++) {
+        for (int j = 0; j < img.shape[1]; j++) {
+            float p = img(i, j, 0);
+            xt(i + ph, j + pw).re = p;
+            xt(i + ph, j + pw).im = 0;
         }
     }
-    for (int i = 0; i < w; i++) {
+    //xt.printValue();
+    /* FFT on row */
+    for (int i = 0; i < h; i++) {
+        Complex* xti = xt.ptr() + w*i;
+        Complex* xfi = xf.ptr() + w*i;
+        FFT(xfi, xti, tw);
+    }
 
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            xt[j*h + i] = xf[i*w + j];
+        }
+    }
+    /* FFT on column */
+    for (int i = 0; i < w; i++) {
+        Complex* xti = xt.ptr() + h*i;
+        Complex* xfi = xf.ptr() + h*i;
+        FFT(xfi, xti, th);
+    }
+    CTensor xf_= xf.tr();
+    xf = xf_;
+    //xf.printValue();
+    /* spectrum */
+    spectrum = Tensor(h, w, 1);
+    float maxVal = 0;
+    float minVal = 1e9;
+    for (std::size_t i = 0; i < xf.totalSize; i++) {
+        float d = xf[i].modulus()/100;
+        d = std::log(1 + d);
+        maxVal = std::max(maxVal, d);
+        minVal = std::min(minVal, d);
+    }
+
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            float d = xf[j*h + i].modulus()/100;
+            d = std::log(1 + d);
+            float p = (d - minVal)/(maxVal - minVal)*255.0;
+            int u = i < h/2 ? i + h/2 : i - h/2;
+            int v = j < w/2 ? j + w/2 : j - w/2;
+            spectrum(u, v, 0) = p;
+        }
+    }
+    return 0;
+}
+
+int imp::iFFT2D(Tensor &img, const CTensor &xf_)
+{
+    CTensor xf = xf_;
+    CTensor xt(xf.shape);
+    int h = xf.shape[0];
+    int w = xf.shape[1];
+    int th = std::log2(h);
+    int tw = std::log2(w);
+    /* IFFT on row */
+    for (int i = 0; i < h; i++) {
+        Complex* xti = xt.ptr() + w*i;
+        Complex* xfi = xf.ptr() + w*i;
+        iFFT(xti, xfi, tw);
+    }
+
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            xf[j*h + i] = xt[i*w + j];
+        }
+    }
+    /* IFFT on column */
+    for (int i = 0; i < w; i++) {
+        Complex* xti = xt.ptr() + h*i;
+        Complex* xfi = xf.ptr() + h*i;
+        iFFT(xti, xfi, th);
+    }
+    /* image */
+    img = Tensor(h, w, 1);
+    float maxVal = 0;
+    float minVal = 1e9;
+    for (std::size_t i = 0; i < xt.totalSize; i++) {
+        float d = xt[i].modulus();
+        maxVal = std::max(maxVal, d);
+        minVal = std::min(minVal, d);
     }
     for (int i = 0; i < h; i++) {
-
+        for (int j = 0; j < w; j++) {
+            float d = xt[j*h + i].modulus();
+            float p = (d - minVal)/(maxVal - minVal)*255.0;
+            img(i, j, 0) = p;
+        }
     }
     return 0;
 }
 
-int imp::IFFT2D(Tensor &dst, const CTensor &xf)
+Tensor imp::LPF(int h, int w, int freq)
 {
-
-    return 0;
-}
-
-Tensor imp::freqLPF(const Tensor &img, int freq)
-{
-    int h = extendSize(img.shape[HWC_H]);
-    int w = extendSize(img.shape[HWC_W]);
     Tensor H(h, w);
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
@@ -300,20 +349,16 @@ Tensor imp::freqLPF(const Tensor &img, int freq)
             } else {
                 H(u, v) = 0;
             }
-
         }
     }
     return H;
 }
 
-Tensor imp::freqGaussHPF(const Tensor &img, float sigma)
+Tensor imp::gaussHPF(int h, int w, float sigma)
 {
     /*
         H(u, v) = 1 - e^(-[(u - M/2)^2 + (v - N/2)^2]/2)/sigma^2)
-
     */
-    int h = extendSize(img.shape[HWC_H]);
-    int w = extendSize(img.shape[HWC_W]);
     Tensor H(h, w);
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
@@ -321,16 +366,13 @@ Tensor imp::freqGaussHPF(const Tensor &img, float sigma)
             int u = i < h/2 ? i + h/2 : i - h/2;
             int v = j < w/2 ? j + w/2 : j - w/2;
             H(u, v) = 1 - std::exp(-f/2)/(sigma*sigma);
-
         }
     }
     return H;
 }
 
-Tensor imp::freqLaplaceFilter(const Tensor &img)
+Tensor imp::laplaceFilter(int h, int w)
 {
-    int h = extendSize(img.shape[HWC_H]);
-    int w = extendSize(img.shape[HWC_W]);
     Tensor H(h, w);
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
@@ -338,19 +380,16 @@ Tensor imp::freqLaplaceFilter(const Tensor &img)
             int u = i < h/2 ? i + h/2 : i - h/2;
             int v = j < w/2 ? j + w/2 : j - w/2;
             H(u, v) = -f;
-
         }
     }
     return H;
 }
 
-Tensor imp::freqInvDegenerate(const Tensor &img)
+Tensor imp::invDegenerate(int h, int w)
 {
     /*
         H(u, v) = exp(k*((u - M/2)^2 + (v - N/2)^2)^(5/6))
     */
-    int h = extendSize(img.shape[HWC_H]);
-    int w = extendSize(img.shape[HWC_W]);
     Tensor H(h, w);
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
@@ -361,16 +400,13 @@ Tensor imp::freqInvDegenerate(const Tensor &img)
             int u = i < h/2 ? i + h/2 : i - h/2;
             int v = j < w/2 ? j + w/2 : j - w/2;
             H(u, v) = f;
-
         }
     }
     return H;
 }
 
-Tensor imp::freqInvFilter(const Tensor &img, int rad)
+Tensor imp::invFilter(int h, int w, int rad)
 {
-    int h = extendSize(img.shape[HWC_H]);
-    int w = extendSize(img.shape[HWC_W]);
     Tensor H(h, w);
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
@@ -384,16 +420,13 @@ Tensor imp::freqInvFilter(const Tensor &img, int rad)
                 int v = j < w/2 ? j + w/2 : j - w/2;
                 H(u, v) = 1.0/(f + 1e-5);
             }
-
         }
     }
     return H;
 }
 
-Tensor imp::freqWienerFilter(const Tensor &img, float K)
+Tensor imp::wienerFilter(int h, int w, float K)
 {
-    int h = extendSize(img.shape[HWC_H]);
-    int w = extendSize(img.shape[HWC_W]);
     Tensor H(h, w);
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
@@ -404,9 +437,7 @@ Tensor imp::freqWienerFilter(const Tensor &img, float K)
             int u = i < h/2 ? i + h/2 : i - h/2;
             int v = j < w/2 ? j + w/2 : j - w/2;
             H(u, v) = f*f/(f*f*K*(f + 1e-5));
-
         }
     }
     return H;
 }
-
