@@ -184,7 +184,7 @@ int imp::LBP(OutTensor feature, InTensor gray)
     return 0;
 }
 
-int imp::circleLBP(OutTensor feature, InTensor gray, int radius, int neighbors, bool rotationInvariant)
+int imp::circleLBP(OutTensor feature, InTensor gray, int radius, int neighbors, bool rotationInvariance)
 {
     if (gray.shape[HWC_C] != 1) {
         return -1;
@@ -225,8 +225,8 @@ int imp::circleLBP(OutTensor feature, InTensor gray, int radius, int neighbors, 
             feature(i - radius, j - radius, 0) = code;
         }
     }
-    /* rotation invariant */
-    if (rotationInvariant) {
+    /* rotation invariance */
+    if (rotationInvariance) {
         for (int i = 0; i < feature.shape[0]; i++) {
             for (int j = 0; j < feature.shape[1]; j++) {
                 uint8_t p = feature(i, j, 0);

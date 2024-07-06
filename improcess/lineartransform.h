@@ -11,7 +11,7 @@ int linearTransform(OutTensor xo, InTensor xi, float alpha, float beta);
 /* log transform */
 int logTransform(OutTensor xo, InTensor xi, float c);
 /* gamma transform */
-int gammaTransform(OutTensor xo, InTensor xi, float exsp, float gamma);
+int gammaTransform(OutTensor xo, InTensor xi, float esp, float gamma);
 /* histogram equalize */
 int histogramEqualize(OutTensor xo, InTensor xi);
 /* histogram standardize */

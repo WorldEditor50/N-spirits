@@ -1,7 +1,7 @@
 #include "filter.h"
 #include <algorithm>
 
-int imp::averageFilter(OutTensor xo, InTensor xi, const imp::Size &size)
+int imp::averageBlur(OutTensor xo, InTensor xi, const imp::Size &size)
 {
     if (size.x != size.y) {
         return -1;
@@ -12,7 +12,7 @@ int imp::averageFilter(OutTensor xo, InTensor xi, const imp::Size &size)
     return 0;
 }
 
-int imp::gaussianFilter3x3(OutTensor xo, InTensor xi)
+int imp::gaussian3x3(OutTensor xo, InTensor xi)
 {
     Tensor kernel({3, 3}, {1.0/16, 2.0/16, 1.0/16,
                            2.0/16, 4.0/16, 2.0/16,
@@ -21,7 +21,7 @@ int imp::gaussianFilter3x3(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::gaussianFilter5x5(OutTensor xo, InTensor xi)
+int imp::gaussianBlur5x5(OutTensor xo, InTensor xi)
 {
     Tensor kernel({5, 5}, {1.0/273, 4.0/273, 7.0/273, 4.0/273, 1.0/273,
                            4.0/273, 16.0/273, 26.0/273, 16.0/273, 4.0/273,
@@ -32,7 +32,7 @@ int imp::gaussianFilter5x5(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::medianFilter(OutTensor xo, InTensor xi, const imp::Size &size)
+int imp::medianBlur(OutTensor xo, InTensor xi, const imp::Size &size)
 {
     if (size.x != size.y) {
         return -1;
@@ -160,8 +160,111 @@ int imp::prewitt3x3(OutTensor xo, InTensor xi)
 }
 
 
-int imp::adaptiveMedianFilter(OutTensor xo, InTensor xi, size_t kernelSize)
+int imp::canny(OutTensor xo, InTensor xi, float minThres, float maxThres)
 {
+    if (xi.shape[HWC_C] != 1) {
+        return -1;
+    }
+    /* step1: gaussian blur */
+    Tensor img;
+    gaussianBlur5x5(img, xi);
+    /* step2: grad and theta */
+    Tensor kx({3, 3}, {-1, 0, 1,
+                       -2, 0, 2,
+                       -1, 0, 1});
+    Tensor ky({3, 3}, { 1,  2,  1,
+                        0,  0,  0,
+                       -1, -2, -1});
+    Tensor imgx;
+    conv2d(imgx, kx, img, 1, 0);
+    Tensor imgy;
+    conv2d(imgy, ky, img, 1, 0);
+    Tensor grad = LinAlg::sqrt(imgx*imgx + imgy*imgy);
+    Tensor theta(grad.shape);
+    for (std::size_t i = 0; i < theta.totalSize; i++) {
+        theta[i] = std::atan2(imgy[i], imgx[i] + 1e-9)*180/pi;
+    }
+
+    /* step3: Non-Maximum Suppression */
+    int h = grad.shape[HWC_H];
+    int w = grad.shape[HWC_W];
+    Tensor mask(grad.shape);
+    for (int i = 1; i < h - 1; i++) {
+        for (int j = 1; j < w - 1; j++) {
+            if (grad(i, j) == 0) {
+                continue;
+            }
+            float thetaij = theta(i, j);
+            float p1 = 0;
+            float p2 = 0;
+            if (thetaij >= 0 && thetaij < 45) {
+                float g1 = grad(i + 1, j - 1);
+                float g2 = grad(i + 1, j);
+                float g3 = grad(i - 1, j + 1);
+                float g4 = grad(i - 1, j);
+                float w = std::abs(std::tan(thetaij*pi/180));
+                p1 = w*g1 + (1 - w)*g2;
+                p2 = w*g3 + (1 - w)*g4;
+            } else if (thetaij >= 45 && thetaij < 90) {
+                float g1 = grad(i + 1, j - 1);
+                float g2 = grad(i, j - 1);
+                float g3 = grad(i - 1, j + 1);
+                float g4 = grad(i, j + 1);
+                float w = std::abs(std::tan((thetaij - 90)*pi/180));
+                p1 = w*g1 + (1 - w)*g2;
+                p2 = w*g3 + (1 - w)*g4;
+            } else if (thetaij >= -90 && thetaij < -45) {
+                float g1 = grad(i - 1, j - 1);
+                float g2 = grad(i, j - 1);
+                float g3 = grad(i + 1, j + 1);
+                float g4 = grad(i, j + 1);
+                float w = std::abs(std::tan((thetaij - 90)*pi/180));
+                p1 = w*g1 + (1 - w)*g2;
+                p2 = w*g3 + (1 - w)*g4;
+            } else if (thetaij >= -45 && thetaij < 0) {
+                float g1 = grad(i + 1, j + 1);
+                float g2 = grad(i + 1, j);
+                float g3 = grad(i - 1, j - 1);
+                float g4 = grad(i - 1, j);
+                float w = std::abs(std::tan(thetaij*pi/180));
+                p1 = w*g1 + (1 - w)*g2;
+                p2 = w*g3 + (1 - w)*g4;
+            }
+            float p = grad(i, j);
+            if (p > p1 && p > p2) {
+                mask(i, j) = p;
+            }
+        }
+    }
+
+    /* step4: threshold */
+    Tensor strongEdge(grad.shape);
+    Tensor weakEdge(grad.shape);
+
+    int hi[8] = {1, 1, 0, -1, -1, -1, 0, 1};
+    int hj[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+
+    for (int i = 1; i < h - 1; i++) {
+        for (int j = 1; j < w - 1; j++) {
+            float p = mask(i, j);
+            if (p == 0) {
+                continue;
+            }
+            if (p > maxThres) {
+                strongEdge(i, j) = 255;
+            } else if (p < maxThres && p > minThres) {
+                for (int k = 0; k < 8; k++) {
+                    float u = i + hi[k];
+                    float v = j + hj[k];
+                    if (mask(u, v) > maxThres) {
+                        weakEdge(i, j) = 255;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    xo = strongEdge + weakEdge;
     return 0;
 }
 
@@ -211,12 +314,11 @@ int imp::FFT(Complex *xf, const Complex *xt, int t)
 int imp::iFFT(Complex *xt, const Complex *xf, int t)
 {
     int length = 1 << t;
-    std::unique_ptr<Complex> x_(new Complex[length]);
-    Complex *x = x_.get();
+    CTensor xfi(length);
     for (int i = 0; i < length; i++) {
-        x[i] = xf[i].conjugate();
+        xfi[i] = xf[i].conjugate();
     }
-    FFT(xt, x, t);
+    FFT(xt, xfi.ptr(), t);
     for (int i = 0; i < length; i++) {
         xt[i] = xt[i].conjugate()/float(length);
     }
@@ -245,7 +347,6 @@ int imp::FFT2D(Tensor &spectrum, CTensor &xf, const Tensor &img)
             xt(i + ph, j + pw).im = 0;
         }
     }
-    //xt.printValue();
     /* FFT on row */
     for (int i = 0; i < h; i++) {
         Complex* xti = xt.ptr() + w*i;
@@ -299,7 +400,7 @@ int imp::iFFT2D(Tensor &img, const CTensor &xf_)
     int w = xf.shape[1];
     int th = std::log2(h);
     int tw = std::log2(w);
-    /* IFFT on row */
+    /* iFFT on row */
     for (int i = 0; i < h; i++) {
         Complex* xti = xt.ptr() + w*i;
         Complex* xfi = xf.ptr() + w*i;
@@ -311,7 +412,7 @@ int imp::iFFT2D(Tensor &img, const CTensor &xf_)
             xf[j*h + i] = xt[i*w + j];
         }
     }
-    /* IFFT on column */
+    /* iFFT on column */
     for (int i = 0; i < w; i++) {
         Complex* xti = xt.ptr() + h*i;
         Complex* xfi = xf.ptr() + h*i;

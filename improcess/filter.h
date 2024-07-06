@@ -52,10 +52,10 @@ inline void conv2d(OutTensor y, InTensor kernel, InTensor x, int stride=1, int p
     return;
 }
 
-int averageFilter(OutTensor xo, InTensor xi, const Size &size);
-int gaussianFilter3x3(OutTensor xo, InTensor xi);
-int gaussianFilter5x5(OutTensor xo, InTensor xi);
-int medianFilter(OutTensor xo, InTensor xi, const Size &size);
+int averageBlur(OutTensor xo, InTensor xi, const Size &size);
+int gaussian3x3(OutTensor xo, InTensor xi);
+int gaussianBlur5x5(OutTensor xo, InTensor xi);
+int medianBlur(OutTensor xo, InTensor xi, const Size &size);
 
 int sobel3x3(OutTensor xo, InTensor xi);
 int sobel5x5(OutTensor xo, InTensor xi);
@@ -63,7 +63,7 @@ int laplacian3x3(OutTensor xo, InTensor xi);
 int laplacian5x5(OutTensor xo, InTensor xi);
 int prewitt3x3(OutTensor xo, InTensor xi);
 
-int adaptiveMedianFilter(OutTensor xo, InTensor xi, std::size_t kernelSize);
+int canny(OutTensor xo, InTensor xi, float minThres, float maxThres);
 
 int FFT(Complex *xf, const Complex *xt, int t);
 int iFFT(Complex *xt, const Complex *xf, int t);

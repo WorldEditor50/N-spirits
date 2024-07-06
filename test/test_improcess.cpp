@@ -248,7 +248,7 @@ void test_averageBlur()
     }
     /* average blur */
     Tensor dst;
-    imp::averageFilter(dst, img, imp::Size(3, 3));
+    imp::averageBlur(dst, img, imp::Size(3, 3));
     /* save */
     imp::save(dst, "averageblur.bmp");
     return;
@@ -264,7 +264,7 @@ void test_medianBlur()
     }
     /* median blur */
     Tensor dst;
-    imp::medianFilter(dst, img, imp::Size(3, 3));
+    imp::medianBlur(dst, img, imp::Size(3, 3));
     /* save */
     imp::save(dst, "median.bmp");
     return;
@@ -292,7 +292,7 @@ void test_laplacian()
         return;
     }
     Tensor blur;
-    imp::gaussianFilter3x3(blur, img);
+    imp::gaussian3x3(blur, img);
     Tensor dst;
     imp::laplacian3x3(dst, blur);
     imp::save(LinAlg::abs(dst), "laplacian3x3.bmp");
@@ -301,7 +301,7 @@ void test_laplacian()
 
 void test_prewitt()
 {
-    Tensor img = imp::load("./images/dota2.bmp");
+    Tensor img = imp::load("./images/dota-2-official.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
@@ -309,6 +309,7 @@ void test_prewitt()
     Tensor dst;
     imp::prewitt3x3(dst, img);
     imp::save(dst, "prewitt3x3.bmp");
+    imp::show(dst);
     return;
 }
 
@@ -935,7 +936,7 @@ void test_fft()
         return;
     }
     Tensor gray;
-    imp::rgb2gray(gray, img);
+    imp::maxGray(gray, img);
     /* FFT */
     Tensor spectrum;
     CTensor xf;
@@ -951,6 +952,47 @@ void test_fft()
     return;
 }
 
+void test_CMY()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor cmy;
+    imp::RGB2CMY(cmy, img);
+    imp::show(cmy);
+    return;
+}
+
+void test_HSI()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor hsi;
+    imp::RGB2HSI(hsi, img);
+    imp::show(hsi);
+    return;
+}
+
+void test_canny()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    imp::meanGray(gray, img);
+    Tensor x1;
+    imp::canny(x1, gray, 30, 80);
+    Tensor result = Tensor::concat(1, x1, gray);
+    imp::show(result);
+    return;
+}
 
 int main()
 {
@@ -985,6 +1027,8 @@ int main()
     test_entropyThreshold();
     test_show();
 #endif
+    //test_CMY();
+    //test_HSI();
     //test_rotate();
     //test_sobel();
     //test_histogram();
@@ -997,6 +1041,7 @@ int main()
     //test_SVD();
     //test_erode();
     //test_dilate();
-    test_fft();
+    //test_fft();
+    test_canny();
     return 0;
 }

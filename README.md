@@ -3,19 +3,44 @@ fun with cpp
 
 ## Features
 
-- expression template 
-- simd (support SSE2, AVX2)
-- matrix
-- tensor
-- complex number
-- basic linear algerbra (LU, QR, SVD, PCA, DET)
-- kmeans
-- gmm
-- svm
-- lr
-- BPNET
-- LeNet5
-- LSTM
+- SIMD (support SSE2, AVX2)
+
+- Tensor
+
+- Linear Algerbra
+
+   invert, eigen, LU, QR, SVD,  DET, 
+
+- Machine Learning
+
+  kmeans , gmm, svm, BPNET, LeNet5, LSTM
+
+- Image Process
+
+  - spatial filter
+
+    average blur, gaussian blur,  median blur, sobel, laplace, canny
+
+  - frequency filter
+
+    FFT, LPF, gaussianHPF
+
+  - geometry tranform
+
+    move, flip, rotate, nearest interpolation, bilinear interpolation
+
+  - segmentation
+
+    threshold, region grow, hough line, kmeans, gmm
+
+  - morphology
+
+    erode, dilate
+
+  - feature
+
+    histogram, LBP, SVD
+
 - LBM (D2Q9)
 
 ## Requirements
