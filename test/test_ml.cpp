@@ -9,7 +9,6 @@
 
 void test_kmeans()
 {
-
     /* load data */
     NumericDB db("D:/home/dataset/wine-clustering.csv");
     std::vector<Tensor> x;

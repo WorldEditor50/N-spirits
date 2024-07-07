@@ -82,8 +82,7 @@ int imp::sobel3x3(OutTensor xo, InTensor xi)
                             -1, -2, -1});
     Tensor grady;
     imp::conv2d(grady, kernely, xi, 1);
-    xo = LinAlg::sqrt(gradx*gradx + grady*grady)/2;
-    //xo = gradx + grady;
+    xo = LinAlg::sqrt(gradx*gradx + grady*grady);
     return 0;
 }
 
@@ -179,58 +178,58 @@ int imp::canny(OutTensor xo, InTensor xi, float minThres, float maxThres)
     conv2d(imgx, kx, img, 1, 0);
     Tensor imgy;
     conv2d(imgy, ky, img, 1, 0);
-    Tensor grad = LinAlg::sqrt(imgx*imgx + imgy*imgy);
-    Tensor theta(grad.shape);
+    Tensor g = LinAlg::sqrt(imgx*imgx + imgy*imgy);
+    Tensor theta(g.shape);
     for (std::size_t i = 0; i < theta.totalSize; i++) {
         theta[i] = std::atan2(imgy[i], imgx[i] + 1e-9)*180/pi;
     }
 
     /* step3: Non-Maximum Suppression */
-    int h = grad.shape[HWC_H];
-    int w = grad.shape[HWC_W];
-    Tensor mask(grad.shape);
+    int h = g.shape[HWC_H];
+    int w = g.shape[HWC_W];
+    Tensor mask(g.shape);
     for (int i = 1; i < h - 1; i++) {
         for (int j = 1; j < w - 1; j++) {
-            if (grad(i, j) == 0) {
+            if (g(i, j) == 0) {
                 continue;
             }
             float thetaij = theta(i, j);
             float p1 = 0;
             float p2 = 0;
             if (thetaij >= 0 && thetaij < 45) {
-                float g1 = grad(i + 1, j - 1);
-                float g2 = grad(i + 1, j);
-                float g3 = grad(i - 1, j + 1);
-                float g4 = grad(i - 1, j);
+                float g1 = g(i + 1, j - 1);
+                float g2 = g(i + 1, j);
+                float g3 = g(i - 1, j + 1);
+                float g4 = g(i - 1, j);
                 float w = std::abs(std::tan(thetaij*pi/180));
                 p1 = w*g1 + (1 - w)*g2;
                 p2 = w*g3 + (1 - w)*g4;
             } else if (thetaij >= 45 && thetaij < 90) {
-                float g1 = grad(i + 1, j - 1);
-                float g2 = grad(i, j - 1);
-                float g3 = grad(i - 1, j + 1);
-                float g4 = grad(i, j + 1);
+                float g1 = g(i + 1, j - 1);
+                float g2 = g(i, j - 1);
+                float g3 = g(i - 1, j + 1);
+                float g4 = g(i, j + 1);
                 float w = std::abs(std::tan((thetaij - 90)*pi/180));
                 p1 = w*g1 + (1 - w)*g2;
                 p2 = w*g3 + (1 - w)*g4;
             } else if (thetaij >= -90 && thetaij < -45) {
-                float g1 = grad(i - 1, j - 1);
-                float g2 = grad(i, j - 1);
-                float g3 = grad(i + 1, j + 1);
-                float g4 = grad(i, j + 1);
+                float g1 = g(i - 1, j - 1);
+                float g2 = g(i, j - 1);
+                float g3 = g(i + 1, j + 1);
+                float g4 = g(i, j + 1);
                 float w = std::abs(std::tan((thetaij - 90)*pi/180));
                 p1 = w*g1 + (1 - w)*g2;
                 p2 = w*g3 + (1 - w)*g4;
             } else if (thetaij >= -45 && thetaij < 0) {
-                float g1 = grad(i + 1, j + 1);
-                float g2 = grad(i + 1, j);
-                float g3 = grad(i - 1, j - 1);
-                float g4 = grad(i - 1, j);
+                float g1 = g(i + 1, j + 1);
+                float g2 = g(i + 1, j);
+                float g3 = g(i - 1, j - 1);
+                float g4 = g(i - 1, j);
                 float w = std::abs(std::tan(thetaij*pi/180));
                 p1 = w*g1 + (1 - w)*g2;
                 p2 = w*g3 + (1 - w)*g4;
             }
-            float p = grad(i, j);
+            float p = g(i, j);
             if (p > p1 && p > p2) {
                 mask(i, j) = p;
             }
@@ -238,8 +237,8 @@ int imp::canny(OutTensor xo, InTensor xi, float minThres, float maxThres)
     }
 
     /* step4: threshold */
-    Tensor strongEdge(grad.shape);
-    Tensor weakEdge(grad.shape);
+    Tensor strongEdge(g.shape);
+    Tensor weakEdge(g.shape);
 
     int hi[8] = {1, 1, 0, -1, -1, -1, 0, 1};
     int hj[8] = {0, 1, 1, 1, 0, -1, -1, -1};
@@ -332,8 +331,8 @@ int imp::FFT2D(Tensor &spectrum, CTensor &xf, const Tensor &img)
     }
     int th = std::floor(std::log2(img.shape[0])) + 1;
     int tw = std::floor(std::log2(img.shape[1])) + 1;
-    int w = std::pow(2, tw);
-    int h = std::pow(2, th);
+    int w = 1 << tw;//std::pow(2, tw);
+    int h = 1 << th;//std::pow(2, th);
     int ph = (h - img.shape[0])/2;
     int pw = (w - img.shape[1])/2;
     CTensor xt(h, w);

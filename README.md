@@ -39,7 +39,7 @@ fun with cpp
 
   - feature
 
-    histogram, LBP, SVD
+    histogram, LBP, SVD, HOG
 
 - LBM (D2Q9)
 

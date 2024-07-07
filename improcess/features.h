@@ -15,5 +15,6 @@ int barycenter(InTensor img, Point2i &center);
 int LBP(OutTensor feature, InTensor gray);
 int circleLBP(OutTensor feature, InTensor gray, int radius=3, int neighbors=8, bool rotationInvariance=true);
 int multiScaleBlockLBP(OutTensor feature, InTensor gray, float scale=3);
+
 }
 #endif // FEATURES_H

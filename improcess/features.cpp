@@ -1,5 +1,5 @@
 #include "features.h"
-
+#include "filter.h"
 
 int imp::histogram(OutTensor hist, InTensor gray)
 {

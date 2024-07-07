@@ -9,6 +9,7 @@
 #include "image.hpp"
 #include "graphic2d.h"
 #include "geometrytransform.h"
+#include "lineartransform.h"
 #include "filter.h"
 #include "features.h"
 #ifdef ENABLE_JPEG
@@ -76,6 +77,8 @@ namespace imp {
     int templateMatch(InTensor xi, InTensor xt, Rect &rect);
     /* houghLine */
     int houghLine(OutTensor xo, InTensor xi, float thres, int lineNo, const Color3 &color);
+    /* histogram of oriented gradient */
+    int HOG(OutTensor xo, OutTensor hist, InTensor xi);
 }
 
 

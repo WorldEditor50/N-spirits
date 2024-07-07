@@ -388,19 +388,6 @@ void test_tensor()
         x.sub(1, 1).printValue();
         std::cout<<"(1, 1, 1) = "<<x(1, 1, 1)<<std::endl;
     }
-    /* row and column */
-    std::cout<<"row and column:"<<std::endl;
-    {
-        Tensor x({3, 3}, {1, 2, 3,
-                          4, 5, 6,
-                          7, 8, 9});
-        std::cout<<"row:";
-        Tensor r = x.row(1);
-        r.printValue();
-        std::cout<<"col:";
-        Tensor c = x.column(1);
-        c.printValue();
-    }
     /* block */
     std::cout<<"block:"<<std::endl;
     {

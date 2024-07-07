@@ -994,6 +994,25 @@ void test_canny()
     return;
 }
 
+void test_HOG()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor crop;
+    copy(crop, img, imp::Rect(0, 0, 304, 304));
+    Tensor gray;
+    imp::meanGray(gray, crop);
+    Tensor hog;
+    Tensor hist;
+    imp::HOG(hog, hist, gray);
+    Tensor result = Tensor::concat(1, hog, crop);
+    imp::show(result);
+    return;
+}
+
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -1042,6 +1061,7 @@ int main()
     //test_erode();
     //test_dilate();
     //test_fft();
-    test_canny();
+    //test_canny();
+    test_HOG();
     return 0;
 }

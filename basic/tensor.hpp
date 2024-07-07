@@ -194,6 +194,15 @@ public:
             }
             return index;
         }
+        inline T norm2() const
+        {
+            T s = 0;
+            for (std::size_t i = 0; i < totalSize; i++) {
+                float val = pointer->val[i + pos];
+                s += val*val;
+            }
+            return std::sqrt(s);
+        }
     };
 
 protected:
@@ -624,42 +633,6 @@ public:
             }
         }
         return y;
-    }
-
-    Tensor_ row(int i) const
-    {
-        Tensor_ r(shape[1]);
-        int pos = i*shape[1];
-        for (int j = 0; j < shape[1]; j++) {
-            r[j] = val[j + pos];
-        }
-        return r;
-    }
-
-    void row(int i, const Tensor_ &r)
-    {
-        int pos = i*shape[1];
-        for (int j = 0; j < shape[1]; j++) {
-            val[j + pos] = r[j];
-        }
-        return;
-    }
-
-    Tensor_ column(int j) const
-    {
-        Tensor_ c(shape[0]);
-        for (int i = 0; i < shape[0]; i++) {
-            c[i] = val[i*shape[1] + j];
-        }
-        return c;
-    }
-
-    void column(int j, const Tensor_ &c)
-    {
-        for (int i = 0; i < shape[0]; i++) {
-            val[i*shape[1] + j] = c[i];
-        }
-        return;
     }
 
     /* operator */

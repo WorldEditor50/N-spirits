@@ -60,6 +60,9 @@ void imp::showHistogram(InTensor xi)
 
 void imp::show(InTensor xi)
 {
+    if (xi.empty()) {
+        return;
+    }
     int h = xi.shape[HWC_H];
     int w = xi.shape[HWC_W];
     int c = xi.shape[HWC_C];
@@ -72,9 +75,6 @@ void imp::show(InTensor xi)
 void imp::show(const std::string &fileName)
 {
     Tensor img = load(fileName);
-    if (img.empty()) {
-        return;
-    }
     show(img);
     return;
 }
@@ -103,7 +103,7 @@ int imp::copy(OutTensor &xo, InTensor xi, const imp::Rect &rect)
     for (int i = 0; i < rect.height; i++) {
         for (int j = 0; j < rect.width; j++) {
             for (int k = 0; k < c; k++) {
-                xo(i, j, k) = xi(i + rect.height, j + rect.width, k);
+                xo(i, j, k) = xi(i + rect.x, j + rect.y, k);
             }
         }
     }
@@ -893,6 +893,107 @@ int imp::houghLine(OutTensor xo, InTensor xi, float thres, int lineNo, const Col
                         xo(i, j, 0) = 255;
                     }
                 }
+            }
+        }
+    }
+    return 0;
+}
+
+int imp::HOG(OutTensor xo, OutTensor hist, InTensor xi)
+{
+    if (xi.shape[HWC_C] != 1) {
+        return -1;
+    }
+
+    /* step1: grad and angle */
+    Tensor kx({3, 3}, {-1, 0, 1,
+                       -2, 0, 2,
+                       -1, 0, 1});
+    Tensor ky({3, 3}, { 1,  2,  1,
+                        0,  0,  0,
+                       -1, -2, -1});
+    Tensor imgx;
+    conv2d(imgx, kx, xi, 1, 1);
+    Tensor imgy;
+    conv2d(imgy, ky, xi, 1, 1);
+    Tensor g = LinAlg::sqrt(imgx*imgx + imgy*imgy);
+    Tensor theta(g.shape);
+    for (std::size_t i = 0; i < theta.totalSize; i++) {
+        theta[i] = std::atan2(imgy[i], imgx[i] + 1e-9)*180/pi;
+    }
+    int h = g.shape[HWC_H];
+    int w = g.shape[HWC_W];
+    /* step2: histogram of oriented gradient */
+    int cellSize = 16;
+    int stride = cellSize;
+    int binSize = 8;
+    int angleUnit = 360/binSize;
+    int hc = (h - cellSize)/stride + 1;
+    int wc = (w - cellSize)/stride + 1;
+    Tensor cellHist(hc, wc, binSize);
+    for (int i = 0; i < hc; i++) {
+        for (int j = 0; j < wc; j++) {
+            for (int u = 0; u < cellSize; u++) {
+                for (int v = 0; v < cellSize; v++) {
+                    /* map to input */
+                    int ui = u + i*stride;
+                    int vj = v + j*stride;
+                    if (ui >= h || vj >= w) {
+                        continue;
+                    }
+                    /* cell histogram */
+                    float angle = theta(ui, w - 1 - vj);
+                    angle = angle < 0 ? angle + 180 : angle;
+                    int index1 = angle/angleUnit;
+                    int index2 = (index1 + 1)%binSize;
+                    int mod = int(angle)%angleUnit;
+                    float mag = g(ui, w - 1 - vj);
+                    cellHist(i, j, index1) += mag*(1 - mod/angleUnit);
+                    cellHist(i, j, index2) += mag*mod/angleUnit;
+                }
+            }
+        }
+    }
+    /* step3: normalize per 4 cell */
+    hist = Tensor(hc, wc, binSize);
+    for (int i = 0; i < hc - 1; i++) {
+        for (int j = 0; j < wc - 1; j++) {
+            float s = 0;
+            for (int k = 0; k < binSize; k++) {
+                for (int u = 0; u < 2; u++) {
+                    for (int v = 0; v < 2; v++) {
+                        float mag = cellHist(i + u, j + v, k);
+                        s += mag*mag;
+                    }
+                }
+            }
+            s = std::sqrt(s);
+            if (s != 0) {
+                for (int k = 0; k < binSize; k++) {
+                    hist(i, j, k) = cellHist(i, j, k)/s;
+                }
+            }
+
+        }
+    }
+    /* step4: hog image */
+    xo = Tensor(h, w, 3);
+    float maxMag = cellHist.max();
+    for (int i = 0; i < hc; i++) {
+        for (int j = 0; j < wc; j++) {
+            float angle = 0;
+            for (int k = 0; k < binSize; k++) {
+                angle = angle > 180 ? 180 - angle : angle;
+                float rad = angle*pi/180;
+                float sinTheta = std::sin(rad);
+                float cosTheta = std::cos(rad);
+                float mag = cellHist(i, j, k)/maxMag;
+                int x1 = float(i*cellSize + mag*cellSize*cosTheta*0.5);
+                int y1 = float(j*cellSize + mag*cellSize*sinTheta*0.5);
+                int x2 = float(i*cellSize - mag*cellSize*cosTheta*0.5);
+                int y2 = float(j*cellSize - mag*cellSize*sinTheta*0.5);
+                line(xo, Point2i(y1, x1), Point2i(y2, x2), Color3(0, 255*std::sqrt(mag), 0));
+                angle += angleUnit;
             }
         }
     }

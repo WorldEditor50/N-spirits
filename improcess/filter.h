@@ -18,34 +18,32 @@ inline void conv2d(OutTensor y, InTensor kernel, InTensor x, int stride=1, int p
         kernel: (h, w)
         (h, w, c) -> (h, w, c)
     */
-    int hi = x.shape[HWC_H];
-    int wi = x.shape[HWC_W];
-    int ci = x.shape[HWC_C];
-    int hk = kernel.shape[0];
-    int wk = kernel.shape[1];
-    int ho = std::floor((hi - hk + 2*padding)/stride) + 1;
-    int wo = std::floor((wi - wk + 2*padding)/stride) + 1;
-    y = Tensor(ho, wo, ci);
+    int h = x.shape[HWC_H];
+    int w = x.shape[HWC_W];
+    int c = x.shape[HWC_C];
+    int kernelSize0 = kernel.shape[0];
+    int kernelSize1 = kernel.shape[1];
+    int ho = (h - kernelSize0 + 2*padding)/stride + 1;
+    int wo = (w - kernelSize1 + 2*padding)/stride + 1;
+    y = Tensor(ho, wo, c);
     for (int i = 0; i < ho; i++) {
         for (int j = 0; j < wo; j++) {
-            for (int c = 0; c < ci; c++) {
-                float yi = 0;
+            for (int k = 0; k < c; k++) {
+                float yijk = 0;
                 /* kernels */
-                for (int u = 0; u < hk; u++) {
-                    for (int v = 0; v < wk; v++) {
+                for (int u = 0; u < kernelSize0; u++) {
+                    for (int v = 0; v < kernelSize1; v++) {
                         /* map to input  */
-                        int row = u + i*stride - padding;
-                        int col = v + j*stride - padding;
-                        if (row < 0 || row >= hi || col < 0 || col >= wi) {
+                        int ui = u + i*stride - padding;
+                        int vj = v + j*stride - padding;
+                        if (ui < 0 || ui >= h || vj < 0 || vj >= w) {
                             continue;
                         }
-                        //y(i, wo - j - 1, c) += kernel(u, v)*x(row, wo - col - 1, c);
-                        float kt = kernel(u, v);
-                        float xt = x(row, col, c);
-                        yi += kt*xt;
+                        yijk += kernel(u, v)*x(ui, wo - vj - 1, k);
+
                     }
                 }
-                y(i, j, c) = yi;
+                y(i, j, k) = yijk;
             }
         }
     }
