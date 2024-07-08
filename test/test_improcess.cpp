@@ -1001,14 +1001,14 @@ void test_HOG()
         std::cout<<"failed to load image."<<std::endl;
         return;
     }
-    Tensor crop;
-    copy(crop, img, imp::Rect(0, 0, 304, 304));
+
     Tensor gray;
-    imp::meanGray(gray, crop);
+    imp::meanGray(gray, img);
     Tensor hog;
     Tensor hist;
-    imp::HOG(hog, hist, gray);
-    Tensor result = Tensor::concat(1, hog, crop);
+    imp::HOG(hog, hist, gray, 8, 8, 2);
+    Tensor result = Tensor::concat(1, hog, img);
+    imp::save(hog, "./hog.bmp");
     imp::show(result);
     return;
 }

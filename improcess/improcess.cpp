@@ -899,13 +899,17 @@ int imp::houghLine(OutTensor xo, InTensor xi, float thres, int lineNo, const Col
     return 0;
 }
 
-int imp::HOG(OutTensor xo, OutTensor hist, InTensor xi)
+int imp::HOG(OutTensor xo, OutTensor hist, InTensor xi, int cellSize, int binSize, int blockSize)
 {
     if (xi.shape[HWC_C] != 1) {
         return -1;
     }
-
-    /* step1: grad and angle */
+    /* step1: align image */
+    Tensor img;
+    int h = (xi.shape[imp::HWC_H]/cellSize)*cellSize;
+    int w = (xi.shape[imp::HWC_W]/cellSize)*cellSize;
+    copy(img, xi, imp::Rect(0, 0, w, h));
+    /* step2: compute grad and angle, keep shape */
     Tensor kx({3, 3}, {-1, 0, 1,
                        -2, 0, 2,
                        -1, 0, 1});
@@ -913,20 +917,17 @@ int imp::HOG(OutTensor xo, OutTensor hist, InTensor xi)
                         0,  0,  0,
                        -1, -2, -1});
     Tensor imgx;
-    conv2d(imgx, kx, xi, 1, 1);
+    conv2d(imgx, kx, img, 1, 1);
     Tensor imgy;
-    conv2d(imgy, ky, xi, 1, 1);
+    conv2d(imgy, ky, img, 1, 1);
     Tensor g = LinAlg::sqrt(imgx*imgx + imgy*imgy);
     Tensor theta(g.shape);
     for (std::size_t i = 0; i < theta.totalSize; i++) {
         theta[i] = std::atan2(imgy[i], imgx[i] + 1e-9)*180/pi;
     }
-    int h = g.shape[HWC_H];
-    int w = g.shape[HWC_W];
-    /* step2: histogram of oriented gradient */
-    int cellSize = 16;
+
+    /* step3: histogram of oriented gradient */
     int stride = cellSize;
-    int binSize = 8;
     int angleUnit = 360/binSize;
     int hc = (h - cellSize)/stride + 1;
     int wc = (w - cellSize)/stride + 1;
@@ -954,29 +955,44 @@ int imp::HOG(OutTensor xo, OutTensor hist, InTensor xi)
             }
         }
     }
-    /* step3: normalize per 4 cell */
+    /* step4: normalize */
     hist = Tensor(hc, wc, binSize);
-    for (int i = 0; i < hc - 1; i++) {
-        for (int j = 0; j < wc - 1; j++) {
-            float s = 0;
+    int hb = hc/blockSize;
+    int wb = wc/blockSize;
+    for (int i = 0; i < hb; i++) {
+        for (int j = 0; j < wb; j++) {
             for (int k = 0; k < binSize; k++) {
-                for (int u = 0; u < 2; u++) {
-                    for (int v = 0; v < 2; v++) {
-                        float mag = cellHist(i + u, j + v, k);
+                float s = 0;
+                for (int h = 0; h < blockSize; h++) {
+                    for (int l = 0; l < blockSize; l++) {
+                        int u = h + i*cellSize;
+                        int v = l + j*cellSize;
+                        if (u >= hc || v >= wc) {
+                            continue;
+                        }
+                        float mag = cellHist(u, v, k);
                         s += mag*mag;
                     }
                 }
-            }
-            s = std::sqrt(s);
-            if (s != 0) {
-                for (int k = 0; k < binSize; k++) {
-                    hist(i, j, k) = cellHist(i, j, k)/s;
+                s = std::sqrt(s);
+                if (s == 0) {
+                    continue;
+                }
+                for (int h = 0; h < blockSize; h++) {
+                    for (int l = 0; l < blockSize; l++) {
+                        int u = h + i*blockSize;
+                        int v = l + j*blockSize;
+                        if (u >= hc || v >= wc) {
+                            continue;
+                        }
+                        cellHist(u, v, k) /= s;
+                    }
                 }
             }
-
         }
     }
-    /* step4: hog image */
+
+    /* step5: hog image */
     xo = Tensor(h, w, 3);
     float maxMag = cellHist.max();
     for (int i = 0; i < hc; i++) {
