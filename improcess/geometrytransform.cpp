@@ -131,28 +131,25 @@ int imp::nearestInterpolate(OutTensor xo, InTensor xi, const imp::Size &size)
 
 int imp::bilinearInterpolate(OutTensor xo, InTensor xi, const Size &size)
 {
-    int height = xi.shape[HWC_H];
-    int width = xi.shape[HWC_W];
-    int channels = xi.shape[HWC_C];
-    xo = Tensor(size.x, size.y, channels);
-    double hr = double(height)/double(size.x);
-    double wr = double(width)/double(size.y);
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    int c = xi.shape[HWC_C];
+    xo = Tensor(size.x, size.y, c);
+    float hr = float(h)/float(size.x);
+    float wr = float(w)/float(size.y);
 
     for (int i = 0; i < size.x; i++) {
         for (int j = 0; j < size.y; j++) {
-            for (int k = 0; k < channels; k++) {
-                double rx = i*hr;
-                double ry = j*wr;
-                int xLeft = int(rx);
-                int xRight = xLeft + 1;
-                int yLeft = int(ry);
-                int yRight = yLeft + 1;
-                if (xRight >= height) {
-                    xRight = height - 1;
-                }
-                if (yRight >= width) {
-                    yRight = width - 1;
-                }
+            float rx = i*hr;
+            float ry = j*wr;
+            int xLeft = int(rx);
+            int xRight = xLeft + 1;
+            int yLeft = int(ry);
+            int yRight = yLeft + 1;
+            xRight = xLeft + 1 >= h ? h - 1 : xLeft + 1;
+            yRight = yLeft + 1 >= w ? w - 1 : yLeft + 1;
+
+            for (int k = 0; k < c; k++) {
                 float y1 = xi(xRight, yLeft, k)*(rx - xLeft) - xi(xLeft, yLeft, k)*(rx - xLeft) + xi(xLeft, yLeft, k);
                 float y2 = xi(xRight, yRight, k)*(rx - xLeft) - xi(xLeft, yRight, k)*(rx -xLeft) + xi(xLeft, yRight, k);
                 float y3 = y2*(ry - yLeft) - y1*(ry - yLeft) + y1;
@@ -164,15 +161,76 @@ int imp::bilinearInterpolate(OutTensor xo, InTensor xi, const Size &size)
     return 0;
 }
 
-int imp::cubicInterpolate(OutTensor xo, InTensor xi, const imp::Size &size, float a)
+
+float imp::cubic::triangle(float x)
 {
-    /*
-        F(i + u, j + v) = ΣΣf(i + row, j + col)*S(row - u, col - v)
+    float y = 0.5*x;
+    return y < 0 ? y + 1 : 1 - y;
+}
 
-        S(x) = 1 - (a + 3)x^2 + (a + 2)|x|^3, for 0<|x|<1
-        S(x) = -4a + 8a|x| - 5ax^2 + a|x|^3, for 1<|x|<2
-    */
+float imp::cubic::bell(float x)
+{
+    float y = x/2.0*1.5;
+    float r = 0;
+    if (y > -1.5 && y < -0.5 ) {
+        r = 0.5 *(y + 1.5)*(y + 1.5);
+    } else if (y > -0.5 && y < 0.5 ) {
+        r = 0.75 - y*y;
+    } else if (y > 0.5 && y < 1.5) {
+        r = 0.5 * (y - 1.5)*(y - 1.5);
+    }
+    return r;
+}
 
+float imp::cubic::bspLine(float x)
+{
+    float xi = 0;
+    float r = 1;
+    if (x < 0) {
+        xi = -x;
+    }
+    if (xi >= 0 && xi <= 1) {
+        r = 2.0/3.0 + 0.5*xi*xi*xi - xi*xi;
+    } else if (xi > 1 && xi <= 2 ){
+        r = (2.0 - xi)*(2.0 - xi)*(2.0 - xi)/6;
+    }
+    return r;
+}
+
+int imp::cubicInterpolate(OutTensor xo, InTensor xi, const imp::Size &size, const std::function<float(float)> &interpolate)
+{
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    int c = xi.shape[HWC_C];
+    int ho = size.x;
+    int wo = size.y;
+    float rh = float(h)/float(ho);
+    float rw = float(w)/float(wo);
+    xo = Tensor(ho, wo, c);
+    for (int i = 0; i < ho; i++) {
+        for (int j = 0; j < wo; j++) {
+            float si = i*rh;
+            float sj = j*rw;
+            for (int k = 0; k < c; k++) {
+                float coeff = 0;
+                for (int u = -1; u < 3; u++) {
+                    for (int v = -1; v < 3; v++) {
+                        int ui = u + si;
+                        int vj = v + sj;
+                        if (ui < 0 || vj < 0 || ui >= h || vj >= w) {
+                            continue;
+                        }
+                        float wi = interpolate(u - si + int(si));
+                        float wj = interpolate(sj - int(sj) - v);
+                        float wij = wi*wj;
+                        xo(i, j, k) += xi(ui, vj, k)*wij;
+                        coeff += wij;
+                    }
+                }
+                xo(i, j, k) /= coeff;
+            }
+        }
+    }
     return 0;
 }
 
@@ -184,17 +242,18 @@ int imp::affine(OutTensor xo, InTensor xi, InTensor op)
     xo = Tensor(h, w, c);
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
-            Tensor pixel = xi.sub(i, j);
             Tensor p1({1, 3}, {float(i), float(j), 1});
             Tensor p2(1, 3);
-            /* p2 = p1*op */
+            /* transform: p2 = p1*op */
             Tensor::MM::ikkj(p2, p1, op);
             int u = p2[0];
             int v = p2[1];
             if (u < 0 || v < 0 || u >= h || v >= w) {
                 continue;
             }
-            xo.at(u, v) = pixel;
+            for (int k = 0; k < c; k++) {
+                xo(u, v, k) = xi(i, j, k);
+            }
         }
     }
     return 0;

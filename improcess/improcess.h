@@ -79,6 +79,7 @@ namespace imp {
     int houghLine(OutTensor xo, InTensor xi, float thres, int lineNo, const Color3 &color);
     /* histogram of oriented gradient */
     int HOG(OutTensor xo, OutTensor hist, InTensor xi, int cellSize=16, int binSize=8, int blockSize=2);
+
 }
 
 

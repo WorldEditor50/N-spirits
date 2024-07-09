@@ -341,7 +341,7 @@ void test_nearest_interpolation()
     return;
 }
 
-void test_bilinear_interpolation()
+void test_bilinearInterpolate()
 {
     Tensor img = imp::load("./images/dota-2-official.bmp");
     if (img.empty()) {
@@ -350,8 +350,8 @@ void test_bilinear_interpolation()
     }
     imp::Size size(img.shape[imp::HWC_H], img.shape[imp::HWC_W]);
     Tensor dst;
-    imp::bilinearInterpolate(dst, img, size*4);
-    imp::save(dst, "bilinear-interpolate.bmp");
+    imp::bilinearInterpolate(dst, img, size*2);
+    imp::show(dst);
     return;
 }
 
@@ -1028,60 +1028,73 @@ void test_affine()
                         0, 1, 0,
                         0, 0, 1});
     /* translate */
-    Tensor op2({3, 3}, {1,   0,  0,
-                        0,   1,  0,
-                        80,  -80, 1});
+    Tensor translateOp({3, 3}, {1,   0,  0,
+                                0,   1,  0,
+                                80,  -80, 1});
     /* scale */
-    Tensor op3({3, 3}, {0.5,    0,      0,
-                        0,      0.5,    0,
-                        0,      0,      1});
+    Tensor scaleOp({3, 3}, {0.5,    0,      0,
+                            0,      0.5,    0,
+                            0,      0,      1});
     /* ratate */
     float theta = 60.0*imp::pi/180.0;
-    Tensor op4({3, 3}, {std::cos(theta), std::sin(theta), 0,
-                       -std::sin(theta), std::cos(theta), 0,
-                        0,               0,               1});
+    Tensor rotateOp({3, 3}, {std::cos(theta), std::sin(theta), 0,
+                            -std::sin(theta), std::cos(theta), 0,
+                             0,               0,               1});
     /* shear in x direction */
     Tensor op5({3, 3}, {1, 0.5, 0,
                         0,   1, 0,
                         0,   0, 1});
 
     /* shear in y direction */
-    Tensor op6({3, 3}, {1,   0, 0,
-                        0.5, 1, 0,
-                        0,   0, 1});
-    imp::affine(imgAffine, img, op6);
+    Tensor shearYOp({3, 3}, {1,   0, 0,
+                             0.5, 1, 0,
+                             0,   0, 1});
     /* reflect */
-    Tensor op7({3, 3}, {-1,  0, 0,
-                         0, -1, 0,
-                         0,  0, 1});
+    Tensor reflectOp({3, 3}, {-1,  0, 0,
+                               0, -1, 0,
+                               0,  0, 1});
     /* reflect about x */
-    Tensor op8({3, 3}, { 1,  0, 0,
-                         0, -1, 0,
-                         0,  0, 1});
+    Tensor reflectXOp({3, 3}, { 1,  0, 0,
+                                0, -1, 0,
+                                0,  0, 1});
     /* reflect about y */
-    Tensor op9({3, 3}, {-1,  0, 0,
-                         0,  1, 0,
-                         0,  0, 1});
+    Tensor reflectYOp({3, 3}, {-1,  0, 0,
+                                0,  1, 0,
+                                0,  0, 1});
     /* affine = Translate(Scale((Rotate)img))
               = (Translate*Scale*Rotate)img
     */
-    Tensor op10(3, 3);
-    Tensor r0(3, 3);
-    Tensor::MM::ikkj(r0, op3, op4);
-    Tensor::MM::ikkj(op10, op2, r0);
+    Tensor affineOp(3, 3);
+    Tensor sr(3, 3);
+    Tensor::MM::ikkj(sr, scaleOp, rotateOp);
+    Tensor::MM::ikkj(affineOp, translateOp, sr);
     /* operation on image's center */
     Tensor op(3, 3);
-    Tensor opr1({3, 3}, {1,         0,      0,
-                         0,        -1,      0,
-                        -0.5f*w,    0.5f*h, 1});
-    Tensor opr2({3, 3}, {1,         0,      0,
-                         0,        -1,      0,
-                         0.5f*w,    0.5f*h, 1});
+    Tensor originCenter({3, 3}, {1,         0,      0,
+                                 0,        -1,      0,
+                                -0.5f*w,    0.5f*h, 1});
+    Tensor newCenter({3, 3}, {1,         0,      0,
+                              0,        -1,      0,
+                              0.5f*w,    0.5f*h, 1});
     Tensor r1(3, 3);
-    Tensor::MM::ikkj(r1, opr1, op10);
-    Tensor::MM::ikkj(op, r1, opr2);
+    Tensor::MM::ikkj(r1, originCenter, affineOp);
+    Tensor::MM::ikkj(op, r1, newCenter);
     imp::affine(imgAffine, img, op);
     imp::show(imgAffine);
+    return;
+}
+
+void test_cubicInterpolate()
+{
+    Tensor img = imp::load("./images/dota-2-official.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    imp::Size size(img.shape[imp::HWC_H], img.shape[imp::HWC_W]);
+    Tensor dst;
+    imp::cubicInterpolate(dst, img, size*2, imp::cubic::bspLine);
+    imp::show(dst);
     return;
 }
 
@@ -1135,6 +1148,7 @@ int main()
     //test_fft();
     //test_canny();
     //test_HOG();
-    test_affine();
+    //test_affine();
+    test_cubicInterpolate();
     return 0;
 }

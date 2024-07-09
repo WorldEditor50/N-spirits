@@ -12,7 +12,12 @@ int verticalFlip(OutTensor xo, InTensor xi);
 int rotate(OutTensor xo, InTensor xi, float angle);
 int nearestInterpolate(OutTensor xo, InTensor xi, const Size &size);
 int bilinearInterpolate(OutTensor xo, InTensor xi, const Size &size);
-int cubicInterpolate(OutTensor xo, InTensor xi, const Size &size, float a=0.5);
+namespace cubic {
+    float triangle(float x);
+    float bell(float x);
+    float bspLine(float x);
+}
+int cubicInterpolate(OutTensor xo, InTensor xi, const Size &size, const std::function<float(float)> &interpolate);
 int affine(OutTensor xo, InTensor xi, InTensor op);
 
 }

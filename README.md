@@ -27,7 +27,7 @@ fun with cpp
 
   - geometry tranform
 
-    move, flip, rotate, nearest interpolation, bilinear interpolation
+    move, flip, rotate, affine, nearest interpolation, bilinear interpolation, cubic interpolation
 
   - segmentation
 

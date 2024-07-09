@@ -384,7 +384,7 @@ int imp::resize(OutTensor xo, InTensor xi, const imp::Size &size, int type)
         imp::bilinearInterpolate(xo, xi, size);
         break;
     case INTERPOLATE_CUBIC:
-        imp::cubicInterpolate(xo, xi, size);
+        imp::cubicInterpolate(xo, xi, size, cubic::bspLine);
         break;
     default:
         imp::nearestInterpolate(xo, xi, size);
