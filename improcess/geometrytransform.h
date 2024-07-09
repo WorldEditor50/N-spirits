@@ -13,8 +13,7 @@ int rotate(OutTensor xo, InTensor xi, float angle);
 int nearestInterpolate(OutTensor xo, InTensor xi, const Size &size);
 int bilinearInterpolate(OutTensor xo, InTensor xi, const Size &size);
 int cubicInterpolate(OutTensor xo, InTensor xi, const Size &size, float a=0.5);
-int affine();
-int project();
+int affine(OutTensor xo, InTensor xi, InTensor op);
 
 }
 #endif // GEOMETRYTRANSFORM_H

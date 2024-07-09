@@ -1013,6 +1013,78 @@ void test_HOG()
     return;
 }
 
+void test_affine()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    int h = img.shape[0];
+    int w = img.shape[1];
+    Tensor imgAffine;
+    /* no change */
+    Tensor op1({3, 3}, {1, 0, 0,
+                        0, 1, 0,
+                        0, 0, 1});
+    /* translate */
+    Tensor op2({3, 3}, {1,   0,  0,
+                        0,   1,  0,
+                        80,  -80, 1});
+    /* scale */
+    Tensor op3({3, 3}, {0.5,    0,      0,
+                        0,      0.5,    0,
+                        0,      0,      1});
+    /* ratate */
+    float theta = 60.0*imp::pi/180.0;
+    Tensor op4({3, 3}, {std::cos(theta), std::sin(theta), 0,
+                       -std::sin(theta), std::cos(theta), 0,
+                        0,               0,               1});
+    /* shear in x direction */
+    Tensor op5({3, 3}, {1, 0.5, 0,
+                        0,   1, 0,
+                        0,   0, 1});
+
+    /* shear in y direction */
+    Tensor op6({3, 3}, {1,   0, 0,
+                        0.5, 1, 0,
+                        0,   0, 1});
+    imp::affine(imgAffine, img, op6);
+    /* reflect */
+    Tensor op7({3, 3}, {-1,  0, 0,
+                         0, -1, 0,
+                         0,  0, 1});
+    /* reflect about x */
+    Tensor op8({3, 3}, { 1,  0, 0,
+                         0, -1, 0,
+                         0,  0, 1});
+    /* reflect about y */
+    Tensor op9({3, 3}, {-1,  0, 0,
+                         0,  1, 0,
+                         0,  0, 1});
+    /* affine = Translate(Scale((Rotate)img))
+              = (Translate*Scale*Rotate)img
+    */
+    Tensor op10(3, 3);
+    Tensor r0(3, 3);
+    Tensor::MM::ikkj(r0, op3, op4);
+    Tensor::MM::ikkj(op10, op2, r0);
+    /* operation on image's center */
+    Tensor op(3, 3);
+    Tensor opr1({3, 3}, {1,         0,      0,
+                         0,        -1,      0,
+                        -0.5f*w,    0.5f*h, 1});
+    Tensor opr2({3, 3}, {1,         0,      0,
+                         0,        -1,      0,
+                         0.5f*w,    0.5f*h, 1});
+    Tensor r1(3, 3);
+    Tensor::MM::ikkj(r1, opr1, op10);
+    Tensor::MM::ikkj(op, r1, opr2);
+    imp::affine(imgAffine, img, op);
+    imp::show(imgAffine);
+    return;
+}
+
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -1062,6 +1134,7 @@ int main()
     //test_dilate();
     //test_fft();
     //test_canny();
-    test_HOG();
+    //test_HOG();
+    test_affine();
     return 0;
 }

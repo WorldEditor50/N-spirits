@@ -175,3 +175,27 @@ int imp::cubicInterpolate(OutTensor xo, InTensor xi, const imp::Size &size, floa
 
     return 0;
 }
+
+int imp::affine(OutTensor xo, InTensor xi, InTensor op)
+{
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    int c = xi.shape[HWC_C];
+    xo = Tensor(h, w, c);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            Tensor pixel = xi.sub(i, j);
+            Tensor p1({1, 3}, {float(i), float(j), 1});
+            Tensor p2(1, 3);
+            /* p2 = p1*op */
+            Tensor::MM::ikkj(p2, p1, op);
+            int u = p2[0];
+            int v = p2[1];
+            if (u < 0 || v < 0 || u >= h || v >= w) {
+                continue;
+            }
+            xo.at(u, v) = pixel;
+        }
+    }
+    return 0;
+}
