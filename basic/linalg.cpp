@@ -165,13 +165,11 @@ void LinAlg::bernoulli(Tensor &x, float p)
     return;
 }
 
-void LinAlg::gaussian(Tensor &x, float mu, float sigma)
+void LinAlg::gaussian1(Tensor &x, float mu, float sigma)
 {
-    std::random_device device;
-    std::default_random_engine engine(device());
-    std::normal_distribution<float> distribution(mu, sigma);
+    std::normal_distribution<float> normal(mu, sigma);
     for (std::size_t i = 0; i < x.totalSize; i++) {
-        x.val[i] = distribution(engine);
+        x.val[i] = normal(Random::engine);
     }
     return;
 }

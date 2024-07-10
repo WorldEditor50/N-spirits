@@ -1114,6 +1114,33 @@ void test_scharr()
     return;
 }
 
+void test_wavelet()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    imp::maxGray(gray, img);
+    Tensor wavelet;
+    /* wavelet transform */
+    imp::wavelet2D(wavelet, img, 4);
+    /* filter */
+    for (std::size_t i = 0; i < wavelet.totalSize; i++) {
+        if (std::abs(wavelet[i]) < 15) {
+            wavelet[i] = 0;
+        }
+    }
+    /* invert */
+    Tensor dst;
+    imp::iWavelet2D(dst, wavelet, 4);
+
+    Tensor result = Tensor::concat(1, wavelet, dst, img);
+    imp::show(result);
+    return;
+}
+
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -1166,6 +1193,6 @@ int main()
     //test_HOG();
     //test_affine();
     //test_cubicInterpolate();
-    test_scharr();
+    test_wavelet();
     return 0;
 }

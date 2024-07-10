@@ -462,6 +462,81 @@ int imp::iFFT2D(Tensor &img, const CTensor &xf_)
     return 0;
 }
 
+int imp::wavelet2D(OutTensor xo, InTensor xi, int depth)
+{
+    Tensor row(xi.shape);
+    Tensor col(xi.shape);
+    Tensor wavelet = xi;
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    int c = xi.shape[HWC_C];
+    int depth_ = 1;
+    while (depth_ <= depth) {
+        h = xi.shape[HWC_H]/depth_;
+        w = xi.shape[HWC_W]/depth_;
+        /* wavelet on rows */
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w/2; j++) {
+                for (int k = 0; k < c; k++) {
+                    /* mean */
+                    row(i, j, k) = (wavelet(i, 2*j, k) + wavelet(i, 2*j + 1, k))*0.5;
+                    /* delta */
+                    row(i, j + w/2, k) = (wavelet(i, 2*j, k) - wavelet(i, 2*j + 1, k))*0.5;
+                }
+            }
+        }
+        /* wavelet on columns */
+        for (int i = 0; i < h / 2; i++) {
+            for (int j = 0; j < w; j++) {
+                for (int k = 0; k < c; k++) {
+                    col(i, j, k) = (row(2*i, j, k) + row(2*i + 1, j, k))*0.5;
+                    col(i + h/2, j, k) = (row(2*i, j, k) - row(2*i + 1, j, k))*0.5;
+                }
+            }
+        }
+        wavelet = col;
+        depth_++;
+    }
+    xo = wavelet;
+    return 0;
+}
+
+int imp::iWavelet2D(OutTensor xo, InTensor xi, int depth)
+{
+    Tensor row(xi.shape);
+    Tensor col = xi;
+    Tensor wavelet = xi;
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    int c = xi.shape[HWC_C];
+    int depth_ = depth;
+    while (depth_ > 0) {
+        h = xi.shape[HWC_H]/depth_;
+        w = xi.shape[HWC_W]/depth_;
+        for (int i = 0; i < h - 1; i+=2) {
+            for (int j = 0; j < w; j++) {
+                for (int k = 0; k < c; k++) {
+                    row(i, j, k) = wavelet(i/2, j, k) + wavelet(i/2 + h/2, j, k);
+                    row(i + 1, j, k) = wavelet(i/2, j, k) - wavelet(i/2 + h/2, j, k);
+                }
+            }
+        }
+
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w - 1; j+=2) {
+                for (int k = 0; k < c; k++) {
+                    col(i, j, k) = row(i, j/2, k) + row(i, j/2 + w/2, k);
+                    col(i, j + 1, k) = row(i, j/2, k) - row(i, j/2 + w/2, k);
+                }
+            }
+        }
+        wavelet = col;
+        depth_--;
+    }
+    xo = wavelet;
+    return 0;
+}
+
 Tensor imp::LPF(int h, int w, int freq)
 {
     Tensor H(h, w);

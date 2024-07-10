@@ -43,7 +43,7 @@ inline void uniform(T &x, float x1, float x2)
     return;
 }
 void bernoulli(Tensor &x, float p);
-void gaussian(Tensor &x, float mu, float sigma);
+void gaussian1(Tensor &x, float mu, float sigma);
 float normL1(const Tensor &x1, const Tensor &x2);
 float normL2(const Tensor &x1, const Tensor &x2);
 float normLp(const Tensor &x1, const Tensor &x2, float p);
