@@ -14,7 +14,7 @@ public:
     explicit Camera(int w, int h)
         :width(w),height(h)
     {
-        bitmap = new int[h*w];
+        bitmap = new int[h*w*4];
     }
     ~Camera()
     {

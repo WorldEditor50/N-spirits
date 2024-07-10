@@ -12,7 +12,7 @@ int imp::averageBlur(OutTensor xo, InTensor xi, const imp::Size &size)
     return 0;
 }
 
-int imp::gaussian3x3(OutTensor xo, InTensor xi)
+int imp::gaussianBlur3x3(OutTensor xo, InTensor xi)
 {
     Tensor kernel({3, 3}, {1.0/16, 2.0/16, 1.0/16,
                            2.0/16, 4.0/16, 2.0/16,
@@ -39,6 +39,8 @@ int imp::medianBlur(OutTensor xo, InTensor xi, const imp::Size &size)
     }
     int stride = 1;
     int padding = 0;
+    int h = xi.shape[0];
+    int w = xi.shape[1];
     int ho = std::floor((xi.shape[0] - size.x + 2*padding)/stride) + 1;
     int wo = std::floor((xi.shape[1] - size.y + 2*padding)/stride) + 1;
     xo = Tensor(ho, wo, xi.shape[2]);
@@ -47,16 +49,15 @@ int imp::medianBlur(OutTensor xo, InTensor xi, const imp::Size &size)
         for (int i = 0; i < xo.shape[0]; i++) {
             for (int j = 0; j < xo.shape[1]; j++) {
                 /* kernels */
-                for (int h = 0; h < size.x; h++) {
-                    for (int k = 0; k < size.y; k++) {
+                for (int u = 0; u < size.x; u++) {
+                    for (int v = 0; v < size.y; v++) {
                         /* map to input  */
-                        int row = h + i*stride - padding;
-                        int col = k + j*stride - padding;
-                        if (row < 0 || row >= xi.shape[0] ||
-                                col < 0 || col >= xi.shape[1]) {
+                        int ui = u + i*stride - padding;
+                        int vj = v + j*stride - padding;
+                        if (ui < 0 || ui >= h || vj < 0 || vj >= w) {
                             continue;
                         }
-                        box(h, k) = xi(row, wo - col - 1, c);
+                        box(u, v) = xi(ui, w - vj - 1, c);
                     }
                 }
                 /* sort and find middle value */
@@ -66,7 +67,6 @@ int imp::medianBlur(OutTensor xo, InTensor xi, const imp::Size &size)
             }
         }
     }
-
     return 0;
 }
 
@@ -158,6 +158,32 @@ int imp::prewitt3x3(OutTensor xo, InTensor xi)
     return 0;
 }
 
+int imp::scharr3x3(OutTensor xo, InTensor xi)
+{
+    Tensor kernelx({3, 3}, {-3,  0, 3,
+                            -10, 0, 10,
+                            -3,  0, 3});
+    Tensor gradx;
+    imp::conv2d(gradx, kernelx, xi, 1);
+    Tensor kernely({3, 3}, {-3, -10, -3,
+                             0,   0,  0,
+                             3,  10,  3});
+    Tensor grady;
+    imp::conv2d(grady, kernely, xi, 1);
+    xo = LinAlg::sqrt(gradx*gradx + grady*grady);
+    return 0;
+}
+
+int imp::LOG5x5(OutTensor xo, InTensor xi)
+{
+    Tensor kernel({5, 5}, {-2,  -4, -4, -4, -2,
+                           -4,   0,  8,  0, -4,
+                           -4,   8, 24,  8, -4,
+                           -4,   0,  8,  0, -4,
+                           -2,  -4, -4, -4, -2});
+    conv2d(xo, kernel, xi, 1);
+    return 0;
+}
 
 int imp::canny(OutTensor xo, InTensor xi, float minThres, float maxThres)
 {

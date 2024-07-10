@@ -39,7 +39,7 @@ inline void conv2d(OutTensor y, InTensor kernel, InTensor x, int stride=1, int p
                         if (ui < 0 || ui >= h || vj < 0 || vj >= w) {
                             continue;
                         }
-                        yijk += kernel(u, v)*x(ui, wo - vj - 1, k);
+                        yijk += kernel(u, v)*x(ui, w - 1 - vj, k);
 
                     }
                 }
@@ -51,7 +51,7 @@ inline void conv2d(OutTensor y, InTensor kernel, InTensor x, int stride=1, int p
 }
 
 int averageBlur(OutTensor xo, InTensor xi, const Size &size);
-int gaussian3x3(OutTensor xo, InTensor xi);
+int gaussianBlur3x3(OutTensor xo, InTensor xi);
 int gaussianBlur5x5(OutTensor xo, InTensor xi);
 int medianBlur(OutTensor xo, InTensor xi, const Size &size);
 
@@ -60,7 +60,8 @@ int sobel5x5(OutTensor xo, InTensor xi);
 int laplacian3x3(OutTensor xo, InTensor xi);
 int laplacian5x5(OutTensor xo, InTensor xi);
 int prewitt3x3(OutTensor xo, InTensor xi);
-
+int scharr3x3(OutTensor xo, InTensor xi);
+int LOG5x5(OutTensor xo, InTensor xi);
 int canny(OutTensor xo, InTensor xi, float minThres, float maxThres);
 
 int FFT(Complex *xf, const Complex *xt, int t);

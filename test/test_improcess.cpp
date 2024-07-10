@@ -292,10 +292,11 @@ void test_laplacian()
         return;
     }
     Tensor blur;
-    imp::gaussian3x3(blur, img);
+    imp::gaussianBlur3x3(blur, img);
     Tensor dst;
     imp::laplacian3x3(dst, blur);
-    imp::save(LinAlg::abs(dst), "laplacian3x3.bmp");
+    //imp::save(LinAlg::abs(dst), "laplacian3x3.bmp");
+    imp::show(LinAlg::abs(dst));
     return;
 }
 
@@ -1098,6 +1099,21 @@ void test_cubicInterpolate()
     return;
 }
 
+void test_scharr()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    imp::maxGray(gray, img);
+    Tensor dst;
+    imp::scharr3x3(dst, gray);
+    imp::show(dst);
+    return;
+}
+
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -1149,6 +1165,7 @@ int main()
     //test_canny();
     //test_HOG();
     //test_affine();
-    test_cubicInterpolate();
+    //test_cubicInterpolate();
+    test_scharr();
     return 0;
 }

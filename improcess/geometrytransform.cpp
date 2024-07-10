@@ -109,19 +109,19 @@ int imp::rotate(OutTensor xo, InTensor xi, float angle)
 
 int imp::nearestInterpolate(OutTensor xo, InTensor xi, const imp::Size &size)
 {
-    int height = xi.shape[HWC_H];
-    int width = xi.shape[HWC_W];
-    int channels = xi.shape[HWC_C];
-    xo = Tensor(size.x, size.y, channels);
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    int c = xi.shape[HWC_C];
     int ho = size.x;
     int wo = size.y;
-    double hr = double(height)/double(ho);
-    double wr = double(width)/double(wo);
+    xo = Tensor(ho, wo, c);
+    float rh = float(h)/float(ho);
+    float rw = float(w)/float(wo);
     for (int i = 1; i < ho + 1; i++) {
         for (int j = 1; j < wo + 1; j++) {
-            int u = imp::bound(i*hr + 0.5, 1, height + 1);
-            int v = imp::bound(j*wr + 0.5, 1, width + 1);
-            for (int k = 0; k < channels; k++) {
+            int u = imp::bound(i*rh + 0.5, 1, h + 1);
+            int v = imp::bound(j*rw + 0.5, 1, w + 1);
+            for (int k = 0; k < c; k++) {
                 xo(i - 1, j - 1, k) = xi(u - 1, v - 1, k);
             }
         }
@@ -134,27 +134,28 @@ int imp::bilinearInterpolate(OutTensor xo, InTensor xi, const Size &size)
     int h = xi.shape[HWC_H];
     int w = xi.shape[HWC_W];
     int c = xi.shape[HWC_C];
-    xo = Tensor(size.x, size.y, c);
-    float hr = float(h)/float(size.x);
-    float wr = float(w)/float(size.y);
-
-    for (int i = 0; i < size.x; i++) {
-        for (int j = 0; j < size.y; j++) {
-            float rx = i*hr;
-            float ry = j*wr;
-            int xLeft = int(rx);
-            int xRight = xLeft + 1;
-            int yLeft = int(ry);
-            int yRight = yLeft + 1;
-            xRight = xLeft + 1 >= h ? h - 1 : xLeft + 1;
-            yRight = yLeft + 1 >= w ? w - 1 : yLeft + 1;
-
+    int ho = size.x;
+    int wo = size.y;
+    xo = Tensor(ho, wo, c);
+    float rh = float(h)/float(ho);
+    float rw = float(w)/float(wo);
+    for (int i = 0; i < ho; i++) {
+        for (int j = 0; j < wo; j++) {
+            float si = i*rh;
+            float sj = j*rw;
+            float wi = si - int(si);
+            float wj = sj - int(sj);
+            int u0 = si;
+            int u1 = u0 + 1;
+            int v0 = sj;
+            int v1 = v0 + 1;
+            u1 = u0 + 1 >= h ? h - 1 : u0 + 1;
+            v1 = v0 + 1 >= w ? w - 1 : v0 + 1;
             for (int k = 0; k < c; k++) {
-                float y1 = xi(xRight, yLeft, k)*(rx - xLeft) - xi(xLeft, yLeft, k)*(rx - xLeft) + xi(xLeft, yLeft, k);
-                float y2 = xi(xRight, yRight, k)*(rx - xLeft) - xi(xLeft, yRight, k)*(rx -xLeft) + xi(xLeft, yRight, k);
-                float y3 = y2*(ry - yLeft) - y1*(ry - yLeft) + y1;
-
-                xo(i, j, k) = imp::bound(y3, 0, 255);
+                float y1 = xi(u0, v0, k)*(1 - wi) + xi(u1, v0, k)*wi;
+                float y2 = xi(u0, v1, k)*(1 - wi) + xi(u1, v1, k)*wi;
+                float y = y2*wj + (1 - wj)*y1;
+                xo(i, j, k) = imp::bound(y, 0, 255);
             }
         }
     }
