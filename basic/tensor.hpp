@@ -143,6 +143,17 @@ public:
             }
             return s/T(totalSize);
         }
+
+        inline T variance(T u) const
+        {
+            T s = 0;
+            for (std::size_t i = 0; i < totalSize; i++) {
+                float d = pointer->val[i + pos] - u;
+                s += d*d;
+            }
+            return s/T(totalSize);
+        }
+
         inline T max() const
         {
             T maxVal = 0;

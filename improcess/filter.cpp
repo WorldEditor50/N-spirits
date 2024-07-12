@@ -462,7 +462,7 @@ int imp::iFFT2D(Tensor &img, const CTensor &xf_)
     return 0;
 }
 
-int imp::wavelet2D(OutTensor xo, InTensor xi, int depth)
+int imp::HarrWavelet2D(OutTensor xo, InTensor xi, int depth)
 {
     Tensor row(xi.shape);
     Tensor col(xi.shape);
@@ -501,11 +501,11 @@ int imp::wavelet2D(OutTensor xo, InTensor xi, int depth)
     return 0;
 }
 
-int imp::iWavelet2D(OutTensor xo, InTensor xi, int depth)
+int imp::iHarrWavelet2D(OutTensor xo, InTensor xi, int depth)
 {
     Tensor row(xi.shape);
     Tensor col = xi;
-    Tensor wavelet = xi;
+    Tensor iWavelet = xi;
     int h = xi.shape[HWC_H];
     int w = xi.shape[HWC_W];
     int c = xi.shape[HWC_C];
@@ -516,8 +516,8 @@ int imp::iWavelet2D(OutTensor xo, InTensor xi, int depth)
         for (int i = 0; i < h - 1; i+=2) {
             for (int j = 0; j < w; j++) {
                 for (int k = 0; k < c; k++) {
-                    row(i, j, k) = wavelet(i/2, j, k) + wavelet(i/2 + h/2, j, k);
-                    row(i + 1, j, k) = wavelet(i/2, j, k) - wavelet(i/2 + h/2, j, k);
+                    row(i, j, k) = iWavelet(i/2, j, k) + iWavelet(i/2 + h/2, j, k);
+                    row(i + 1, j, k) = iWavelet(i/2, j, k) - iWavelet(i/2 + h/2, j, k);
                 }
             }
         }
@@ -530,10 +530,10 @@ int imp::iWavelet2D(OutTensor xo, InTensor xi, int depth)
                 }
             }
         }
-        wavelet = col;
+        iWavelet = col;
         depth_--;
     }
-    xo = wavelet;
+    xo = iWavelet;
     return 0;
 }
 

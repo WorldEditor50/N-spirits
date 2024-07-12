@@ -1010,6 +1010,7 @@ void test_HOG()
     imp::HOG(hog, hist, gray, 8, 8, 2);
     Tensor result = Tensor::concat(1, hog, img);
     imp::save(hog, "./hog.bmp");
+    imp::save(result, "./hog_result.bmp");
     imp::show(result);
     return;
 }
@@ -1114,7 +1115,7 @@ void test_scharr()
     return;
 }
 
-void test_wavelet()
+void test_HarrWavelet()
 {
     Tensor img = imp::load("./images/crystalmaiden.bmp");
     if (img.empty()) {
@@ -1125,18 +1126,42 @@ void test_wavelet()
     imp::maxGray(gray, img);
     Tensor wavelet;
     /* wavelet transform */
-    imp::wavelet2D(wavelet, img, 4);
+    imp::HarrWavelet2D(wavelet, img, 4);
     /* filter */
     for (std::size_t i = 0; i < wavelet.totalSize; i++) {
-        if (std::abs(wavelet[i]) < 15) {
+        if (std::abs(wavelet[i]) < 10) {
             wavelet[i] = 0;
         }
     }
     /* invert */
     Tensor dst;
-    imp::iWavelet2D(dst, wavelet, 4);
+    imp::iHarrWavelet2D(dst, wavelet, 4);
 
     Tensor result = Tensor::concat(1, wavelet, dst, img);
+    imp::show(result);
+    return;
+}
+
+void test_eigen()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    imp::maxGray(gray, img);
+    Tensor img1;
+    imp::copy(img1, gray, imp::Rect(0, 0, 300, 300));
+    Tensor e;
+    Tensor v;
+    LinAlg::eigen(img1, e, v, 2000, 1e-4);
+    Tensor g = LinAlg::diag(v);
+    Tensor r1(img1.shape);
+    Tensor::MM::ikkj(r1, e, g);
+    Tensor r2(img1.shape);
+    Tensor::MM::ikjk(r2, r1, e);
+    Tensor result = Tensor::concat(1, r2, img1);
     imp::show(result);
     return;
 }
@@ -1193,6 +1218,7 @@ int main()
     //test_HOG();
     //test_affine();
     //test_cubicInterpolate();
-    test_wavelet();
+    //test_HarrWavelet();
+    test_eigen();
     return 0;
 }

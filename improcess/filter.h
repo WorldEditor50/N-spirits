@@ -68,8 +68,9 @@ int FFT(Complex *xf, const Complex *xt, int t);
 int iFFT(Complex *xt, const Complex *xf, int t);
 int FFT2D(Tensor &spectrum, CTensor &xf, const Tensor &img);
 int iFFT2D(Tensor &img, const CTensor &xf);
-int wavelet2D(OutTensor xo, InTensor img, int level);
-int iWavelet2D(OutTensor xo, InTensor img, int level);
+int HarrWavelet2D(OutTensor xo, InTensor img, int level);
+int iHarrWavelet2D(OutTensor xo, InTensor img, int level);
+
 Tensor LPF(int h, int w, int freq);
 Tensor gaussHPF(int h, int w, float sigma);
 Tensor laplaceFilter(int h, int w);

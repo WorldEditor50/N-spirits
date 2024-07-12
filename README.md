@@ -1,5 +1,5 @@
 # N-spirits
-fun with cpp
+
 
 ## Features
 
@@ -23,7 +23,7 @@ fun with cpp
 
   - frequency filter
 
-    FFT, LPF, gaussianHPF
+    FFT, HarrWavelet, LPF, gaussianHPF
 
   - geometry tranform
 
@@ -132,12 +132,12 @@ imp::sobel3x3(dst, img);
 imp::save(dst, "sobel3x3.bmp");
 ```
 
-#### 
+
 
 ### 2.  von karman vortex street
 
 ```c++
-	int W = 320;
+    int W = 320;
     int H = 240;
     int R = 12;
     Cylinder cylinder(H/2, W/5, R);

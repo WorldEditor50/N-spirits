@@ -343,7 +343,7 @@ Tensor LinAlg::variance(const std::vector<Tensor> &x, const Tensor &u)
     return sigma;
 }
 
-void LinAlg::cov(const Tensor &x, Tensor &y)
+Tensor LinAlg::cov(const Tensor &x)
 {
     Tensor xi(x);
     for (int i = 0; i < x.shape[1]; i++) {
@@ -359,9 +359,10 @@ void LinAlg::cov(const Tensor &x, Tensor &y)
         }
     }
     /* y = A^T*A */
+    Tensor y(xi.shape[1], xi.shape[1]);
     Tensor::MM::kikj(y, xi, xi);
     y /= float(xi.shape[0]);
-    return;
+    return y;
 }
 
 float LinAlg::gaussian(const Tensor &xi, const Tensor &ui, const Tensor &sigmai)
@@ -571,70 +572,77 @@ int LinAlg::eigen(const Tensor &x, Tensor &vec, Tensor &value, int maxIterateCou
     Tensor a = x;
     vec = eye(N);
     value = Tensor(N, 1);
-
-    for (int it = 0; it < maxIterateCount; it++) {
-        /* find max value on non pivot position */
-        float maxVal = 0;
-        int p = 0;
-        int q = 0;
-        for (int i = 0; i < N; i++) {
-            for (int j = i + 1; j < N; j++) {
-                float val = std::abs(a(i, j));
-                if (i != j && val > maxVal) {
-                    maxVal = val;
-                    p = j;
-                    q = i;
+    for (int it1 = 0; it1 < maxIterateCount; it1++) {
+        for (int it2 = 0; it2 < maxIterateCount; it2++) {
+            /* find max value on non pivot position */
+            float maxVal = -1;
+            int p = 0;
+            int q = 1;
+            float delta = 0;
+            for (int i = 0; i < N; i++) {
+                for (int j = 0; j < N; j++) {
+                    if (i == j) {
+                        continue;
+                    }
+                    float aij = a(i, j);
+                    delta += aij*aij;
+                    float val = std::abs(aij);
+                    if (val > maxVal) {
+                        maxVal = val;
+                        p = i;
+                        q = j;
+                    }
                 }
             }
-        }
-        if (maxVal < eps) {
-            //std::cout<<"iterate count:"<<it<<std::endl;
-            break;
-        }
-        float app = a(p, p);
-        float apq = a(p, q);
-        float aqq = a(q, q);
-        /* rotate */
-        float theta = 0.5*std::atan2(-2*apq, aqq - app);
-        float sinTheta = std::sin(theta);
-        float cosTheta = std::cos(theta);
-        float sin2Theta = std::sin(2*theta);
-        float cos2Theta = std::cos(2*theta);
+            delta = std::sqrt(delta/(N*N - N));
+            if (delta < eps) {
+                break;
+            }
+            std::cout<<"iterate count:"<<it1<<","<<it2<<", delta:"<<delta<<std::endl;
+            float app = a(p, p);
+            float apq = a(p, q);
+            float aqq = a(q, q);
+            /* rotate */
+            float theta = 0.5*std::atan2(-2*apq, aqq - app);
+            float sinTheta = std::sin(theta);
+            float cosTheta = std::cos(theta);
+            float sin2Theta = std::sin(2*theta);
+            float cos2Theta = std::cos(2*theta);
 
-        a(p, p) = app*cosTheta*cosTheta + aqq*sinTheta*sinTheta + 2*apq*cosTheta*sinTheta;
-        a(q, q) = app*sinTheta*sinTheta + aqq*cosTheta*cosTheta - 2*apq*cosTheta*sinTheta;
-        a(p, q) = 0.5*(aqq- app)*sin2Theta + apq*cos2Theta;
-        a(q, p) = a(p, q);
+            a(p, p) = app*cosTheta*cosTheta + aqq*sinTheta*sinTheta + 2*apq*cosTheta*sinTheta;
+            a(q, q) = app*sinTheta*sinTheta + aqq*cosTheta*cosTheta - 2*apq*cosTheta*sinTheta;
+            a(p, q) = 0.5*(aqq - app)*sin2Theta + apq*cos2Theta;
+            a(q, p) = a(p, q);
 
-        for (int i = 0; i < N; i ++) {
-            if (i != q && i != p) {
-                float u = a(i, p);
-                float v = a(i, q);
-                a(i, p) = v*sinTheta + u*cosTheta;
-                a(i, q) = v*cosTheta - u*sinTheta;
+            for (int i = 0; i < N; i++) {
+                if (i != q && i != p) {
+                    float aip = a(i, p);
+                    float aiq = a(i, q);
+                    a(i, p) =  aip*cosTheta + aiq*sinTheta;
+                    a(i, q) = -aip*sinTheta + aiq*cosTheta;
+                }
+            }
+
+            for (int j = 0; j < N; j++) {
+                if (j != q && j != p) {
+                    float apj = a(p, j);
+                    float aqj = a(q, j);
+                    a(p, j) =  apj*cosTheta + aqj*sinTheta;
+                    a(q, j) = -apj*sinTheta + aqj*cosTheta;
+                }
+            }
+
+            /* eigen vector */
+            for (int i = 0; i < N; i ++) {
+                float u = vec(i, p);
+                float v = vec(i, q);
+                vec(i, p) =  u*cosTheta + v*sinTheta;
+                vec(i, q) = -u*sinTheta + v*cosTheta;
             }
         }
-
-        for (int j = 0; j < N; j ++) {
-            if (j != q && j != p) {
-                float u = a(p, j);
-                float v = a(q, j);
-                a(p, j) = v*sinTheta + u*cosTheta;
-                a(q, j) = v*cosTheta - u*sinTheta;
-            }
-        }
-
-        /* eigen vector */
-        for (int i = 0; i < N; i ++) {
-            float u = vec(i, p);
-            float v = vec(i, q);
-            vec(i, p) = v*sinTheta + u*cosTheta;
-            vec(i, q) = v*cosTheta - u*sinTheta;
-        }
-
     }
     /* eigen value */
-    for (int i = 0; i < N; i ++) {
+    for (int i = 0; i < N; i++) {
         value[i] = a(i, i);
     }
     /* sign */
@@ -1143,8 +1151,7 @@ int LinAlg::Cholesky::solve(const Tensor &x, Tensor &l)
 void LinAlg::PCA::solve(const Tensor &x, Tensor &u)
 {
     /* covariance matrix */
-    Tensor y(x.shape[1], x.shape[1]);
-    cov(x, y);
+    Tensor y = cov(x);
     /* svd */
     Tensor s;
     Tensor v;

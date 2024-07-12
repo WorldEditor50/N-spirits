@@ -64,7 +64,7 @@ void mean(const std::vector<Tensor> &x, Tensor &u);
 void variance(const std::vector<Tensor> &x, const Tensor &u, Tensor &sigma);
 Tensor mean(const std::vector<Tensor> &x);
 Tensor variance(const std::vector<Tensor> &x, const Tensor &u);
-void cov(const Tensor &x, Tensor &y);
+Tensor cov(const Tensor &x);
 float gaussian(const Tensor &xi, const Tensor &ui, const Tensor &sigmai);
 /* exchange */
 void exchangeRow(Tensor &x, int i1, int i2);
