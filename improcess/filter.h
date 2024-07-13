@@ -39,7 +39,7 @@ inline void conv2d(OutTensor y, InTensor kernel, InTensor x, int stride=1, int p
                         if (ui < 0 || ui >= h || vj < 0 || vj >= w) {
                             continue;
                         }
-                        yijk += kernel(u, v)*x(ui, w - 1 - vj, k);
+                        yijk += kernel(u, v)*x(ui, vj, k);
 
                     }
                 }

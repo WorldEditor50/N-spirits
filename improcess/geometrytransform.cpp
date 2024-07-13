@@ -243,10 +243,10 @@ int imp::affine(OutTensor xo, InTensor xi, InTensor op)
     xo = Tensor(h, w, c);
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
-            Tensor p1({1, 3}, {float(i), float(j), 1});
-            Tensor p2(1, 3);
-            /* transform: p2 = p1*op */
-            Tensor::MM::ikkj(p2, p1, op);
+            Tensor p1({3, 1}, {float(i), float(j), 1});
+            Tensor p2(3, 1);
+            /* transform: p2 = op^T*p1 */
+            Tensor::MM::kikj(p2, op, p1);
             int u = p2[0];
             int v = p2[1];
             if (u < 0 || v < 0 || u >= h || v >= w) {

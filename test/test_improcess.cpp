@@ -1030,39 +1030,19 @@ void test_affine()
                         0, 1, 0,
                         0, 0, 1});
     /* translate */
-    Tensor translateOp({3, 3}, {1,   0,  0,
-                                0,   1,  0,
-                                80,  -80, 1});
+    Tensor translateOp = imp::AffineOperator::translate(-80, 80);
     /* scale */
-    Tensor scaleOp({3, 3}, {0.5,    0,      0,
-                            0,      0.5,    0,
-                            0,      0,      1});
-    /* ratate */
-    float theta = 60.0*imp::pi/180.0;
-    Tensor rotateOp({3, 3}, {std::cos(theta), std::sin(theta), 0,
-                            -std::sin(theta), std::cos(theta), 0,
-                             0,               0,               1});
+    Tensor scaleOp = imp::AffineOperator::scale(0.5, 0.5);
+    /* rotate */
+    Tensor rotateOp = imp::AffineOperator::rotate(15);
     /* shear in x direction */
-    Tensor op5({3, 3}, {1, 0.5, 0,
-                        0,   1, 0,
-                        0,   0, 1});
-
+    Tensor shearXOp = imp::AffineOperator::shearX(0.5);
     /* shear in y direction */
-    Tensor shearYOp({3, 3}, {1,   0, 0,
-                             0.5, 1, 0,
-                             0,   0, 1});
-    /* reflect */
-    Tensor reflectOp({3, 3}, {-1,  0, 0,
-                               0, -1, 0,
-                               0,  0, 1});
+    Tensor shearYOp = imp::AffineOperator::shearY(0.5);
     /* reflect about x */
-    Tensor reflectXOp({3, 3}, { 1,  0, 0,
-                                0, -1, 0,
-                                0,  0, 1});
+    Tensor reflectXOp = imp::AffineOperator::flipX();
     /* reflect about y */
-    Tensor reflectYOp({3, 3}, {-1,  0, 0,
-                                0,  1, 0,
-                                0,  0, 1});
+    Tensor reflectYOp = imp::AffineOperator::flipY();
     /* affine = Translate(Scale((Rotate)img))
               = (Translate*Scale*Rotate)img
     */
@@ -1072,13 +1052,10 @@ void test_affine()
     Tensor::MM::ikkj(affineOp, translateOp, sr);
     /* operation on image's center */
     Tensor op(3, 3);
-    Tensor originCenter({3, 3}, {1,         0,      0,
-                                 0,        -1,      0,
-                                -0.5f*w,    0.5f*h, 1});
-    Tensor newCenter({3, 3}, {1,         0,      0,
-                              0,        -1,      0,
-                              0.5f*w,    0.5f*h, 1});
+    Tensor originCenter = imp::AffineOperator::center(0.5f*h, -0.5f*w);
+    Tensor newCenter = imp::AffineOperator::center(0.5f*h, 0.5f*w);
     Tensor r1(3, 3);
+    affineOp.printValue2D();
     Tensor::MM::ikkj(r1, originCenter, affineOp);
     Tensor::MM::ikkj(op, r1, newCenter);
     imp::affine(imgAffine, img, op);
@@ -1203,6 +1180,7 @@ int main()
     //test_HSI();
     //test_rotate();
     //test_sobel();
+    //test_laplacian();
     //test_histogram();
     //test_svmSegmentation();
     //test_kmeansPixelCluster();
@@ -1216,9 +1194,9 @@ int main()
     //test_fft();
     //test_canny();
     //test_HOG();
-    //test_affine();
+    test_affine();
     //test_cubicInterpolate();
     //test_HarrWavelet();
-    test_eigen();
+    //test_eigen();
     return 0;
 }

@@ -943,12 +943,12 @@ int imp::HOG(OutTensor xo, OutTensor hist, InTensor xi, int cellSize, int binSiz
                         continue;
                     }
                     /* cell histogram */
-                    float angle = theta(ui, w - 1 - vj);
+                    float angle = theta(ui, vj);
                     angle = angle < 0 ? angle + 180 : angle;
                     int index1 = angle/angleUnit;
                     int index2 = (index1 + 1)%binSize;
                     int mod = int(angle)%angleUnit;
-                    float mag = g(ui, w - 1 - vj);
+                    float mag = g(ui, vj);
                     cellHist(i, j, index1) += mag*(1 - mod/angleUnit);
                     cellHist(i, j, index2) += mag*mod/angleUnit;
                 }
