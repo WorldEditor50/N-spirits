@@ -293,7 +293,7 @@ public:
         /* reverse: B1G1R1B2G2R2 -> R2G2B2R1G1B1 */
         int c = 3;
         int alignstep = align4(w, c);
-        rgb = std::shared_ptr<uint8_t[]>(new uint8_t[alignstep*h]);
+        rgb = std::shared_ptr<uint8_t[]>(new uint8_t[h*w*c]);
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
                 rgb[(h - 1 - i)*w*c + j*c + 2] = img[i*alignstep + j*c];

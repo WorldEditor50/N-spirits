@@ -264,9 +264,11 @@ void test_medianBlur()
     }
     /* median blur */
     Tensor dst;
-    imp::medianBlur(dst, img, imp::Size(3, 3));
-    /* save */
-    imp::save(dst, "median.bmp");
+    Tensor e = imp::Noise::saltPepper(img.shape[0],img.shape[1], img.shape[2], 0.01);
+    Tensor noisedImg = img*e;
+    imp::medianBlur(dst, noisedImg, imp::Size(3, 3));
+    Tensor result = Tensor::concat(1, noisedImg, dst, img);
+    imp::show(result);
     return;
 }
 
@@ -1030,7 +1032,7 @@ void test_affine()
                         0, 1, 0,
                         0, 0, 1});
     /* translate */
-    Tensor translateOp = imp::AffineOperator::translate(-80, 80);
+    Tensor translateOp = imp::AffineOperator::translate(80, 80);
     /* scale */
     Tensor scaleOp = imp::AffineOperator::scale(0.5, 0.5);
     /* rotate */
@@ -1050,7 +1052,7 @@ void test_affine()
     Tensor sr(3, 3);
     Tensor::MM::ikkj(sr, scaleOp, rotateOp);
     Tensor::MM::ikkj(affineOp, translateOp, sr);
-    /* operation on image's center */
+    /* operation center */
     Tensor op(3, 3);
     Tensor originCenter = imp::AffineOperator::center(0.5f*h, -0.5f*w);
     Tensor newCenter = imp::AffineOperator::center(0.5f*h, 0.5f*w);
@@ -1143,6 +1145,52 @@ void test_eigen()
     return;
 }
 
+void test_projectToSphere()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    int h = img.shape[0];
+    Tensor sphere;
+    imp::planeToSphere(sphere, img, h/2);
+    imp::show(sphere);
+    return;
+}
+
+void test_curvatrueBlur()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor xo;
+    Tensor e = imp::Noise::saltPepper(img.shape[0],img.shape[1], img.shape[2], 0.01);
+    Tensor noisedImg = img*e;
+    imp::curvatureBlur3x3(xo, noisedImg);
+    Tensor result = Tensor::concat(1, noisedImg, xo, img);
+    imp::show(result);
+    return;
+}
+
+void test_bilateralBlur()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor xo;
+    Tensor e = imp::Noise::saltPepper(img.shape[0],img.shape[1], img.shape[2], 0.01);
+    Tensor noisedImg = img*e;
+    imp::bilateralBlur(xo, noisedImg, imp::Size(7, 7), 16, 16);
+    Tensor result = Tensor::concat(1, noisedImg, xo, img);
+    imp::show(result);
+    return;
+}
+
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -1194,9 +1242,12 @@ int main()
     //test_fft();
     //test_canny();
     //test_HOG();
-    test_affine();
+    //test_affine();
     //test_cubicInterpolate();
     //test_HarrWavelet();
     //test_eigen();
+    //test_projectToSphere();
+    //test_curvatrueBlur();
+    test_bilateralBlur();
     return 0;
 }

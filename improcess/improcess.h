@@ -8,10 +8,12 @@
 #include "ppm.hpp"
 #include "image.hpp"
 #include "graphic2d.h"
+#include "graphic3d.h"
 #include "geometrytransform.h"
 #include "lineartransform.h"
 #include "filter.h"
 #include "features.h"
+#include "noise.h"
 #ifdef ENABLE_JPEG
 #include "jpegwrap/jpegwrap.h"
 #endif

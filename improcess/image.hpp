@@ -15,7 +15,8 @@ public:
     uint64_t totalsize;
     uint8_t* data;
 public:
-    Image():height(0),width(0),channel(0),widthstep(0),totalsize(0),data(nullptr){}
+    Image()
+        :height(0),width(0),channel(0),widthstep(0),totalsize(0),data(nullptr){}
     explicit Image(uint32_t h, uint32_t w, uint32_t c, uint8_t* d)
         :height(h),width(w),channel(c),widthstep(w*c),totalsize(h*w*c),data(d){}
 
@@ -23,13 +24,16 @@ public:
         :height(h),width(w),channel(c),widthstep(w*c),totalsize(h*w*c)
     {
         data = new uint8_t[totalsize];
+        memset(data, 0, totalsize);
     }
     explicit Image(const Image &r)
         :height(r.height),width(r.width),channel(r.channel),
-          widthstep(r.widthstep),totalsize(r.totalsize)
+          widthstep(r.widthstep),totalsize(r.totalsize),data(nullptr)
     {
-        data = new uint8_t[totalsize];
-        memcpy(data, r.data, totalsize);
+        if (r.data != nullptr) {
+            data = new uint8_t[totalsize];
+            memcpy(data, r.data, totalsize);
+        }
     }
 
     Image(Image &&r) noexcept
@@ -49,16 +53,21 @@ public:
         if (this == &r) {
             return *this;
         }
+        if (r.data == nullptr) {
+            return *this;
+        }
         height = r.height;
         width = r.width;
         channel = r.channel;
         widthstep = r.widthstep;
-        if (totalsize < r.totalsize) {
+        if (data != nullptr) {
+            if (totalsize != r.totalsize) {
+                delete [] data;
+                totalsize = r.totalsize;
+                data = new uint8_t[totalsize];
+            }
+        } else {
             totalsize = r.totalsize;
-            delete [] data;
-            data = nullptr;
-        }
-        if (data == nullptr) {
             data = new uint8_t[totalsize];
         }
         memcpy(data, r.data, totalsize);
@@ -89,8 +98,11 @@ public:
     {
         if (data != nullptr) {
             delete [] data;
+            data = nullptr;
         }
     }
+    bool empty() const {return data == nullptr || totalsize == 0;}
+
     inline uint8_t operator()(std::size_t i, std::size_t j, std::size_t k)
     {
         /* hwc */

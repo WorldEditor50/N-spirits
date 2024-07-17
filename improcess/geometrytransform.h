@@ -24,13 +24,13 @@ namespace AffineOperator {
     {
         return Tensor({3, 3}, {1,   0,  0,
                                0,   1,  0,
-                               j,   i,  1});
+                               i,  -j,  1});
     }
     /* scale */
     inline Tensor scale(float iFactor, float jFactor)
     {
-        return Tensor({3, 3}, {jFactor, 0,       0,
-                               0,       iFactor, 0,
+        return Tensor({3, 3}, {iFactor, 0,       0,
+                               0,       jFactor, 0,
                                0,       0,       1});
     }
 

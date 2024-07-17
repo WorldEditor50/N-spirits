@@ -6,7 +6,7 @@ int imp::fromTensor(InTensor x, std::shared_ptr<uint8_t[]> &img)
         img = std::shared_ptr<uint8_t[]>(new uint8_t[x.totalSize]);
     }
     for (std::size_t i = 0; i < x.totalSize; i++) {
-        img[i] = imp::bound(x.val[i], 0, 255);
+        img[i] = imp::clip(x.val[i], 0, 255);
     }
     return 0;
 }
@@ -15,7 +15,7 @@ std::unique_ptr<uint8_t[]> imp::fromTensor(InTensor x)
 {
     std::unique_ptr<uint8_t[]> img(new uint8_t[x.totalSize]);
     for (std::size_t i = 0; i < x.totalSize; i++) {
-        img[i] = imp::bound(x.val[i], 0, 255);
+        img[i] = imp::clip(x.val[i], 0, 255);
     }
     return img;
 }
@@ -24,7 +24,7 @@ std::shared_ptr<uint8_t[]> imp::tensor2Image(InTensor x)
 {
     std::shared_ptr<uint8_t[]> img(new uint8_t[x.totalSize]);
     for (std::size_t i = 0; i < x.totalSize; i++) {
-        img[i] = imp::bound(x.val[i], 0, 255);
+        img[i] = imp::clip(x.val[i], 0, 255);
     }
     return img;
 }

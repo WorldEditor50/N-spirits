@@ -119,8 +119,8 @@ int imp::nearestInterpolate(OutTensor xo, InTensor xi, const imp::Size &size)
     float rw = float(w)/float(wo);
     for (int i = 1; i < ho + 1; i++) {
         for (int j = 1; j < wo + 1; j++) {
-            int u = imp::bound(i*rh + 0.5, 1, h + 1);
-            int v = imp::bound(j*rw + 0.5, 1, w + 1);
+            int u = imp::clip(i*rh + 0.5, 1, h + 1);
+            int v = imp::clip(j*rw + 0.5, 1, w + 1);
             for (int k = 0; k < c; k++) {
                 xo(i - 1, j - 1, k) = xi(u - 1, v - 1, k);
             }
@@ -155,7 +155,7 @@ int imp::bilinearInterpolate(OutTensor xo, InTensor xi, const Size &size)
                 float y1 = xi(u0, v0, k)*(1 - wi) + xi(u1, v0, k)*wi;
                 float y2 = xi(u0, v1, k)*(1 - wi) + xi(u1, v1, k)*wi;
                 float y = y2*wj + (1 - wj)*y1;
-                xo(i, j, k) = imp::bound(y, 0, 255);
+                xo(i, j, k) = imp::clip(y, 0, 255);
             }
         }
     }

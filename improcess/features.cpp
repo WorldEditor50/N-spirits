@@ -157,7 +157,6 @@ int imp::barycenter(InTensor img, Point2i &center)
     return 0;
 }
 
-
 int imp::LBP(OutTensor feature, InTensor gray)
 {
     if (gray.shape[HWC_C] != 1) {

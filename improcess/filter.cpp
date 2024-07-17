@@ -57,13 +57,93 @@ int imp::medianBlur(OutTensor xo, InTensor xi, const imp::Size &size)
                         if (ui < 0 || ui >= h || vj < 0 || vj >= w) {
                             continue;
                         }
-                        box(u, v) = xi(ui, w - vj - 1, c);
+                        box(u, v) = xi(ui, vj, c);
                     }
                 }
                 /* sort and find middle value */
                 std::sort(box.begin(), box.end());
-                xo(i, wo - j - 1, c) = box(size.x/2, size.y/2);
+                xo(i, j, c) = box(size.x/2, size.y/2);
 
+            }
+        }
+    }
+    return 0;
+}
+
+
+int imp::bilateralBlur(OutTensor xo, InTensor xi, const imp::Size &size, float sigma1, float sigma2)
+{
+    int h = xi.shape[0];
+    int w = xi.shape[1];
+    int c = xi.shape[2];
+    int kernelSize1 = size.x;
+    int kernelSize2 = size.y;
+    int padding1 = kernelSize1/2;
+    int padding2 = kernelSize2/2;
+    int stride1 = 1;
+    int stride2 = 1;
+    int km1 = kernelSize1/2;
+    int km2 = kernelSize2/2;
+    int ho = std::floor(float(h - kernelSize1 + 2*padding1)/stride1) + 1;
+    int wo = std::floor(float(w - kernelSize2 + 2*padding2)/stride2) + 1;
+    xo = Tensor(ho, wo, c);
+    for (int i = 0; i < ho; i++) {
+        for (int j = 0; j < wo; j++) {
+            for (int k = 0; k < c; k++) {
+                int um = km1 + i*stride1 - padding1;
+                int vm = km2 + j*stride2 - padding2;
+                if (um < 0 || vm < 0 || um >= h || vm >= w) {
+                    continue;
+                }
+                float xw = 0;
+                float sw = 0;
+                for (int u = 0; u < kernelSize1; u++) {
+                    for (int v = 0; v < kernelSize2; v++) {
+                        int ui = u + i*stride1 - padding1;
+                        int vj = v + j*stride2 - padding2;
+                        if (ui < 0 || vj < 0 || ui >= h || vj >= w) {
+                            continue;
+                        }
+                        /* spatial kernel */
+                        float du = u - km1;
+                        float dv = v - km2;
+                        float w1 = std::exp(-(du*du + dv*dv)/(2*sigma1*sigma1));
+                        /* pixel kernel */
+                        float delta = xi(ui, vj, k) - xi(um, vm, k);
+                        float w2 = std::exp(-(delta*delta)/(2*sigma2*sigma2));
+                        xw += w1*w2*xi(ui, vj, k);
+                        sw += w1*w2;
+                    }
+                }
+                xo(i, j, k) = xw/sw;
+            }
+        }
+    }
+    return 0;
+}
+
+int imp::curvatureBlur3x3(OutTensor xo, InTensor xi)
+{
+    int h = xi.shape[0];
+    int w = xi.shape[1];
+    int c = xi.shape[2];
+    xo = Tensor(h, w, c);
+    Tensor d(3, 3);
+    for (int k = 0; k < c; k++) {
+        for (int i = 1; i < h - 1; i++) {
+            for (int j = 1; j < w - 1; j++) {
+                d[0] = (xi(i - 1, j, k) + xi(i + 1, j, k))/2 - xi(i, j, k);
+                d[1] = (xi(i, j - 1, k) + xi(i, j + 1, k))/2 - xi(i, j, k);
+                d[2] = (xi(i - 1, j - 1, k) + xi(i + 1, j + 1, k))/2 - xi(i, j, k);
+                d[3] = (xi(i - 1, j + 1, k) + xi(i + 1, j - 1, k))/2 - xi(i, j, k);
+
+                d[4] = xi(i - 1, j, k) + xi(i, j - 1, k) - xi(i - 1, j - 1, k) - xi(i, j, k);
+                d[5] = xi(i - 1, j, k) + xi(i, j + 1, k) - xi(i - 1, j + 1, k) - xi(i, j, k);
+                d[6] = xi(i, j - 1, k) + xi(i + 1, j, k) - xi(i + 1, j - 1, k) - xi(i, j, k);
+                d[7] = xi(i, j + 1, k) + xi(i + 1, j, k) - xi(i + 1, j + 1, k) - xi(i, j, k);
+                /* sort and find middle value */
+                std::sort(d.begin(), d.end());
+                xo(i, j, k) = xi(i, j , k) + d(1, 1);
             }
         }
     }
@@ -197,9 +277,9 @@ int imp::canny(OutTensor xo, InTensor xi, float minThres, float maxThres)
     Tensor kx({3, 3}, {-1, 0, 1,
                        -2, 0, 2,
                        -1, 0, 1});
-    Tensor ky({3, 3}, { 1,  2,  1,
-                        0,  0,  0,
-                       -1, -2, -1});
+    Tensor ky({3, 3}, { -1,  -2,  -1,
+                         0,   0,   0,
+                         1,   2,   1});
     Tensor imgx;
     conv2d(imgx, kx, img, 1, 0);
     Tensor imgy;

@@ -256,9 +256,9 @@ int imp::RGB2YUV(OutTensor xo, InTensor xi)
             float Y = 0.299*R + 0.587*G + 0.114*B;
             float U = (B - Y)*0.567;
             float V = (R - Y)*0.713;
-            xo(i, j, 0) = bound(Y, 0, 255);
-            xo(i, j, 1) = bound(U, 0, 255);
-            xo(i, j, 2) = bound(V, 0, 255);
+            xo(i, j, 0) = clip(Y, 0, 255);
+            xo(i, j, 1) = clip(U, 0, 255);
+            xo(i, j, 2) = clip(V, 0, 255);
         }
     }
     return 0;
@@ -285,9 +285,9 @@ int imp::YUV2RGB(OutTensor xo, InTensor xi)
             float R = Y + 1.402*V;
             float G = Y - 0.344*U - 0.714*V;
             float B = Y + 1.772*U;
-            xo(i, j, 0) = bound(R, 0, 255);
-            xo(i, j, 1) = bound(G, 0, 255);
-            xo(i, j, 2) = bound(B, 0, 255);
+            xo(i, j, 0) = clip(R, 0, 255);
+            xo(i, j, 1) = clip(G, 0, 255);
+            xo(i, j, 2) = clip(B, 0, 255);
         }
     }
     return 0;
@@ -309,9 +309,9 @@ int imp::RGB2YIQ(OutTensor xo, InTensor xi)
             float Y = 0.299*R + 0.587*G + 0.114*B;
             float I = 0.596*R - 0.274*G - 0.322*B;
             float Q = 0.211*R - 0.523*G + 0.312*B;
-            xo(i, j, 0) = bound(Y, 0, 255);
-            xo(i, j, 1) = bound(I, 0, 255);
-            xo(i, j, 2) = bound(Q, 0, 255);
+            xo(i, j, 0) = clip(Y, 0, 255);
+            xo(i, j, 1) = clip(I, 0, 255);
+            xo(i, j, 2) = clip(Q, 0, 255);
         }
     }
     return 0;
@@ -333,9 +333,9 @@ int imp::YIQ2RGB(OutTensor xo, InTensor xi)
             float R = Y + 0.956*I + 0.621*Q;
             float G = Y - 0.262*I - 0.647*Q;
             float B = Y - 1.106*I + 1.703*Q;
-            xo(i, j, 0) = bound(R, 0, 255);
-            xo(i, j, 1) = bound(G, 0, 255);
-            xo(i, j, 2) = bound(B, 0, 255);
+            xo(i, j, 0) = clip(R, 0, 255);
+            xo(i, j, 1) = clip(G, 0, 255);
+            xo(i, j, 2) = clip(B, 0, 255);
         }
     }
     return 0;

@@ -99,7 +99,7 @@ inline static Size imageSize(const Tensor &x)
     return Size(x.shape[HWC_H], x.shape[HWC_W]);
 }
 
-inline static double bound(double x, double min_, double max_)
+inline static double clip(double x, double min_, double max_)
 {
     double value = x < min_ ? min_ : x;
     value = value > max_ ? max_ : x;
@@ -109,7 +109,7 @@ inline static double bound(double x, double min_, double max_)
 inline static void clamp(Tensor &img, float min_, float max_)
 {
     for (std::size_t i = 0; i < img.totalSize; i++) {
-        img[i] = bound(img[i], min_, max_);
+        img[i] = clip(img[i], min_, max_);
     }
     return;
 }

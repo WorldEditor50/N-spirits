@@ -7,7 +7,7 @@ int imp::linearTransform(OutTensor xo, InTensor xi, float alpha, float beta)
     }
     xo = Tensor(xi.shape);
     for (std::size_t i = 0; i < xi.totalSize; i++) {
-        xo.val[i] = bound(xi.val[i]*alpha + beta, 0, 255);
+        xo.val[i] = clip(xi.val[i]*alpha + beta, 0, 255);
     }
     return 0;
 }
@@ -19,7 +19,7 @@ int imp::logTransform(OutTensor xo, InTensor xi, float c)
     }
     xo = Tensor(xi.shape);
     for (std::size_t i = 0; i < xi.totalSize; i++) {
-        xo.val[i] = bound(c*std::log(xi.val[i] + 1), 0, 255);
+        xo.val[i] = clip(c*std::log(xi.val[i] + 1), 0, 255);
     }
     return 0;
 }
@@ -32,7 +32,7 @@ int imp::gammaTransform(OutTensor xo, InTensor xi, float esp, float gamma)
     xo = Tensor(xi.shape);
     for (std::size_t i = 0; i < xi.totalSize; i++) {
         float p = std::pow((xi.val[i] + esp)/255, gamma)*255;
-        xo.val[i] = bound(p, 0, 255);
+        xo.val[i] = clip(p, 0, 255);
     }
     return 0;
 }
@@ -62,7 +62,7 @@ int imp::histogramEqualize(OutTensor xo, InTensor xi)
         for (std::size_t j = 0; j < xi.val[i]; j++) {
             cdf += hist.val[j];
         }
-        xo.val[i] = bound(cdf*255.0, 0, 255);
+        xo.val[i] = clip(cdf*255.0, 0, 255);
     }
     return 0;
 }
@@ -104,7 +104,7 @@ int imp::histogramStandardize(OutTensor xo, InTensor xi)
         for (std::size_t j = 0; j < xi.val[i]; j++) {
             cdf += hist[j];
         }
-        xo.val[i] = bound(histStd[int(255*cdf)], 0, 255);
+        xo.val[i] = clip(histStd[int(255*cdf)], 0, 255);
     }
     return 0;
 }

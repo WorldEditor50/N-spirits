@@ -92,14 +92,14 @@ int imp::rectangle(Tensor &img, const Point2i &pos, const Point2i &size, imp::Co
     int xR = pos.x + size.x;
     int yR = pos.y + size.y;
     /* thick */
-    int xLL = bound(xL - thick, 0, img.shape[1]);
-    int yLL = bound(yL - thick, 0, img.shape[0]);
-    int xLU = bound(xL + thick, 0, img.shape[1]);
-    int yLU = bound(yL + thick, 0, img.shape[0]);
-    int xRL = bound(xR - thick, 0, img.shape[1]);
-    int yRL = bound(yR - thick, 0, img.shape[0]);
-    int xRU = bound(xR + thick, 0, img.shape[1]);
-    int yRU = bound(yR + thick, 0, img.shape[0]);
+    int xLL = clip(xL - thick, 0, img.shape[1]);
+    int yLL = clip(yL - thick, 0, img.shape[0]);
+    int xLU = clip(xL + thick, 0, img.shape[1]);
+    int yLU = clip(yL + thick, 0, img.shape[0]);
+    int xRL = clip(xR - thick, 0, img.shape[1]);
+    int yRL = clip(yR - thick, 0, img.shape[0]);
+    int xRU = clip(xR + thick, 0, img.shape[1]);
+    int yRU = clip(yR + thick, 0, img.shape[0]);
     for (int x = 0; x < img.shape[1]; x++) {
         /* vertical border */
         for (int y = 0; y < img.shape[0]; y++) {
