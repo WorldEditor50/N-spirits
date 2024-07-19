@@ -65,7 +65,7 @@ void variance(const std::vector<Tensor> &x, const Tensor &u, Tensor &sigma);
 Tensor mean(const std::vector<Tensor> &x);
 Tensor variance(const std::vector<Tensor> &x, const Tensor &u);
 Tensor cov(const Tensor &x);
-float gaussian(const Tensor &xi, const Tensor &ui, const Tensor &sigmai);
+float gaussian(const Tensor &x, const Tensor &u, const Tensor &sigma);
 /* exchange */
 void exchangeRow(Tensor &x, int i1, int i2);
 void exchangeCol(Tensor &x, int j1, int j2);
@@ -116,7 +116,7 @@ namespace QR {
 namespace SVD {
     float normalize(Tensor &x, float eps);
     float qrIteration(Tensor &a, const Tensor &q, float eps);
-    int solve(const Tensor &x, Tensor &u, Tensor &s, Tensor &v, float eps=1e-7, std::size_t maxEpoch=100);
+    int solve(const Tensor &x, Tensor &u, Tensor &s, Tensor &v, float eps=1e-4, std::size_t maxEpoch=1000);
 };
 /* cholesky */
 namespace Cholesky {

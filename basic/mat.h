@@ -272,7 +272,7 @@ public:
         Mat y(cols, rows);
         for (std::size_t i = 0; i < y.rows; i++) {
             for (std::size_t j = 0; j < y.cols; j++) {
-                y.val[i*y.cols + j] = val[j*cols + i];
+                y(i, j) = val[j*cols + i];
             }
         }
         return y;

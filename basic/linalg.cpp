@@ -365,10 +365,24 @@ Tensor LinAlg::cov(const Tensor &x)
     return y;
 }
 
-float LinAlg::gaussian(const Tensor &xi, const Tensor &ui, const Tensor &sigmai)
+float LinAlg::gaussian(const Tensor &x, const Tensor &u, const Tensor &sigma)
 {
-
-    return 0;
+    /*
+        x:(featureDim, 1)
+        u:(featureDim, 1)
+        sigma:(featureDim, 1)
+    */
+    /* xTAx = (x - u)^T*isigma*(x - u) */
+    float xTAx = 0;
+    for (std::size_t i = 0; i < sigma.totalSize; i++) {
+        float d = x[i] - u[i];
+        float isigma = 1.0/sigma[i];
+        xTAx += d*d*isigma;
+    }
+    float det = LinAlg::product(sigma);
+    float n = x.shape[0];
+    float coeff = std::pow(LinAlg::pi2, n/2)*std::sqrt(det);
+    return 1.0/coeff*std::exp(-0.5*xTAx);
 }
 
 Tensor LinAlg::transpose(const Tensor &x)
@@ -1014,7 +1028,7 @@ int LinAlg::LU::inv(const Tensor &x, Tensor &xi)
 
 float LinAlg::SVD::normalize(Tensor &x, float eps)
 {
-    float s = std::sqrt(dot(x, x));
+    float s = x.norm2();
     if (s < eps) {
         return 0;
     }
@@ -1037,7 +1051,6 @@ float LinAlg::SVD::qrIteration(Tensor &a, const Tensor &q, float eps)
             a[j] -= s*q(i, j);
         }
     }
-    normalize(a, eps);
     return r;
 }
 
@@ -1053,7 +1066,7 @@ int LinAlg::SVD::solve(const Tensor &x, Tensor &u, Tensor &s, Tensor &v, float e
     Tensor nextVr(x.shape[1], 1);
     while (1) {
         uniform(ur, -1, 1);
-        float s = normalize(ur,eps);
+        float s = normalize(ur, eps);
         if (s > eps) {
             break;
         }

@@ -620,11 +620,6 @@ void test_kmeansPixelCluster()
     x.reshape(h*w, 3, 1);
     std::vector<Tensor> xi;
     x.toVector(xi);
-#if 0
-    Kmeans model(16, 3, LinAlg::normL2);
-    Kmeans model(16, 3, LinAlg::cosine);
-    Kmeans model(16, 3, LinAlg::Kernel::rbf);
-#endif
     Kmeans model(16, 3, [](const Tensor &x1, const Tensor &x2)->float{
         return LinAlg::Kernel::laplace(x1, x2, 1.0);
     });
@@ -912,7 +907,7 @@ void test_SVD()
     Tensor u;
     Tensor s;
     Tensor v;
-    LinAlg::SVD::solve(gray, u, s, v, 1e-4, 100);
+    LinAlg::SVD::solve(gray, u, s, v, 1e-8, 1000);
     int n = s.argmax();
     s[n] *= 0.6;
     int N = std::min(s.shape[0], s.shape[1]);

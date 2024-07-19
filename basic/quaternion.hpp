@@ -186,7 +186,7 @@ public:
     }
     static float dot(const Quaternion &q1, const Quaternion &q2)
     {
-        return q1.x0*q2.x0 + q1.xi*q2.xi + q1.xj*q2.xj + q1.xk*q2.xk;
+        return q1.x0*q2.x0 - q1.xi*q2.xi - q1.xj*q2.xj - q1.xk*q2.xk;
     }
     static Quaternion slerp(Quaternion &q1, Quaternion &q2, float t)
     {

@@ -209,7 +209,7 @@ public:
         {
             T s = 0;
             for (std::size_t i = 0; i < totalSize; i++) {
-                float val = pointer->val[i + pos];
+                T val = pointer->val[i + pos];
                 s += val*val;
             }
             return std::sqrt(s);
@@ -251,20 +251,23 @@ public:
         return;
     }
     /* contruct with shape */
-    explicit Tensor_(const Shape &shape_):totalSize(1),shape(shape_)
+    explicit Tensor_(const Shape &shape_)
+        :totalSize(1),shape(shape_)
     {
         initParams(shape, sizes, totalSize);
         val = std::vector<T, Alloc<T>>(totalSize, T(0));
     }
 
-    explicit Tensor_(const Shape &shape_, const std::vector<T, Alloc<T>> &val_):
+    explicit Tensor_(const Shape &shape_,
+                     const std::vector<T, Alloc<T>> &val_):
         totalSize(1),shape(shape_),val(val_)
     {
         initParams(shape, sizes, totalSize);
     }
 
 
-    explicit Tensor_(const std::initializer_list<int> &shape_, const std::initializer_list<T> &val_):
+    explicit Tensor_(const std::initializer_list<int> &shape_,
+                     const std::initializer_list<T> &val_):
         totalSize(1),shape(shape_),val(val_)
     {
         initParams(shape, sizes, totalSize);
@@ -635,12 +638,12 @@ public:
 
     Tensor_ tr() const
     {
-        int r = shape[0];
-        int c = shape[1];
-        Tensor_ y(c, r);
-        for (int i = 0; i < r; i++) {
-            for (int j = 0; j < c; j++) {
-                y.val[j*c + i] = val[i*c + j];
+        int rows = shape[0];
+        int cols = shape[1];
+        Tensor_ y(cols, rows);
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                y(j, i) = val[i*cols + j];
             }
         }
         return y;
@@ -888,9 +891,10 @@ public:
         {
             for (std::size_t i = 0; i < x.shape[0]; i++) {
                 for (std::size_t k = 0; k < x1.shape[1]; k++) {
+                    T x1ik = x1(i, k);
                     for (std::size_t j = 0; j < x.shape[1]; j++) {
                         /* x(i, j) = x1(i, k) * x2(k, j) */
-                        x.val[i*x.shape[1] + j] += x1.val[i*x1.shape[1] + k]*x2.val[k*x2.shape[1] + j];
+                        x(i, j) += x1ik*x2(k, j);
                     }
                 }
             }
@@ -902,9 +906,10 @@ public:
             /* transpose x1 */
             for (std::size_t i = 0; i < x.shape[0]; i++) {
                 for (std::size_t k = 0; k < x1.shape[0]; k++) {
+                    T x1ki= x1(k, i);
                     for (std::size_t j = 0; j < x.shape[1]; j++) {
                         /* x(i, j) = x1(k, i)^T * x2(k, j) */
-                        x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i]*x2.val[k*x2.shape[1] + j];
+                        x(i, j) += x1ki*x2(k, j);
                     }
                 }
             }
@@ -916,9 +921,10 @@ public:
             /* transpose x2 */
             for (std::size_t i = 0; i < x.shape[0]; i++) {
                 for (std::size_t k = 0; k < x1.shape[1]; k++) {
+                    T x1ik = x1(i, k);
                     for (std::size_t j = 0; j < x.shape[1]; j++) {
                         /* x(i, j) = x1(i, k) * x2(j, k)^T */
-                        x.val[i*x.shape[1] + j] += x1.val[i*x1.shape[1] + k]*x2.val[j*x2.shape[1] + k];
+                        x(i, j) += x1ik*x2(j, k);
                     }
                 }
             }
@@ -930,90 +936,77 @@ public:
             /* transpose x1, x2 */
             for (std::size_t i = 0; i < x.shape[0]; i++) {
                 for (std::size_t k = 0; k < x1.shape[0]; k++) {
+                    T x1ki = x1ki;
                     for (std::size_t j = 0; j < x.shape[1]; j++) {
                         /* x(i, j) = x1(k, i)^T * x2(j, k)^T */
-                        x.val[i*x.shape[1] + j] += x1.val[k*x1.shape[1] + i] * x2.val[j*x2.shape[1] + k];
+                        x(i, j) += x1ki*x2(j, k);
                     }
                 }
             }
             return;
         }
-    };
-    struct MM1 {
-        inline static void ikkj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
+
+        inline static Tensor_ ikkj(const Tensor_ &x1, const Tensor_ &x2)
         {
-            std::size_t rows = x.shape[0];
-            std::size_t cols = x.shape[1];
-            std::size_t cols1 = x1.shape[1];
-            std::size_t cols2 = x2.shape[1];
-            for (std::size_t i = 0; i < rows; i++) {
-                for (std::size_t k = 0; k < cols1; k++) {
-                    float val1 = x1.val[i*cols1 + k];
-                    for (std::size_t j = 0; j < cols; j++) {
+            Tensor_ x(x1.shape[0], x2.shape[1]);
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t k = 0; k < x1.shape[1]; k++) {
+                    T x1ik = x1(i, k);
+                    for (std::size_t j = 0; j < x.shape[1]; j++) {
                         /* x(i, j) = x1(i, k) * x2(k, j) */
-                        x.val[i*cols + j] += val1*x2.val[k*cols2 + j];
+                        x(i, j) += x1ik*x2(k, j);
                     }
                 }
             }
-            return;
+            return x;
         }
 
-        inline static void kikj(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
+        inline static Tensor_ kikj(const Tensor_ &x1, const Tensor_ &x2)
         {
-            std::size_t rows = x.shape[0];
-            std::size_t cols = x.shape[1];
-            std::size_t rows1 = x1.shape[0];
-            std::size_t cols1 = x1.shape[1];
-            std::size_t cols2 = x2.shape[1];
+            Tensor_ x(x1.shape[1], x2.shape[1]);
             /* transpose x1 */
-            for (std::size_t i = 0; i < rows; i++) {
-                for (std::size_t k = 0; k < rows1; k++) {
-                    float val1 = x1.val[k*cols1 + i];
-                    for (std::size_t j = 0; j < cols; j++) {
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t k = 0; k < x1.shape[0]; k++) {
+                    T x1ki= x1(k, i);
+                    for (std::size_t j = 0; j < x.shape[1]; j++) {
                         /* x(i, j) = x1(k, i)^T * x2(k, j) */
-                        x.val[i*cols + j] += val1*x2.val[k*cols2 + j];
+                        x(i, j) += x1ki*x2(k, j);
                     }
                 }
             }
-            return;
+            return x;
         }
 
-        inline static void ikjk(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
+        inline static Tensor_ ikjk(const Tensor_ &x1, const Tensor_ &x2)
         {
-            std::size_t rows = x.shape[0];
-            std::size_t cols = x.shape[1];
-            std::size_t cols1 = x1.shape[1];
-            std::size_t rows2 = x2.shape[0];
+            Tensor_ x(x1.shape[0], x2.shape[0]);
             /* transpose x2 */
-            for (std::size_t i = 0; i < rows; i++) {
-                for (std::size_t k = 0; k < cols1; k++) {
-                    float val1 = x1.val[i*cols1 + k];
-                    for (std::size_t j = 0; j < cols; j++) {
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t k = 0; k < x1.shape[1]; k++) {
+                    T x1ik = x1(i, k);
+                    for (std::size_t j = 0; j < x.shape[1]; j++) {
                         /* x(i, j) = x1(i, k) * x2(j, k)^T */
-                        x.val[i*cols + j] += val1*x2.val[k*rows2 + j];
+                        x(i, j) += x1ik*x2(j, k);
                     }
                 }
             }
-            return;
+            return x;
         }
 
-        inline static void kijk(Tensor_ &x, const Tensor_ &x1, const Tensor_ &x2)
+        inline static Tensor_ kijk(const Tensor_ &x1, const Tensor_ &x2)
         {
-            std::size_t rows = x.shape[0];
-            std::size_t cols = x.shape[1];
-            std::size_t rows1 = x1.shape[0];
-            std::size_t rows2 = x2.shape[0];
+            Tensor_ x(x1.shape[1], x2.shape[0]);
             /* transpose x1, x2 */
-            for (std::size_t i = 0; i < rows; i++) {
-                for (std::size_t k = 0; k < rows1; k++) {
-                    float val1 = x1.val[i*rows1 + k];
-                    for (std::size_t j = 0; j < cols; j++) {
+            for (std::size_t i = 0; i < x.shape[0]; i++) {
+                for (std::size_t k = 0; k < x1.shape[0]; k++) {
+                    T x1ki = x1ki;
+                    for (std::size_t j = 0; j < x.shape[1]; j++) {
                         /* x(i, j) = x1(k, i)^T * x2(j, k)^T */
-                        x.val[i*cols + j] += val1 * x2.val[k*rows2 + j];
+                        x(i, j) += x1ki*x2(j, k);
                     }
                 }
             }
-            return;
+            return x;
         }
     };
 

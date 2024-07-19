@@ -147,22 +147,22 @@ void test_svd()
     Tensor u;
     Tensor v;
     Tensor s;
-    LinAlg::SVD::solve(x, u, s, v);
+    LinAlg::SVD::solve(x, u, s, v, 1e-7, 1000);
     std::cout<<"U:"<<std::endl;
-    u.printValue();
+    u.printValue2D();
     std::cout<<"S:"<<std::endl;
-    s.printValue();
+    s.printValue2D();
     std::cout<<"V:"<<std::endl;
-    v.printValue();
+    v.printValue2D();
     /* x = U*S*V^T */
     Tensor y1(x.shape);
     Tensor::MM::ikkj(y1, u, s);
     Tensor y2(x.shape);
     Tensor::MM::ikjk(y2, y1, v);
     std::cout<<"x:"<<std::endl;
-    x.printValue();
+    x.printValue2D();
     std::cout<<"y:"<<std::endl;
-    y2.printValue();
+    y2.printValue2D();
     return;
 }
 
@@ -579,6 +579,19 @@ void test_eigen()
     return;
 }
 
+void test_transpose()
+{
+    Tensor x({3, 4}, {8, 0, 1, 9,
+                      0, 2, 6, 7,
+                      1, 1, 3, 0});
+    x.printValue2D();
+    Tensor xt = x.tr();
+    xt.printValue2D();
+    std::cout<<"x(1, 2)="<<x(1, 2)<<std::endl;
+    std::cout<<"x(2, 1)="<<x(2, 1)<<std::endl;
+    std::cout<<"xt(1, 2)="<<xt(1, 2)<<std::endl;
+    return;
+}
 int main()
 {
 #if 0
@@ -589,6 +602,7 @@ int main()
     test_svd();
     test_conv();
     test_permute();
+    test_transpose();
 #endif
     //test_tensor();
     //getchar();
@@ -602,10 +616,11 @@ int main()
     //test_cholesky();
     //test_gaussSeidel();
 
-    //test_inv();
+    test_inv();
     //test_eigen();
     //test_svd();
-    test_rank();
+    //test_rank();
+
     return 0;
 }
 
