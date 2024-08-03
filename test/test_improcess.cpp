@@ -1027,11 +1027,11 @@ void test_affine()
                         0, 1, 0,
                         0, 0, 1});
     /* translate */
-    Tensor translateOp = imp::AffineOperator::translate(80, 80);
+    Tensor translateOp = imp::AffineOperator::translate(160, 80);
     /* scale */
     Tensor scaleOp = imp::AffineOperator::scale(0.5, 0.5);
     /* rotate */
-    Tensor rotateOp = imp::AffineOperator::rotate(15);
+    Tensor rotateOp = imp::AffineOperator::rotate(30);
     /* shear in x direction */
     Tensor shearXOp = imp::AffineOperator::shearX(0.5);
     /* shear in y direction */
@@ -1043,18 +1043,12 @@ void test_affine()
     /* affine = Translate(Scale((Rotate)img))
               = (Translate*Scale*Rotate)img
     */
-    Tensor affineOp(3, 3);
-    Tensor sr(3, 3);
-    Tensor::MM::ikkj(sr, scaleOp, rotateOp);
-    Tensor::MM::ikkj(affineOp, translateOp, sr);
+    Tensor affineOp = translateOp%scaleOp%rotateOp;
+    affineOp.printValue2D();
     /* operation center */
-    Tensor op(3, 3);
     Tensor originCenter = imp::AffineOperator::center(0.5f*h, -0.5f*w);
     Tensor newCenter = imp::AffineOperator::center(0.5f*h, 0.5f*w);
-    Tensor r1(3, 3);
-    affineOp.printValue2D();
-    Tensor::MM::ikkj(r1, originCenter, affineOp);
-    Tensor::MM::ikkj(op, r1, newCenter);
+    Tensor op = originCenter%affineOp%newCenter;
     imp::affine(imgAffine, img, op);
     imp::show(imgAffine);
     return;

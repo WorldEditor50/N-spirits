@@ -1,22 +1,30 @@
-#ifndef LINEARREGRESSION_H
-#define LINEARREGRESSION_H
+#ifndef LOGISTIC_H
+#define LOGISTIC_H
 #include "../basic/tensor.hpp"
 #include "../basic/linalg.h"
 
-class LinearModel
+class Logistic
 {
 public:
+    std::size_t maxEpoch;
+    std::size_t batchSize;
+    float learningRate;
     Tensor w;
     float b;
 public:
-    LinearModel(){}
-    explicit LinearModel(int dim)
+    Logistic(){}
+    explicit Logistic(int topicDim,
+                      int featureDim,
+                      std::size_t maxEpoch_,
+                      std::size_t batchSize_,
+                      float learningRate_)
+        :maxEpoch(maxEpoch_),batchSize(batchSize_),learningRate(learningRate_)
     {
-        w = Tensor(dim, 1);
+        w = Tensor(featureDim, 1);
     }
     static float sigmoid(float x)
     {
-        return 1/(1 + exp(-x));
+        return 1/(1 + std::exp(-x));
     }
     static float dSigmoid(float y)
     {
@@ -35,7 +43,7 @@ public:
         b -= learningRate*(y - yt)*dSigmoid(y);
         return;
     }
-    void train(const std::vector<Tensor> &x, const Tensor &yt, std::size_t maxEpoch, std::size_t batchSize=30, float learningRate=1e-3)
+    void fit(const std::vector<Tensor> &x, const Tensor &yt, const Tensor &sampleWeight)
     {
         for (std::size_t i = 0; i < maxEpoch; i++) {
             for (std::size_t j = 0; j < batchSize; j++) {
@@ -48,4 +56,4 @@ public:
     }
 };
 
-#endif // LINEARREGRESSION_H
+#endif // LOGISTIC_H

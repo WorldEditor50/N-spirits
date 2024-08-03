@@ -441,6 +441,28 @@ Tensor LinAlg::eye(int n)
     return I;
 }
 
+Tensor LinAlg::upTriangle(int rows, int cols)
+{
+    Tensor x(rows, cols);
+    for (int i = 0; i < rows; i++) {
+        for (int j = i + 1; j < cols; j++) {
+            x(i, j) = 1;
+        }
+    }
+    return x;
+}
+
+Tensor LinAlg::lowTriangle(int rows, int cols)
+{
+    Tensor x(rows, cols);
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < i; j++) {
+            x(i, j) = 1;
+        }
+    }
+    return x;
+}
+
 int LinAlg::trace(const Tensor &x, float &value)
 {
     if (x.shape[0] != x.shape[1]) {

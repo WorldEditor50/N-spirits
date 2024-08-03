@@ -74,6 +74,10 @@ void embeddingRow(Tensor &x, int i, const Tensor &r);
 void embeddingCol(Tensor &x, int j, const Tensor &c);
 /* indentiy */
 Tensor eye(int n);
+/* up triangle */
+Tensor upTriangle(int rows, int cols);
+/* low triangle */
+Tensor lowTriangle(int rows, int cols);
 /* transpose */
 Tensor transpose(const Tensor &x);
 /* trace */

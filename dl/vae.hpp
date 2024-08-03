@@ -7,62 +7,62 @@
 #include "../basic/linalg.h"
 
 class VAE
-{  
-public:
+{
+private:
     /* encoder */
-    FcLayer fromImg;
-    FcLayer map2Mu;
-    FcLayer map2Sigma;
+    FcLayer encode1;
+    FcLayer encode2;
+    FcLayer encode3;
     /* decoder */
-    FcLayer fromZ;
-    FcLayer map2Img;
+    FcLayer decode1;
+    FcLayer decode2;
 public:
-    explicit VAE(int imgSize, int hiddenDim, int zDim)
+    explicit VAE(int inputDim, int hiddenDim, int zDim)
     {
         /* encoder */
-        fromImg = FcLayer(imgSize, hiddenDim, false, Fn_LeakyRelu);
-        map2Mu = FcLayer(hiddenDim, zDim, false, Fn_Linear);
-        map2Sigma = FcLayer(hiddenDim, zDim, false, Fn_Linear);
+        encode1 = FcLayer(inputDim, hiddenDim, false, Fn_LeakyRelu);
+        encode2 = FcLayer(hiddenDim, zDim, false, Fn_Linear);
+        encode3 = FcLayer(hiddenDim, zDim, false, Fn_Linear);
         /* decoder */
-        fromZ = FcLayer(zDim, hiddenDim, false, Fn_LeakyRelu);
-        map2Img = FcLayer(hiddenDim, imgSize, false, Fn_Sigmoid);
+        decode1 = FcLayer(zDim, hiddenDim, false, Fn_LeakyRelu);
+        decode2 = FcLayer(hiddenDim, inputDim, false, Fn_Sigmoid);
     }
-    void encoder(const Tensor &img, Tensor &mu, Tensor &sigma)
+    void encode(const Tensor &img, Tensor &mu, Tensor &sigma)
     {
-        Tensor& h = fromImg.forward(img);
-        mu = map2Mu.forward(h);
-        sigma = map2Sigma.forward(h);
+        Tensor& h = encode1.forward(img);
+        mu = encode2.forward(h);
+        sigma = encode3.forward(h);
         return;
     }
 
-    Tensor& decoder(const Tensor &z)
+    Tensor& decode(const Tensor &z)
     {
-        Tensor& h = fromZ.forward(z);
-        return map2Img.forward(h);
+        Tensor& h = decode1.forward(z);
+        return decode2.forward(h);
     }
 
-    std::tuple<Tensor, Tensor, Tensor> forward(const Tensor &img)
+    Tensor& forward(const Tensor &xi)
     {
         Tensor mu;
         Tensor sigma;
-        encoder(img, mu, sigma);
+        encode(xi, mu, sigma);
         Tensor epsilon = Tensor(sigma.shape);
         LinAlg::uniform(epsilon, -1, 1);
-        Tensor z = mu + epsilon;
-        Tensor img_ = decoder(z);
-        return std::tuple<Tensor, Tensor, Tensor>(img_, mu, sigma);
+        Tensor z = mu + epsilon*sigma;
+        return decode(z);
     }
 
     Tensor& operator()(const Tensor &img)
     {
         Tensor mu;
         Tensor sigma;
-        encoder(img, mu, sigma);
+        encode(img, mu, sigma);
         Tensor epsilon = Tensor(sigma.shape);
         LinAlg::uniform(epsilon, -1, 1);
-        Tensor z = mu + epsilon;
-        return decoder(z);
+        Tensor z = mu + epsilon*sigma;
+        return decode(z);
     }
+
 
 };
 #endif // VAE_HPP

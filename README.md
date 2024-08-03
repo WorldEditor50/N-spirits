@@ -21,7 +21,7 @@
 
   - spatial filter
 
-    average blur, gaussian blur,  median blur, sobel, laplace, canny
+    average blur, gaussian blur,  median blur, curvature filter, bilateral filter, sobel, laplace, canny
 
   - frequency filter
 

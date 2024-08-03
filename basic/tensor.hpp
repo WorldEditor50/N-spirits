@@ -686,6 +686,21 @@ public:
         return y;
     }
 
+    Tensor_ operator %(const Tensor_ &x) const
+    {
+        Tensor_ y(shape[0], x.shape[1]);
+        for (std::size_t i = 0; i < y.shape[0]; i++) {
+            for (std::size_t k = 0; k < shape[1]; k++) {
+                T vik = val[posOf(i, k)];
+                for (std::size_t j = 0; j < y.shape[1]; j++) {
+                    /* y(i, j) = val(i, k) * x(k, j) */
+                    y(i, j) += vik*x(k, j);
+                }
+            }
+        }
+        return y;
+    }
+
     Tensor_ &operator +=(const Tensor_ &x)
     {
         for (std::size_t i = 0; i < val.size(); i++) {

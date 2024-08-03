@@ -245,8 +245,8 @@ int imp::affine(OutTensor xo, InTensor xi, InTensor op)
         for (int j = 0; j < w; j++) {
             Tensor p1({3, 1}, {float(i), float(j), 1});
             Tensor p2(3, 1);
-            /* transform: p2 = op^T*p1 */
-            Tensor::MM::kikj(p2, op, p1);
+            /* transform: p2 = op*p1 */
+            Tensor::MM::ikkj(p2, op, p1);
             int u = p2[0];
             int v = p2[1];
             if (u < 0 || v < 0 || u >= h || v >= w) {

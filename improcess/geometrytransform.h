@@ -22,9 +22,9 @@ namespace AffineOperator {
     /* translate */
     inline Tensor translate(float i, float j)
     {
-        return Tensor({3, 3}, {1,   0,  0,
-                               0,   1,  0,
-                               i,  -j,  1});
+        return Tensor({3, 3}, {1,   0,  i,
+                               0,   1, -j,
+                               0,   0,  1});
     }
     /* scale */
     inline Tensor scale(float iFactor, float jFactor)
@@ -40,24 +40,24 @@ namespace AffineOperator {
         float theta = angle*imp::pi/180.0;
         float sinTheta = std::sin(theta);
         float cosTheta = std::cos(theta);
-        return Tensor({3, 3}, {cosTheta, sinTheta, 0,
-                              -sinTheta, cosTheta, 0,
-                               0,        0,        1});
+        return Tensor({3, 3}, {cosTheta, -sinTheta, 0,
+                               sinTheta,  cosTheta, 0,
+                               0,         0,        1});
     }
     /* shear in x direction */
     inline Tensor shearX(float factor)
     {
-        return Tensor({3, 3}, {1,   factor, 0,
-                               0,   1, 0,
+        return Tensor({3, 3}, {1,   0, 0,
+                               factor, 1, 0,
                                0,   0, 1});
     }
 
     /* shear in y direction */
     inline Tensor shearY(float factor)
     {
-        return Tensor({3, 3}, {1,      0, 0,
-                               factor, 1, 0,
-                               0,      0, 1});
+        return Tensor({3, 3}, {1, factor, 0,
+                               0, 1, 0,
+                               0, 0, 1});
     }
     /* reflect about x */
     inline Tensor flipX()
@@ -76,9 +76,9 @@ namespace AffineOperator {
     /* operation center */
     inline Tensor center(float i, float j)
     {
-        return Tensor({3, 3}, {1,  0, 0,
-                               0, -1, 0,
-                               j,  i, 1});
+        return Tensor({3, 3}, {1,  0, j,
+                               0, -1, i,
+                               0,  0, 1});
     }
 }
 int affine(OutTensor xo, InTensor xi, InTensor op);
