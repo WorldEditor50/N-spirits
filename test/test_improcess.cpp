@@ -1180,6 +1180,39 @@ void test_bilateralBlur()
     return;
 }
 
+void test_harrisCorner()
+{
+    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    imp::meanGray(gray, img);
+    Tensor xo;
+    imp::harrisCorner(xo, gray, 0.03);
+    float thres = xo.max()*0.001;
+    for (std::size_t i = 0; i < xo.totalSize; i++) {
+        if (xo[i] < thres) {
+            xo[i] = 0;
+        }
+    }
+    int h = img.shape[0];
+    int w = img.shape[1];
+    Tensor mask(h, w, 3);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            if (xo(i, j, 0) != 0) {
+                mask(i, j, 1) = 255;
+                img(i, j, 1) = 255;
+            }
+        }
+    }
+    Tensor result = Tensor::concat(1, mask, img);
+    imp::show(result);
+    return;
+}
+
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -1237,6 +1270,7 @@ int main()
     //test_eigen();
     //test_projectToSphere();
     //test_curvatrueBlur();
-    test_bilateralBlur();
+    //test_bilateralBlur();
+    test_harrisCorner();
     return 0;
 }

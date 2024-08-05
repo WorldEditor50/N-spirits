@@ -913,9 +913,9 @@ int imp::HOG(OutTensor xo, OutTensor hist, InTensor xi, int cellSize, int binSiz
     Tensor kx({3, 3}, {-1, 0, 1,
                        -2, 0, 2,
                        -1, 0, 1});
-    Tensor ky({3, 3}, { 1,  2,  1,
+    Tensor ky({3, 3}, {-1, -2, -1,
                         0,  0,  0,
-                       -1, -2, -1});
+                        1,  2,  1});
     Tensor imgx;
     conv2d(imgx, kx, img, 1, 1);
     Tensor imgy;
@@ -1011,6 +1011,56 @@ int imp::HOG(OutTensor xo, OutTensor hist, InTensor xi, int cellSize, int binSiz
                 line(xo, Point2i(y1, x1), Point2i(y2, x2), Color3(0, 255*std::sqrt(mag), 0));
                 angle += angleUnit;
             }
+        }
+    }
+    return 0;
+}
+
+int imp::harrisCorner(OutTensor xo, InTensor xi, float coeff)
+{
+    if (xi.shape[HWC_C] != 1) {
+        return -1;
+    }
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    xo = Tensor(xi.shape);
+    /* step1: gradient */
+    Tensor kx({3, 3}, {-1, 0, 1,
+                       -2, 0, 2,
+                       -1, 0, 1});
+    Tensor ky({3, 3}, {-1, -2, -1,
+                        0,  0,  0,
+                        1,  2,  1});
+    Tensor gx;
+    conv2d(gx, kx, xi, 1, 1);
+    Tensor gy;
+    conv2d(gy, ky, xi, 1, 1);
+
+    Tensor gxx = gx*gx;
+    Tensor gyy = gy*gy;
+    Tensor gxy = gx*gy;
+    /* step2: sum */
+    Tensor ks = Tensor::ones(2, 2);
+    Tensor fxx;
+    conv2d(fxx, ks, gxx, 1, 0);
+    Tensor fyy;
+    conv2d(fyy, ks, gyy, 1, 0);
+    Tensor fxy;
+    conv2d(fxy, ks, gxy, 1, 0);
+    /* step3: */
+    for (int i = 1; i < h - 1; i++) {
+        for (int j = 1; j < w - 1; j++) {
+            float sxx = fxx(i, j, 0);
+            float syy = fyy(i, j, 0);
+            float sxy = fxy(i, j, 0);
+            /*
+              M = |sxx sxy|
+                  |sxy syy|
+            */
+            float det = sxx*syy - sxy*sxy;
+            float trace = sxx + syy;
+            float resp = det - coeff*trace*trace;
+            xo(i, j, 0) = resp;
         }
     }
     return 0;
