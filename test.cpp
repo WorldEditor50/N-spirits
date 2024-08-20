@@ -6,6 +6,7 @@
 #include "basic/tensor.hpp"
 #include "basic/complex.hpp"
 #include "basic/quaternion.hpp"
+#include "basic/optimization.hpp"
 #include "basic/fft.h"
 #include "utils/csv.h"
 #include "utils/dataset.h"
@@ -400,6 +401,16 @@ void test_tensor()
         Tensor y = x.block({2, 2}, {3, 3});
         y.printValue();
     }
+    /* to string */
+    std::cout<<"to string:"<<std::endl;
+    {
+        Tensor x1({3, 3}, {1.1, 0.02, 3.14, 4, 5.0, 6, 7, 8, 9.12});
+        std::string s = x1.toString();
+        std::cout<<s<<std::endl;
+        Tensor x2 = Tensor::fromString(s);
+        x2.printShape();
+        x2.printValue();
+    }
     return;
 }
 
@@ -592,6 +603,174 @@ void test_transpose()
     std::cout<<"xt(1, 2)="<<xt(1, 2)<<std::endl;
     return;
 }
+
+void test_BFGS1()
+{
+    class FnExp
+    {
+    public:
+        FnExp(){}
+        Tensor operator()(const Tensor &w, const Tensor &x)
+        {
+            /*
+                y = exp(-(a*x1^2 + b*(x1 - x2) + c*x1*x2 + d*x2^2))
+                dy/da = -x1^2*y
+                dy/db = -(x1 - x2)*y
+                dy/dc = -x1*x2*y
+                dy/dd = -x2^2*y
+
+                w0 = a
+                w1 = b
+                w2 = c
+                w3 = d
+            */
+            Tensor y(1, 1);
+            float s = w[0]*x[0]*x[0] +
+                    w[1]*(x[0] - x[1]) +
+                    w[2]*x[1]*x[1] +
+                    w[3];
+            y[0] = std::exp(-s);
+            return y;
+        }
+
+        Tensor df(const Tensor &w, const Tensor &x)
+        {
+            Tensor dw(4, 1);
+            float s = w[0]*x[0]*x[0] +
+                    w[1]*(x[0] - x[1]) +
+                    w[2]*x[1]*x[1] +
+                    w[3];
+            float y = std::exp(-s);
+            dw[0] = -x[0]*x[0]*y;
+            dw[1] = -(x[0] - x[1])*y;
+            dw[2] = -x[0]*x[1]*y;
+            dw[3] = -x[1]*x[1]*y;
+            return dw;
+        }
+    };
+    /* objective function:
+       error = (f(w, x) - f(wt, x))^2
+    */
+    class FnObjective
+    {
+    public:
+       FnExp f;
+       Tensor wt;
+    public:
+        FnObjective(){}
+        FnObjective(FnExp &f_, const Tensor &w)
+            :f(f_),wt(w){}
+        Tensor operator()(const Tensor &w, const Tensor &x)
+        {
+            Tensor delta = f(w, x) - f(wt, x);
+            return delta*delta/2;
+        }
+        Tensor df(const Tensor &w, const Tensor &x)
+        {
+            Tensor delta = f(w, x) - f(wt, x);
+            return f.df(w, x)*delta[0];
+        }
+    };
+
+    Tensor w(4, 1);
+    LinAlg::uniform(w, -1, 1);
+    Tensor wt({4, 1}, {-2, 8, 6, -12});
+    FnExp f;
+    /* sample data */
+    std::size_t N = 10;
+    std::vector<Tensor> x(N, Tensor(2, 1));
+    std::uniform_real_distribution<float> uniform(-10, 10);
+    for (std::size_t i = 0; i < N; i++) {
+        x[i][0] = uniform(LinAlg::Random::engine);
+        x[i][1] = uniform(LinAlg::Random::engine);
+    }
+    /* objective */
+    FnObjective objective(f, wt);
+    /* optimizer */
+    LinAlg::Armijo armijo(0.6, 0.4, 100);
+    LinAlg::BFGS<LinAlg::Armijo> optimize(armijo, 10, 1e-3);
+    optimize(objective, w, x);
+    w.printValue();
+    return;
+}
+
+class FnPolyomial
+{
+public:
+    FnPolyomial(){}
+    Tensor operator()(const Tensor &x)
+    {
+        Tensor y(1, 1);
+        y[0] = x[0]*x[0]*x[0] + 2*x[0]*x[1] - x[1]*x[2] + x[2]*x[2]/2 - x[3]*x[0] + x[3]*x[3] +
+                -x[0] + x[1] - x[2] + 1;
+        return y;
+    }
+    Tensor df(const Tensor &x)
+    {
+        Tensor dy(4, 1);
+        dy[0] = 3*x[0]*x[0] + 2*x[1] - x[3] - 1;
+        dy[1] = 2*x[1] - x[2] + 1;
+        dy[2] = -x[1] + x[2] - 1;
+        dy[3] = -x[0] + 2*x[3];
+        /*
+            while dy/dx0=0, dy/dx1=0,dy/dx2=0,dy/dx3=0:
+            x0 = 2/3, x0 = -0.5
+            x1 = 0
+            x2 = 1
+            x3 = 1/3, x3 = -0.25
+        */
+        return dy;
+    }
+};
+
+void test_BFGS2()
+{
+    std::cout<<"BFGS:"<<std::endl;
+    LinAlg::Armijo armijo(0.6, 1, 30);
+    LinAlg::Wolfe wolfe;
+    LinAlg::BFGS<LinAlg::Wolfe> optimize(wolfe, 10000, 1e-8);
+    Tensor x0(4, 1);
+    LinAlg::uniform(x0, -1, 1);
+    std::cout<<"x0:";
+    x0.printValue();
+    FnPolyomial fn;
+    Tensor x = optimize.solve(fn, x0);
+    std::cout<<"x:";
+    x.printValue();
+    std::cout<<"y="<<fn(x)[0]<<std::endl;;
+    return;
+}
+
+void test_conjugate_gradient()
+{
+    std::cout<<"ConjugateGradient:"<<std::endl;
+    LinAlg::Armijo armijo(0.6, 0.4, 30);
+    LinAlg::Wolfe wolfe(0.1, 0.5, 100);
+    LinAlg::ConjugateGradient<LinAlg::Armijo> optimize(armijo, 10000, 1e-8);
+    Tensor x0(4, 1);
+    LinAlg::uniform(x0, -1, 1);
+    std::cout<<"x0:";
+    x0.printValue();
+    FnPolyomial fn;
+    Tensor x = optimize(fn, x0);
+    std::cout<<"x:";
+    x.printValue();
+    std::cout<<"y="<<fn(x)[0]<<std::endl;
+    return;
+}
+
+void test_DFP()
+{
+    std::cout<<"DFP:"<<std::endl;
+    LinAlg::DFP<LinAlg::Armijo> optimize(1000, 1e-3);
+    Tensor x0(4, 1);
+    LinAlg::uniform(x0, -1, 1);
+    FnPolyomial fn;
+    Tensor x = optimize(fn, x0);
+    x.printValue();
+    std::cout<<"y="<<fn(x)[0]<<std::endl;
+    return;
+}
 int main()
 {
 #if 0
@@ -616,11 +795,13 @@ int main()
     //test_cholesky();
     //test_gaussSeidel();
 
-    test_inv();
+    //test_inv();
     //test_eigen();
     //test_svd();
     //test_rank();
-
+    //test_BFGS1();
+    test_BFGS2();
+    test_conjugate_gradient();
     return 0;
 }
 

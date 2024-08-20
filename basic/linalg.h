@@ -132,6 +132,5 @@ namespace PCA {
     void project(const Tensor &x, const Tensor &u, int k, Tensor &y);
 };
 
-
 }
 #endif // LINEARALGEBRA_H

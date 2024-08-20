@@ -15,7 +15,7 @@ public:
             dw /= dw.norm2() + 1e-8;
         }
         for (std::size_t i = 0; i < w.totalSize; i++) {
-            w.val[i] = (1 - decay)*w.val[i] - learningRate*dw.val[i];
+            w[i] = (1 - decay)*w[i] - learningRate*dw[i];
         }
         dw.zero();
         return;
@@ -40,8 +40,8 @@ public:
             dw /= dw.norm2() + 1e-8;
         }
         for (std::size_t i = 0; i < w.totalSize; i++) {
-            v.val[i] = rho*v.val[i] + (1 - rho) * dw.val[i]*dw.val[i];
-            w.val[i] = (1 - decay)*w.val[i] - learningRate*dw.val[i]/(std::sqrt(v.val[i]) + 1e-9);
+            v[i] = rho*v[i] + (1 - rho) * dw[i]*dw[i];
+            w[i] = (1 - decay)*w[i] - learningRate*dw[i]/(std::sqrt(v[i]) + 1e-9);
         }
         dw.zero();
         return;
