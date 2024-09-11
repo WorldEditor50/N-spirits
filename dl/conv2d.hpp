@@ -75,14 +75,14 @@ public:
 
         inline Tensor& loss() {return e;}
 
-        void backward(const Conv2d &layer, Tensor &delta_)
+        void backward(const Conv2d &layer, Tensor &ei)
         {
             /* delta_: previous delta, the shape is same as input */
 
 #if 1
-            for (int n = 0; n < delta_.shape[0]; n++) {
-                for (int i = 0; i < delta_.shape[1]; i++) {
-                    for (int j = 0; j < delta_.shape[2]; j++) {
+            for (int n = 0; n < ei.shape[0]; n++) {
+                for (int i = 0; i < ei.shape[1]; i++) {
+                    for (int j = 0; j < ei.shape[2]; j++) {
 
                         int h0 = (i - kernelSize + 1)/stride;
                         h0 = h0 > 0 ? std::ceil(h0):0;
@@ -97,7 +97,7 @@ public:
                         for (int c = 0; c < layer.kernels.shape[0]; c++) {
                             for (int h = h0; h < hn; h++) {
                                 for (int k = k0; k < kn; k++) {
-                                    delta_(n, i, j) += layer.kernels(n, c, i - h*stride, j - k*stride)*e(c, h, k);
+                                    ei(n, i, j) += layer.kernels(n, c, i - h*stride, j - k*stride)*e(c, h, k);
                                 }
                             }
                         }
@@ -192,6 +192,7 @@ public:
                 }
             }
 #endif
+            e.zero();
             return;
         }
 
@@ -293,12 +294,12 @@ public:
             e = Tensor(outChannels, ho, wo);
         }
         inline Tensor& loss() {return e;}
-        void backward(MaxPooling2d &layer, Tensor &delta_)
+        void backward(MaxPooling2d &layer, Tensor &ei)
         {
             /* delta_: previous delta, the shape is same as delta and output */
-            for (int n = 0; n < delta_.shape[0]; n++) {
-                for (int i = 0; i < delta_.shape[1]; i++) {
-                    for (int j = 0; j < delta_.shape[2]; j++) {
+            for (int n = 0; n < ei.shape[0]; n++) {
+                for (int i = 0; i < ei.shape[1]; i++) {
+                    for (int j = 0; j < ei.shape[2]; j++) {
 
                         int h0 = (i - kernelSize + 1)/stride;
                         h0 = h0 > 0 ? std::ceil(h0):0;
@@ -312,13 +313,14 @@ public:
 
                         for (int h = h0; h < hn; h++) {
                             for (int k = k0; k < kn; k++) {
-                                delta_(n, i, j) += layer.mask(n, h, k)*e(n, h, k);
+                                ei(n, i, j) += layer.mask(n, h, k)*e(n, h, k);
                             }
                         }
                     }
                 }
             }
             layer.mask.zero();
+            e.zero();
             return;
         }
         /* no gradient */
@@ -397,12 +399,12 @@ public:
             e = Tensor(outChannels, ho, wo);
         }
         inline Tensor& loss() {return e;}
-        void backward(AvgPooling2d &layer, Tensor &delta_)
+        void backward(AvgPooling2d &layer, Tensor &ei)
         {
             /* delta_: previous delta, the shape is same as delta and output */
-            for (int n = 0; n < delta_.shape[0]; n++) {
-                for (int i = 0; i < delta_.shape[1]; i++) {
-                    for (int j = 0; j < delta_.shape[2]; j++) {
+            for (int n = 0; n < ei.shape[0]; n++) {
+                for (int i = 0; i < ei.shape[1]; i++) {
+                    for (int j = 0; j < ei.shape[2]; j++) {
 
                         int h0 = (i - kernelSize + 1)/stride;
                         h0 = h0 > 0 ? std::ceil(h0):0;
@@ -416,12 +418,13 @@ public:
 
                         for (int h = h0; h < hn; h++) {
                             for (int k = k0; k < kn; k++) {
-                                delta_(n, i, j) += e(n, h, k);
+                                ei(n, i, j) += e(n, h, k);
                             }
                         }
                     }
                 }
             }
+            e.zero();
             return;
         }
         /* no gradient */
@@ -579,9 +582,10 @@ public:
         {
             e = Tensor(inChannels, hi, wi);
         }
-        void backward(NMS &layer, Tensor &delta_)
+        void backward(NMS &layer, Tensor &ei)
         {
-            delta_ = e;
+            ei = e;
+            e.zero();
             return;
         }
         /* no gradient */
