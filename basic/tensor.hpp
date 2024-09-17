@@ -55,6 +55,15 @@ public:
             return;
         }
 
+        inline void operator=(const std::initializer_list<T> &x)
+        {
+            std::vector<T> x_(x);
+            for (std::size_t i = 0; i < x.size(); i++) {
+                pointer->val[i + pos] = x_[i];
+            }
+            return;
+        }
+
         inline void operator=(T x)
         {
             for (std::size_t i = 0; i < totalSize; i++) {
@@ -826,16 +835,16 @@ public:
     T variance(T u) const
     {
         T s = 0;
-        for (std::size_t i = 0; i < val.size(); i++) {
+        for (std::size_t i = 1; i < totalSize; i++) {
             s += (val[i] - u)*(val[i] - u);
         }
         return s/T(totalSize);
     }
 
-    T max() const
+    inline T max() const
     {
         T value = val[0];
-        for (std::size_t i = 0; i < val.size(); i++) {
+        for (std::size_t i = 1; i < totalSize; i++) {
             if (value < val[i]) {
                 value = val[i];
             }
@@ -843,10 +852,10 @@ public:
         return value;
     }
 
-    T min() const
+    inline T min() const
     {
         T value = val[0];
-        for (std::size_t i = 0; i < val.size(); i++) {
+        for (std::size_t i = 1; i < totalSize; i++) {
             if (value > val[i]) {
                 value = val[i];
             }
@@ -858,7 +867,7 @@ public:
     {
         T value = val[0];
         std::size_t index = 0;
-        for (std::size_t i = 0; i < val.size(); i++) {
+        for (std::size_t i = 0; i < totalSize; i++) {
             if (value < val[i]) {
                 value = val[i];
                 index = i;
@@ -871,7 +880,7 @@ public:
     {
         T value = val[0];
         std::size_t index = 0;
-        for (std::size_t i = 0; i < val.size(); i++) {
+        for (std::size_t i = 0; i < totalSize; i++) {
             if (value > val[i]) {
                 value = val[i];
                 index = i;
@@ -885,7 +894,7 @@ public:
     {
         double minValue = val[0];
         double maxValue = val[0];
-        for (std::size_t i = 0; i < val.size(); i++) {
+        for (std::size_t i = 0; i < totalSize; i++) {
             if (minValue > val[i]) {
                 minValue = val[i];
             }
@@ -893,7 +902,7 @@ public:
                 maxValue = val[i];
             }
         }
-        for (std::size_t i = 0; i < val.size(); i++) {
+        for (std::size_t i = 0; i < totalSize; i++) {
             val[i] = (val[i] - minValue)/(maxValue - minValue);
         }
         return;

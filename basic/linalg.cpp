@@ -1128,6 +1128,7 @@ int LinAlg::SVD::solve(const Tensor &x, Tensor &u, Tensor &s, Tensor &v, float e
         s(n, n) = r;
         embeddingRow(u, n, ur);
         embeddingRow(v, n, vr);
+        std::cout<<"n="<<n<<", r="<<r<<std::endl;
     }
     u = u.tr();
     v = v.tr();

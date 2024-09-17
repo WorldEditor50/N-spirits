@@ -162,9 +162,9 @@ public:
     int nx;
     int ny;
     /* viscosity of fluid */
-    double niu;
-    double tau;
-    double sigma;
+    float niu;
+    float tau;
+    float sigma;
     /* weights for velocity.: (9) */
     static Tensor w;
     /* lattice vector: (9, 2) */
@@ -209,7 +209,7 @@ public:
         for (int i = 0; i < fn.shape[0]; i++) {
             for (int j = 0; j < fn.shape[1]; j++) {
                 for (int k = 0; k < fn.shape[2]; k++) {
-                    double value = feq(i, j, k);
+                    float value = feq(i, j, k);
                     fn(i, j, k) = value;
                     f(i, j, k) = value;
                 }
@@ -309,7 +309,7 @@ public:
                 Tensor fij = f.sub(i, j).reshape(9, 1);
                 Tensor meq = toMoment(feqs);
                 Tensor m = toMoment(fij);
-                static Tensor s({9, 1}, {1.0, 1.63, 1.14, 1.0, 1.92, 0.0, 1.92, sigma, sigma});
+                static Tensor s({9, 1}, {1.0f, 1.63f, 1.14f, 1.0f, 1.92f, 0.0f, 1.92f, sigma, sigma});
                 s.val[7] = sigma;
                 s.val[8] = sigma;
                 /* MRT */

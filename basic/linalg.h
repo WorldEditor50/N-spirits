@@ -4,7 +4,9 @@
 #include <random>
 #include "mat.h"
 #include "tensor.hpp"
-
+#ifndef MAXFLOAT
+#define MAXFLOAT 1e19
+#endif
 namespace LinAlg {
 constexpr static float pi = 3.1415926535897932384626433832795;
 constexpr static float pi2 = 2*pi;

@@ -623,7 +623,7 @@ void test_kmeansPixelCluster()
     Kmeans model(16, 3, [](const Tensor &x1, const Tensor &x2)->float{
         return LinAlg::Kernel::laplace(x1, x2, 1.0);
     });
-    model.cluster(xi, 1000, 0, 1e-6);
+    model.cluster(xi, 200, 0, 1e-6);
     /* centers */
     for (int i = 0; i < 16; i++) {
         model.centers[i].printValue();
@@ -655,8 +655,8 @@ void test_kmeansPixelCluster()
     Tensor pixelRow4 = Tensor::concat(1, pixels[12], pixels[13], pixels[14], pixels[15]);
 
     Tensor pixelTable = Tensor::concat(0, pixelRow1, pixelRow2, pixelRow3, pixelRow4);
-    Tensor dst = Tensor::concat(1, img, result, pixelTable);
-    imp::save(dst, "kmeans_pixels_cluster.bmp");
+    Tensor dst = Tensor::concat(1, pixelTable, result, img);
+    imp::save(dst, "./kmeans_pixels_cluster.bmp");
     imp::show(dst);
     return;
 }
@@ -707,7 +707,7 @@ void test_gmmPixelCluster()
     Tensor pixelRow4 = Tensor::concat(1, pixels[12], pixels[13], pixels[14], pixels[15]);
 
     Tensor pixelTable = Tensor::concat(0, pixelRow1, pixelRow2, pixelRow3, pixelRow4);
-    Tensor dst = Tensor::concat(1, img, result, pixelTable);
+    Tensor dst = Tensor::concat(1, pixelTable, result, img);
     imp::save(dst, "gmm_pixel_cluster.bmp");
     imp::show(dst);
     return;
@@ -831,7 +831,7 @@ void test_houghLine()
         std::cout<<"no lines"<<std::endl;
         return;
     }
-    Tensor result = Tensor::concat(imp::HWC_W, xo, img);
+    Tensor result = Tensor::concat(imp::HWC_W, img, xo);
     imp::show(result);
     return;
 }
@@ -920,7 +920,7 @@ void test_SVD()
     Tensor::MM::ikkj(r1, u, s);
     Tensor r2(gray.shape);
     Tensor::MM::ikjk(r2, r1, v);
-    Tensor result = Tensor::concat(1, r2, gray);
+    Tensor result = Tensor::concat(1, gray, r2);
     imp::save(result, "svd.bmp");
     imp::show(result);
     return;
@@ -987,7 +987,7 @@ void test_canny()
     imp::meanGray(gray, img);
     Tensor x1;
     imp::canny(x1, gray, 30, 80);
-    Tensor result = Tensor::concat(1, x1, gray);
+    Tensor result = Tensor::concat(1, gray, x1);
     imp::show(result);
     return;
 }
@@ -1005,7 +1005,7 @@ void test_HOG()
     Tensor hog;
     Tensor hist;
     imp::HOG(hog, hist, gray, 8, 8, 2);
-    Tensor result = Tensor::concat(1, hog, img);
+    Tensor result = Tensor::concat(1, img, hog);
     imp::save(hog, "./hog.bmp");
     imp::save(result, "./hog_result.bmp");
     imp::show(result);

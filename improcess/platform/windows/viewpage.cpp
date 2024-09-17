@@ -95,7 +95,7 @@ void imp::View2D::updateImage(int h, int w, int c, uint8_t *data)
     if (c == 1) {
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
-                uint8_t pixel =data[(h - 1 - i)*w*c + j*c];
+                uint8_t pixel = data[(h - 1 - i)*w + j];
                 img[i*w*4 + j*4]     = pixel;
                 img[i*w*4 + j*4 + 1] = pixel;
                 img[i*w*4 + j*4 + 2] = pixel;

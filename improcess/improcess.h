@@ -20,6 +20,15 @@
 
 #ifdef WIN32
 #include "platform/windows/viewpage.h"
+
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
+#endif
+
 #endif
 
 #ifdef __linux__
