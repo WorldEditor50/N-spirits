@@ -3,7 +3,7 @@
 #include "improcess_def.h"
 #include "features.h"
 
-namespace imp {
+namespace ns {
 /* transform */
 int transform(OutTensor xo, InTensor xi, std::function<float(float)> func);
 /* linear transform */

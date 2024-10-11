@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <xcb/xcb.h>
-namespace imp {
+namespace ns {
 
 class NaivePage
 {

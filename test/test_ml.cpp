@@ -6,6 +6,7 @@
 #include "../ml/hmm.h"
 #include "../ml/kdtree.hpp"
 #include "../utils/dataset.h"
+#include "../ml/hopfieldnet.hpp"
 
 void test_kmeans()
 {
@@ -135,12 +136,70 @@ void test_hmm()
     I.printValue();
     return;
 }
+
+void test_hopfieldNet()
+{
+    /* T */
+    Tensor x1({25, 1}, {
+                   1,  1,  1,  1,  1,
+                  -1, -1,  1, -1, -1,
+                  -1, -1,  1, -1, -1,
+                  -1, -1,  1, -1, -1,
+                  -1, -1,  1, -1, -1
+              });
+    /* H */
+    Tensor x2({25, 1}, {
+                   1,  1, -1,  1,  1,
+                   1,  1, -1,  1,  1,
+                   1,  1,  1,  1,  1,
+                   1,  1, -1,  1,  1,
+                   1,  1, -1,  1,  1
+              });
+    /* X */
+    Tensor x3({25, 1}, {
+                   1, -1, -1, -1,  1,
+                  -1,  1, -1,  1, -1,
+                  -1, -1,  1, -1, -1,
+                  -1,  1, -1,  1, -1,
+                   1, -1, -1, -1,  1
+              });
+
+    std::vector<Tensor> x = {x1, x2, x3};
+    /* model */
+    HopfieldNet model(25, 0.01);
+    model.fit(x);
+    /* predict: restore origin data from noised data */
+    std::cout<<"T:"<<std::endl;
+    Tensor xt({25, 1}, {
+                  -1, -1,  1,  1,  1,
+                  -1, -1,  1, -1, -1,
+                  -1, -1,  1, -1, -1,
+                  -1, -1,  1, -1, -1,
+                  -1, -1,  1, -1, -1
+              });
+    Tensor xp = model(xt, 20);
+    xp.reshape(5, 5);
+    xp.printValue2D();
+    std::cout<<"H:"<<std::endl;
+    Tensor xh({25, 1}, {
+                   1,  1, -1, -1,  1,
+                   1,  1, -1, -1,  1,
+                   1,  1,  1,  1,  1,
+                   1, -1,  1,  1,  1,
+                   1, -1, -1,  1,  1
+              });
+    xp = model(xh, 20);
+    xp.reshape(5, 5);
+    xp.printValue2D();
+    return;
+}
 int main()
 {
     //test_kmeans();
     //test_kdtree();
     //test_svm();
     //test_gaussian();
-    test_hmm();
+    //test_hmm();
+    test_hopfieldNet();
     return 0;
 }

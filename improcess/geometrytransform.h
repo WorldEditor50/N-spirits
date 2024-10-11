@@ -2,7 +2,7 @@
 #define GEOMETRYTRANSFORM_H
 #include "improcess_def.h"
 
-namespace imp {
+namespace ns {
 
 /* geometry */
 int move(OutTensor xo, InTensor xi, const Size &offset);
@@ -37,7 +37,7 @@ namespace AffineOperator {
     /* rotate */
     inline Tensor rotate(float angle)
     {
-        float theta = angle*imp::pi/180.0;
+        float theta = angle*ns::pi/180.0;
         float sinTheta = std::sin(theta);
         float cosTheta = std::cos(theta);
         return Tensor({3, 3}, {cosTheta, -sinTheta, 0,

@@ -1,7 +1,7 @@
 #include "filter.h"
 #include <algorithm>
 
-int imp::averageBlur(OutTensor xo, InTensor xi, const imp::Size &size)
+int ns::averageBlur(OutTensor xo, InTensor xi, const ns::Size &size)
 {
     if (size.x != size.y) {
         return -1;
@@ -12,7 +12,7 @@ int imp::averageBlur(OutTensor xo, InTensor xi, const imp::Size &size)
     return 0;
 }
 
-int imp::gaussianBlur3x3(OutTensor xo, InTensor xi)
+int ns::gaussianBlur3x3(OutTensor xo, InTensor xi)
 {
     Tensor kernel({3, 3}, {1.0/16, 2.0/16, 1.0/16,
                            2.0/16, 4.0/16, 2.0/16,
@@ -21,7 +21,7 @@ int imp::gaussianBlur3x3(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::gaussianBlur5x5(OutTensor xo, InTensor xi)
+int ns::gaussianBlur5x5(OutTensor xo, InTensor xi)
 {
     Tensor kernel({5, 5}, {1.0/273, 4.0/273, 7.0/273, 4.0/273, 1.0/273,
                            4.0/273, 16.0/273, 26.0/273, 16.0/273, 4.0/273,
@@ -32,7 +32,7 @@ int imp::gaussianBlur5x5(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::medianBlur(OutTensor xo, InTensor xi, const imp::Size &size)
+int ns::medianBlur(OutTensor xo, InTensor xi, const ns::Size &size)
 {
     if (size.x != size.y) {
         return -1;
@@ -71,7 +71,7 @@ int imp::medianBlur(OutTensor xo, InTensor xi, const imp::Size &size)
 }
 
 
-int imp::bilateralBlur(OutTensor xo, InTensor xi, const imp::Size &size, float sigma1, float sigma2)
+int ns::bilateralBlur(OutTensor xo, InTensor xi, const ns::Size &size, float sigma1, float sigma2)
 {
     int h = xi.shape[0];
     int w = xi.shape[1];
@@ -122,7 +122,7 @@ int imp::bilateralBlur(OutTensor xo, InTensor xi, const imp::Size &size, float s
     return 0;
 }
 
-int imp::curvatureBlur3x3(OutTensor xo, InTensor xi)
+int ns::curvatureBlur3x3(OutTensor xo, InTensor xi)
 {
     int h = xi.shape[0];
     int w = xi.shape[1];
@@ -150,23 +150,23 @@ int imp::curvatureBlur3x3(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::sobel3x3(OutTensor xo, InTensor xi)
+int ns::sobel3x3(OutTensor xo, InTensor xi)
 {
     Tensor kernelx({3, 3}, {-1, 0, 1,
                             -2, 0, 2,
                             -1, 0, 1});
     Tensor gradx;
-    imp::conv2d(gradx, kernelx, xi, 1);
+    ns::conv2d(gradx, kernelx, xi, 1);
     Tensor kernely({3, 3}, { 1,  2,  1,
                              0,  0,  0,
                             -1, -2, -1});
     Tensor grady;
-    imp::conv2d(grady, kernely, xi, 1);
+    ns::conv2d(grady, kernely, xi, 1);
     xo = LinAlg::sqrt(gradx*gradx + grady*grady);
     return 0;
 }
 
-int imp::sobel5x5(OutTensor xo, InTensor xi)
+int ns::sobel5x5(OutTensor xo, InTensor xi)
 {
     Tensor kernelx({5, 5}, {-5,  -4,  0, 4,  5,
                             -8,  -10, 0, 10, 8,
@@ -174,19 +174,19 @@ int imp::sobel5x5(OutTensor xo, InTensor xi)
                             -8,  -10, 0, 10, 8,
                             -5,  -4,  0, 4,  5});
     Tensor gradx;
-    imp::conv2d(gradx, kernelx, xi, 1);
+    ns::conv2d(gradx, kernelx, xi, 1);
     Tensor kernely({5, 5}, {5,   8,  10,   8,  5,
                             4,  10,  20,  10,  4,
                             0,   0,   0,   0,  0,
                            -4, -10, -20, -10, -4,
                            -5,  -8, -10,  -8, -5});
     Tensor grady;
-    imp::conv2d(grady, kernely, xi, 1);
+    ns::conv2d(grady, kernely, xi, 1);
     xo = LinAlg::sqrt(gradx*gradx + grady*grady);
     return 0;
 }
 
-int imp::laplacian3x3(OutTensor xo, InTensor xi)
+int ns::laplacian3x3(OutTensor xo, InTensor xi)
 {
     Tensor kernel({3, 3}, {0, -1,  0,
                           -1,  4, -1,
@@ -195,7 +195,7 @@ int imp::laplacian3x3(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::laplacian5x5(OutTensor xo, InTensor xi)
+int ns::laplacian5x5(OutTensor xo, InTensor xi)
 {
     Tensor kernel({5, 5}, {0,   0, -1,  0,  0,
                            0,  -1, -2, -1,  0,
@@ -206,55 +206,55 @@ int imp::laplacian5x5(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::prewitt3x3(OutTensor xo, InTensor xi)
+int ns::prewitt3x3(OutTensor xo, InTensor xi)
 {
     Tensor kernel0({3, 3}, { 1,  1,  1,
                              0,  0,  0,
                             -1, -1, -1});
 
     Tensor grad0;
-    imp::conv2d(grad0, kernel0, xi, 1);
+    ns::conv2d(grad0, kernel0, xi, 1);
     Tensor kernel45({3, 3}, {-1, -1,  0,
                              -1,  0,  1,
                               0,  1,  1});
 
     Tensor grad45;
-    imp::conv2d(grad45, kernel45, xi, 1);
+    ns::conv2d(grad45, kernel45, xi, 1);
 
     Tensor kernel90({3, 3}, {-1, 0,  1,
                              -1, 0,  1,
                              -1, 0,  1});
 
     Tensor grad90;
-    imp::conv2d(grad90, kernel90, xi, 1);
+    ns::conv2d(grad90, kernel90, xi, 1);
 
     Tensor kernel135({3, 3}, { 0,  1,  1,
                               -1,  0,  1,
                               -1, -1,  0});
 
     Tensor grad135;
-    imp::conv2d(grad135, kernel135, xi, 1);
+    ns::conv2d(grad135, kernel135, xi, 1);
     xo = LinAlg::sqrt(grad0*grad0 + grad45*grad45 + grad90*grad90 + grad135*grad135);
     return 0;
 }
 
-int imp::scharr3x3(OutTensor xo, InTensor xi)
+int ns::scharr3x3(OutTensor xo, InTensor xi)
 {
     Tensor kernelx({3, 3}, {-3,  0, 3,
                             -10, 0, 10,
                             -3,  0, 3});
     Tensor gradx;
-    imp::conv2d(gradx, kernelx, xi, 1);
+    ns::conv2d(gradx, kernelx, xi, 1);
     Tensor kernely({3, 3}, {-3, -10, -3,
                              0,   0,  0,
                              3,  10,  3});
     Tensor grady;
-    imp::conv2d(grady, kernely, xi, 1);
+    ns::conv2d(grady, kernely, xi, 1);
     xo = LinAlg::sqrt(gradx*gradx + grady*grady);
     return 0;
 }
 
-int imp::LOG5x5(OutTensor xo, InTensor xi)
+int ns::LOG5x5(OutTensor xo, InTensor xi)
 {
     Tensor kernel({5, 5}, {-2,  -4, -4, -4, -2,
                            -4,   0,  8,  0, -4,
@@ -265,7 +265,7 @@ int imp::LOG5x5(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::canny(OutTensor xo, InTensor xi, float minThres, float maxThres)
+int ns::canny(OutTensor xo, InTensor xi, float minThres, float maxThres)
 {
     if (xi.shape[HWC_C] != 1) {
         return -1;
@@ -373,7 +373,7 @@ int imp::canny(OutTensor xo, InTensor xi, float minThres, float maxThres)
     return 0;
 }
 
-int imp::FFT(Complex *xf, const Complex *xt, int t)
+int ns::FFT(Complex *xf, const Complex *xt, int t)
 {
     int length = 1 << t;
     CTensor w(length/2);
@@ -416,7 +416,7 @@ int imp::FFT(Complex *xf, const Complex *xt, int t)
     return 0;
 }
 
-int imp::iFFT(Complex *xt, const Complex *xf, int t)
+int ns::iFFT(Complex *xt, const Complex *xf, int t)
 {
     int length = 1 << t;
     CTensor xfi(length);
@@ -430,7 +430,7 @@ int imp::iFFT(Complex *xt, const Complex *xf, int t)
     return 0;
 }
 
-int imp::FFT2D(Tensor &spectrum, CTensor &xf, const Tensor &img)
+int ns::FFT2D(Tensor &spectrum, CTensor &xf, const Tensor &img)
 {
     if (img.shape[HWC_C] != 1) {
         return -1;
@@ -497,7 +497,7 @@ int imp::FFT2D(Tensor &spectrum, CTensor &xf, const Tensor &img)
     return 0;
 }
 
-int imp::iFFT2D(Tensor &img, const CTensor &xf_)
+int ns::iFFT2D(Tensor &img, const CTensor &xf_)
 {
     CTensor xf = xf_;
     CTensor xt(xf.shape);
@@ -542,7 +542,7 @@ int imp::iFFT2D(Tensor &img, const CTensor &xf_)
     return 0;
 }
 
-int imp::HarrWavelet2D(OutTensor xo, InTensor xi, int depth)
+int ns::HarrWavelet2D(OutTensor xo, InTensor xi, int depth)
 {
     Tensor row(xi.shape);
     Tensor col(xi.shape);
@@ -581,7 +581,7 @@ int imp::HarrWavelet2D(OutTensor xo, InTensor xi, int depth)
     return 0;
 }
 
-int imp::iHarrWavelet2D(OutTensor xo, InTensor xi, int depth)
+int ns::iHarrWavelet2D(OutTensor xo, InTensor xi, int depth)
 {
     Tensor row(xi.shape);
     Tensor col = xi;
@@ -617,7 +617,7 @@ int imp::iHarrWavelet2D(OutTensor xo, InTensor xi, int depth)
     return 0;
 }
 
-Tensor imp::LPF(int h, int w, int freq)
+Tensor ns::LPF(int h, int w, int freq)
 {
     Tensor H(h, w);
     for (int i = 0; i < h; i++) {
@@ -635,7 +635,7 @@ Tensor imp::LPF(int h, int w, int freq)
     return H;
 }
 
-Tensor imp::gaussHPF(int h, int w, float sigma)
+Tensor ns::gaussHPF(int h, int w, float sigma)
 {
     /*
         H(u, v) = 1 - e^(-[(u - M/2)^2 + (v - N/2)^2]/2)/sigma^2)
@@ -652,7 +652,7 @@ Tensor imp::gaussHPF(int h, int w, float sigma)
     return H;
 }
 
-Tensor imp::laplaceFilter(int h, int w)
+Tensor ns::laplaceFilter(int h, int w)
 {
     Tensor H(h, w);
     for (int i = 0; i < h; i++) {
@@ -666,7 +666,7 @@ Tensor imp::laplaceFilter(int h, int w)
     return H;
 }
 
-Tensor imp::invDegenerate(int h, int w)
+Tensor ns::invDegenerate(int h, int w)
 {
     /*
         H(u, v) = exp(k*((u - M/2)^2 + (v - N/2)^2)^(5/6))
@@ -686,7 +686,7 @@ Tensor imp::invDegenerate(int h, int w)
     return H;
 }
 
-Tensor imp::invFilter(int h, int w, int rad)
+Tensor ns::invFilter(int h, int w, int rad)
 {
     Tensor H(h, w);
     for (int i = 0; i < h; i++) {
@@ -706,7 +706,7 @@ Tensor imp::invFilter(int h, int w, int rad)
     return H;
 }
 
-Tensor imp::wienerFilter(int h, int w, float K)
+Tensor ns::wienerFilter(int h, int w, float K)
 {
     Tensor H(h, w);
     for (int i = 0; i < h; i++) {

@@ -35,7 +35,7 @@
 #include "platform/linux/viewpage.h"
 #endif
 
-namespace imp {
+namespace ns {
 
     /* tensor shape: (h, w, c) */
     Tensor load(const std::string &fileName);

@@ -6,7 +6,7 @@
 #include "../basic/complex.hpp"
 #include "improcess_def.h"
 
-namespace imp {
+namespace ns {
 
 
 /* naive conv2d */
@@ -54,7 +54,7 @@ int averageBlur(OutTensor xo, InTensor xi, const Size &size);
 int gaussianBlur3x3(OutTensor xo, InTensor xi);
 int gaussianBlur5x5(OutTensor xo, InTensor xi);
 int medianBlur(OutTensor xo, InTensor xi, const Size &size);
-int bilateralBlur(OutTensor xo, InTensor xi, const imp::Size &size,float sigma1, float sigma2);
+int bilateralBlur(OutTensor xo, InTensor xi, const ns::Size &size,float sigma1, float sigma2);
 int curvatureBlur3x3(OutTensor xo, InTensor xi);
 int sobel3x3(OutTensor xo, InTensor xi);
 int sobel5x5(OutTensor xo, InTensor xi);

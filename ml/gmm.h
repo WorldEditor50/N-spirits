@@ -74,6 +74,7 @@ public:
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < topicDim; j++) {
                 //float pij = alpha[j]*gaussian(x[i], u[j], LinAlg::diag(sigma[j]));
+                /* topics are independent */
                 float pij = alpha[j]*quickGaussian(x[i], u[j], sigma[j]);
                 p(i, j) = pij;
                 sp[i] += pij;

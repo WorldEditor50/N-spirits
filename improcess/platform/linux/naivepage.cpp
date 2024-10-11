@@ -1,6 +1,6 @@
 #include "naivepage.h"
 
-void imp::NaivePage::handleEvent()
+void ns::NaivePage::handleEvent()
 {
     while (1) {
         Event *e = xcb_poll_for_event(connection);
@@ -42,7 +42,7 @@ void imp::NaivePage::handleEvent()
     return;
 }
 
-void imp::NaivePage::onKeyRelease(NaivePage::Event *e)
+void ns::NaivePage::onKeyRelease(NaivePage::Event *e)
 {
     xcb_key_release_event_t *ev = (xcb_key_release_event_t *)e;
     switch (ev->detail) {
@@ -54,13 +54,13 @@ void imp::NaivePage::onKeyRelease(NaivePage::Event *e)
     return;
 }
 
-void imp::NaivePage::onPaint(NaivePage::Event *e)
+void ns::NaivePage::onPaint(NaivePage::Event *e)
 {
 
     return;
 }
 
-void imp::NaivePage::onMousePress(NaivePage::Event *e)
+void ns::NaivePage::onMousePress(NaivePage::Event *e)
 {
     xcb_button_press_event_t *ev = (xcb_button_press_event_t*)e;
     int x = ev->event_x;
@@ -69,13 +69,13 @@ void imp::NaivePage::onMousePress(NaivePage::Event *e)
     return;
 }
 
-void imp::NaivePage::onMouseMove(NaivePage::Event *e)
+void ns::NaivePage::onMouseMove(NaivePage::Event *e)
 {
 
     return;
 }
 
-void imp::NaivePage::onMouseRelease(NaivePage::Event *e)
+void ns::NaivePage::onMouseRelease(NaivePage::Event *e)
 {
     xcb_button_release_event_t *ev = (xcb_button_release_event_t*)e;
     int x = ev->event_x;
@@ -83,27 +83,27 @@ void imp::NaivePage::onMouseRelease(NaivePage::Event *e)
     return;
 }
 
-void imp::NaivePage::onKeyPress(NaivePage::Event *e)
+void ns::NaivePage::onKeyPress(NaivePage::Event *e)
 {
 
 }
 
-void imp::NaivePage::onCreate(NaivePage::Event *e)
+void ns::NaivePage::onCreate(NaivePage::Event *e)
 {
 
 }
 
-void imp::NaivePage::onDestroy(NaivePage::Event *e)
+void ns::NaivePage::onDestroy(NaivePage::Event *e)
 {
 
 }
 
-void imp::NaivePage::onResize(NaivePage::Event *e)
+void ns::NaivePage::onResize(NaivePage::Event *e)
 {
 
 }
 
-xcb_gcontext_t imp::NaivePage::createGraphicsContext(xcb_connection_t *connection,
+xcb_gcontext_t ns::NaivePage::createGraphicsContext(xcb_connection_t *connection,
                                                 xcb_screen_t *screen,
                                                 xcb_window_t window)
 {
@@ -119,7 +119,7 @@ xcb_gcontext_t imp::NaivePage::createGraphicsContext(xcb_connection_t *connectio
     return gc;
 }
 
-imp::NaivePage::NaivePage():
+ns::NaivePage::NaivePage():
       width(0),height(0),
       connection(nullptr),screen(nullptr),
       window(0),gc(0)
@@ -127,12 +127,12 @@ imp::NaivePage::NaivePage():
 
 }
 
-imp::NaivePage::~NaivePage()
+ns::NaivePage::~NaivePage()
 {
 
 }
 
-int imp::NaivePage::createWindow(int x, int y, int w, int h)
+int ns::NaivePage::createWindow(int x, int y, int w, int h)
 {
     width = w;
     height = h;

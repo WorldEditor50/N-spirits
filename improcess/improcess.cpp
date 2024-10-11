@@ -1,35 +1,35 @@
 #include "improcess.h"
 
-int imp::fromTensor(InTensor x, std::shared_ptr<uint8_t[]> &img)
+int ns::fromTensor(InTensor x, std::shared_ptr<uint8_t[]> &img)
 {
     if (img == nullptr) {
         img = std::shared_ptr<uint8_t[]>(new uint8_t[x.totalSize]);
     }
     for (std::size_t i = 0; i < x.totalSize; i++) {
-        img[i] = imp::clip(x.val[i], 0, 255);
+        img[i] = ns::clip(x.val[i], 0, 255);
     }
     return 0;
 }
 
-std::unique_ptr<uint8_t[]> imp::fromTensor(InTensor x)
+std::unique_ptr<uint8_t[]> ns::fromTensor(InTensor x)
 {
     std::unique_ptr<uint8_t[]> img(new uint8_t[x.totalSize]);
     for (std::size_t i = 0; i < x.totalSize; i++) {
-        img[i] = imp::clip(x.val[i], 0, 255);
+        img[i] = ns::clip(x.val[i], 0, 255);
     }
     return img;
 }
 
-std::shared_ptr<uint8_t[]> imp::tensor2Image(InTensor x)
+std::shared_ptr<uint8_t[]> ns::tensor2Image(InTensor x)
 {
     std::shared_ptr<uint8_t[]> img(new uint8_t[x.totalSize]);
     for (std::size_t i = 0; i < x.totalSize; i++) {
-        img[i] = imp::clip(x.val[i], 0, 255);
+        img[i] = ns::clip(x.val[i], 0, 255);
     }
     return img;
 }
 
-void imp::showHistogram(InTensor xi)
+void ns::showHistogram(InTensor xi)
 {
     Tensor x;
     if (xi.shape[HWC_C] != 1) {
@@ -54,11 +54,11 @@ void imp::showHistogram(InTensor xi)
             }
         }
     }
-    imp::show(img);
+    ns::show(img);
     return;
 }
 
-void imp::show(InTensor xi)
+void ns::show(InTensor xi)
 {
     if (xi.empty()) {
         return;
@@ -72,14 +72,14 @@ void imp::show(InTensor xi)
     return;
 }
 
-void imp::show(const std::string &fileName)
+void ns::show(const std::string &fileName)
 {
     Tensor img = load(fileName);
     show(img);
     return;
 }
 
-int imp::copyMakeBorder(OutTensor xo, InTensor xi, int padding)
+int ns::copyMakeBorder(OutTensor xo, InTensor xi, int padding)
 {
     int h = xi.shape[HWC_H];
     int w = xi.shape[HWC_W];
@@ -96,7 +96,7 @@ int imp::copyMakeBorder(OutTensor xo, InTensor xi, int padding)
 }
 
 
-int imp::copy(OutTensor &xo, InTensor xi, const imp::Rect &rect)
+int ns::copy(OutTensor &xo, InTensor xi, const ns::Rect &rect)
 {
     int c = xi.shape[HWC_C];
     xo = Tensor(rect.height, rect.width, c);
@@ -110,7 +110,7 @@ int imp::copy(OutTensor &xo, InTensor xi, const imp::Rect &rect)
     return 0;
 }
 
-int imp::copy(OutTensor &xo, InTensor xi, InTensor mask)
+int ns::copy(OutTensor &xo, InTensor xi, InTensor mask)
 {
     int h = xi.shape[HWC_H];
     int w = xi.shape[HWC_W];
@@ -128,7 +128,7 @@ int imp::copy(OutTensor &xo, InTensor xi, InTensor mask)
     return 0;
 }
 
-int imp::rgb2gray(OutTensor gray, InTensor rgb)
+int ns::rgb2gray(OutTensor gray, InTensor rgb)
 {
     if (rgb.shape[HWC_C] != 3) {
         return -1;
@@ -145,7 +145,7 @@ int imp::rgb2gray(OutTensor gray, InTensor rgb)
     return 0;
 }
 
-int imp::maxGray(OutTensor gray, InTensor rgb)
+int ns::maxGray(OutTensor gray, InTensor rgb)
 {
     if (rgb.shape[HWC_C] != 3) {
         return -1;
@@ -163,7 +163,7 @@ int imp::maxGray(OutTensor gray, InTensor rgb)
     return 0;
 }
 
-int imp::minGray(OutTensor gray, InTensor rgb)
+int ns::minGray(OutTensor gray, InTensor rgb)
 {
     if (rgb.shape[HWC_C] != 3) {
         return -1;
@@ -180,7 +180,7 @@ int imp::minGray(OutTensor gray, InTensor rgb)
     }
     return 0;
 }
-int imp::meanGray(OutTensor gray, InTensor rgb)
+int ns::meanGray(OutTensor gray, InTensor rgb)
 {
     if (rgb.shape[HWC_C] != 3) {
         return -1;
@@ -197,7 +197,7 @@ int imp::meanGray(OutTensor gray, InTensor rgb)
     return 0;
 }
 
-int imp::gray2rgb(OutTensor rgb, InTensor gray)
+int ns::gray2rgb(OutTensor rgb, InTensor gray)
 {
     if (gray.shape[HWC_C] != 1) {
         return -1;
@@ -217,7 +217,7 @@ int imp::gray2rgb(OutTensor rgb, InTensor gray)
 }
 
 
-int imp::rgb2rgba(OutTensor rgba, InTensor rgb, int alpha)
+int ns::rgb2rgba(OutTensor rgba, InTensor rgb, int alpha)
 {
     if (rgb.shape[HWC_C] != 3) {
         return -1;
@@ -236,7 +236,7 @@ int imp::rgb2rgba(OutTensor rgba, InTensor rgb, int alpha)
     return 0;
 }
 
-int imp::rgba2rgb(OutTensor rgb, InTensor rgba)
+int ns::rgba2rgb(OutTensor rgb, InTensor rgba)
 {
     int h = rgb.shape[HWC_H];
     int w = rgb.shape[HWC_W];
@@ -252,7 +252,7 @@ int imp::rgba2rgb(OutTensor rgb, InTensor rgba)
 }
 
 
-int imp::transparent(OutTensor rgba, InTensor rgb, int alpha)
+int ns::transparent(OutTensor rgba, InTensor rgb, int alpha)
 {
     rgb2rgba(rgba, rgb, alpha);
     int h = rgb.shape[HWC_H];
@@ -270,7 +270,7 @@ int imp::transparent(OutTensor rgba, InTensor rgb, int alpha)
     return 0;
 }
 
-Tensor imp::toTensor(int h, int w, int c, std::shared_ptr<uint8_t[]> &img)
+Tensor ns::toTensor(int h, int w, int c, std::shared_ptr<uint8_t[]> &img)
 {
     Tensor x(h, w, c);
     for (std::size_t i = 0; i < x.totalSize; i++) {
@@ -279,7 +279,7 @@ Tensor imp::toTensor(int h, int w, int c, std::shared_ptr<uint8_t[]> &img)
     return x;
 }
 
-Tensor imp::load(const std::string &fileName)
+Tensor ns::load(const std::string &fileName)
 {
     Tensor img;
     if (fileName.empty()) {
@@ -291,7 +291,7 @@ Tensor imp::load(const std::string &fileName)
     int c = 0;
     if (fileName.find(".bmp") != std::string::npos) {
         c = 3;
-        int ret = imp::BMP::load(fileName.c_str(), data, h, w);
+        int ret = ns::BMP::load(fileName.c_str(), data, h, w);
         if (ret < 0) {
             return img;
         }
@@ -307,7 +307,7 @@ Tensor imp::load(const std::string &fileName)
     }
     else if (fileName.find(".ppm") != std::string::npos) {
         c = 3;
-        int ret = imp::PPM::load(fileName.c_str(), data, h, w);
+        int ret = ns::PPM::load(fileName.c_str(), data, h, w);
         if (ret < 0) {
             return img;
         }
@@ -321,7 +321,7 @@ Tensor imp::load(const std::string &fileName)
     return img;
 }
 
-int imp::save(InTensor img, const std::string &fileName)
+int ns::save(InTensor img, const std::string &fileName)
 {
     if (fileName.empty()) {
         return -1;
@@ -356,17 +356,17 @@ int imp::save(InTensor img, const std::string &fileName)
         return -4;
 #endif
     } else if (fileName.find(".bmp") != std::string::npos) {
-        int ret = imp::BMP::save(fileName, data, h, w);
+        int ret = ns::BMP::save(fileName, data, h, w);
         if (ret < 0) {
             return -3;
         }
     } else if (fileName.find(".ppm") != std::string::npos) {
-        int ret = imp::PPM::save(fileName, data, h, w);
+        int ret = ns::PPM::save(fileName, data, h, w);
         if (ret < 0) {
             return -3;
         }
     } else {
-        int ret = imp::BMP::save(fileName, data, h, w);
+        int ret = ns::BMP::save(fileName, data, h, w);
         if (ret < 0) {
             return -3;
         }
@@ -374,26 +374,26 @@ int imp::save(InTensor img, const std::string &fileName)
     return 0;
 }
 
-int imp::resize(OutTensor xo, InTensor xi, const imp::Size &size, int type)
+int ns::resize(OutTensor xo, InTensor xi, const ns::Size &size, int type)
 {
     switch (type) {
     case INTERPOLATE_NEAREST:
-        imp::nearestInterpolate(xo, xi, size);
+        ns::nearestInterpolate(xo, xi, size);
         break;
     case INTERPOLATE_BILINEAR:
-        imp::bilinearInterpolate(xo, xi, size);
+        ns::bilinearInterpolate(xo, xi, size);
         break;
     case INTERPOLATE_CUBIC:
-        imp::cubicInterpolate(xo, xi, size, cubic::bspLine);
+        ns::cubicInterpolate(xo, xi, size, cubic::bspLine);
         break;
     default:
-        imp::nearestInterpolate(xo, xi, size);
+        ns::nearestInterpolate(xo, xi, size);
         break;
     }
     return 0;
 }
 
-int imp::erode(OutTensor xo, InTensor xi, InTensor kernel, int maxIterateTimes)
+int ns::erode(OutTensor xo, InTensor xi, InTensor kernel, int maxIterateTimes)
 {
     /*
         kernel:  0 --> ignore,
@@ -431,7 +431,7 @@ int imp::erode(OutTensor xo, InTensor xi, InTensor kernel, int maxIterateTimes)
     return 0;
 }
 
-int imp::dilate(OutTensor xo, InTensor xi, InTensor kernel, int maxIterateTimes)
+int ns::dilate(OutTensor xo, InTensor xi, InTensor kernel, int maxIterateTimes)
 {
     /*
         kernel:  0 --> ignore,
@@ -470,7 +470,7 @@ int imp::dilate(OutTensor xo, InTensor xi, InTensor kernel, int maxIterateTimes)
     return 0;
 }
 
-int imp::traceBoundary(OutTensor xo, InTensor xi, std::vector<Point2i> &boundary)
+int ns::traceBoundary(OutTensor xo, InTensor xi, std::vector<Point2i> &boundary)
 {
     Tensor gray;
     rgb2gray(gray, xi);
@@ -528,7 +528,7 @@ int imp::traceBoundary(OutTensor xo, InTensor xi, std::vector<Point2i> &boundary
     return 0;
 }
 
-int imp::findConnectedRegion(OutTensor mask, InTensor xi, int connectCount, int &labelCount)
+int ns::findConnectedRegion(OutTensor mask, InTensor xi, int connectCount, int &labelCount)
 {
     Tensor gray(xi);
     Tensor kernel(3, 3);
@@ -575,7 +575,7 @@ int imp::findConnectedRegion(OutTensor mask, InTensor xi, int connectCount, int 
     return 0;
 }
 
-int imp::threshold(OutTensor xo, InTensor xi, float thres, float max_, float min_)
+int ns::threshold(OutTensor xo, InTensor xi, float thres, float max_, float min_)
 {
     if (xi.shape[HWC_C] != 1) {
         std::cout<<"invalid channel"<<std::endl;
@@ -592,7 +592,7 @@ int imp::threshold(OutTensor xo, InTensor xi, float thres, float max_, float min
     return 0;
 }
 
-int imp::detectThreshold(InTensor xi, int maxIter, int &thres, int &delta)
+int ns::detectThreshold(InTensor xi, int maxIter, int &thres, int &delta)
 {
     if (xi.shape[HWC_C] != 1) {
         return -1;
@@ -642,7 +642,7 @@ int imp::detectThreshold(InTensor xi, int maxIter, int &thres, int &delta)
     return 0;
 }
 
-int imp::autoThreshold(OutTensor xo, InTensor xi, float max_, float min_)
+int ns::autoThreshold(OutTensor xo, InTensor xi, float max_, float min_)
 {
     int thres = 0;
     int delta = 0;
@@ -656,7 +656,7 @@ int imp::autoThreshold(OutTensor xo, InTensor xi, float max_, float min_)
 }
 
 
-int imp::otsuThreshold(OutTensor xo, InTensor xi, float max_, float min_)
+int ns::otsuThreshold(OutTensor xo, InTensor xi, float max_, float min_)
 {
     uint8_t thres = 0;
     int ret = otsu(xi, thres);
@@ -668,7 +668,7 @@ int imp::otsuThreshold(OutTensor xo, InTensor xi, float max_, float min_)
     return threshold(xo, xi, thres, max_, min_);
 }
 
-int imp::entropyThreshold(OutTensor xo, InTensor xi, float max_, float min_)
+int ns::entropyThreshold(OutTensor xo, InTensor xi, float max_, float min_)
 {
     uint8_t thres = 0;
     int ret = entropy(xi, thres);
@@ -679,7 +679,7 @@ int imp::entropyThreshold(OutTensor xo, InTensor xi, float max_, float min_)
     return threshold(xo, xi, thres, max_, min_);
 }
 
-int imp::regionGrow(OutTensor mask, InTensor xi, const Point2i &seed, const std::vector<uint8_t>& thres)
+int ns::regionGrow(OutTensor mask, InTensor xi, const Point2i &seed, const std::vector<uint8_t>& thres)
 {
     if (xi.shape[HWC_C] != 1) {
         return -1;
@@ -727,7 +727,7 @@ int imp::regionGrow(OutTensor mask, InTensor xi, const Point2i &seed, const std:
     return 0;
 }
 
-int imp::templateMatch(InTensor xi, InTensor xt, Rect &rect)
+int ns::templateMatch(InTensor xi, InTensor xt, Rect &rect)
 {
     /*
         cosθ = <xi, xt>/(||xi||*||xt||)
@@ -780,7 +780,7 @@ int imp::templateMatch(InTensor xi, InTensor xt, Rect &rect)
     return 0;
 }
 
-int imp::houghLine(OutTensor xo, InTensor xi, float thres, int lineNo, const Color3 &color)
+int ns::houghLine(OutTensor xo, InTensor xi, float thres, int lineNo, const Color3 &color)
 {
     int h = xi.shape[HWC_H];
     int w = xi.shape[HWC_W];
@@ -899,16 +899,16 @@ int imp::houghLine(OutTensor xo, InTensor xi, float thres, int lineNo, const Col
     return 0;
 }
 
-int imp::HOG(OutTensor xo, OutTensor hist, InTensor xi, int cellSize, int binSize, int blockSize)
+int ns::HOG(OutTensor xo, OutTensor hist, InTensor xi, int cellSize, int binSize, int blockSize)
 {
     if (xi.shape[HWC_C] != 1) {
         return -1;
     }
     /* step1: align image */
     Tensor img;
-    int h = (xi.shape[imp::HWC_H]/cellSize)*cellSize;
-    int w = (xi.shape[imp::HWC_W]/cellSize)*cellSize;
-    copy(img, xi, imp::Rect(0, 0, w, h));
+    int h = (xi.shape[ns::HWC_H]/cellSize)*cellSize;
+    int w = (xi.shape[ns::HWC_W]/cellSize)*cellSize;
+    copy(img, xi, ns::Rect(0, 0, w, h));
     /* step2: compute grad and angle, keep shape */
     Tensor kx({3, 3}, {-1, 0, 1,
                        -2, 0, 2,
@@ -1016,7 +1016,7 @@ int imp::HOG(OutTensor xo, OutTensor hist, InTensor xi, int cellSize, int binSiz
     return 0;
 }
 
-int imp::harrisCorner(OutTensor xo, InTensor xi, float coeff)
+int ns::harrisCorner(OutTensor xo, InTensor xi, float coeff)
 {
     if (xi.shape[HWC_C] != 1) {
         return -1;

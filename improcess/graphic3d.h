@@ -4,7 +4,7 @@
 #include "../improcess/improcess_def.h"
 #include "../improcess/color.h"
 
-namespace imp {
+namespace ns {
 
 class Camera
 {

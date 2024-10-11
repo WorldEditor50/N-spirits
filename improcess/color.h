@@ -3,7 +3,7 @@
 #include <cstdint>
 #include "improcess_def.h"
 
-namespace imp {
+namespace ns {
 
 class Color3
 {

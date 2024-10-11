@@ -58,14 +58,14 @@
 #### 1.1 pixel cluster
 
 ```c++
-    Tensor img = imp::load("./images/crystalmaiden.bmp");
+    Tensor img = ns::load("./images/crystalmaiden.bmp");
     if (img.empty()) {
         std::cout<<"failed to load image."<<std::endl;
         return;
     }
     /* pixel cluster */
-    int h = img.shape[imp::HWC_H];
-    int w = img.shape[imp::HWC_W];
+    int h = img.shape[ns::HWC_H];
+    int w = img.shape[ns::HWC_W];
     Tensor x = img;
     x.reshape(h*w, 3, 1);
     std::vector<Tensor> xi;
@@ -84,7 +84,7 @@
     }
     result.reshape(h, w, 3);
     Tensor dst = Tensor::concat(1, img, result);
-    imp::show(dst);
+    ns::show(dst);
 ```
 
 ![cluster](https://github.com/WorldEditor50/N-spirits/raw/main/images/cluster.bmp)
@@ -92,46 +92,46 @@
 #### 1.2 template match
 
 ```c++
-Tensor img = imp::load("D:/home/picture/dota2.bmp");
+Tensor img = ns::load("D:/home/picture/dota2.bmp");
 if (img.empty()) {
     std::cout<<"failed to load image."<<std::endl;
     return;
 }
-Tensor temp = imp::load("D:/home/picture/CrystalMaiden.bmp");
+Tensor temp = ns::load("D:/home/picture/CrystalMaiden.bmp");
 if (temp.empty()) {
     std::cout<<"failed to load temp image."<<std::endl;
     return;
 }
 /* resize */
 Tensor dota2;
-imp::resize(dota2, img, imp::imageSize(img)/4);
+ns::resize(dota2, img, imp::imageSize(img)/4);
 Tensor crystalMaiden;
-imp::resize(crystalMaiden, temp, imp::imageSize(temp)/4);
+ns::resize(crystalMaiden, temp, imp::imageSize(temp)/4);
 auto t1 = Clock::tiktok();
 /* template match */
-imp::Rect rect;
-imp::templateMatch(dota2, crystalMaiden, rect);
+ns::Rect rect;
+ns::templateMatch(dota2, crystalMaiden, rect);
 auto t2 = Clock::tiktok();
 rect *= 4;
 std::cout<<"templateMatch cost time:"<<Clock::duration(t2, t1)<<"s"<<std::endl;
 std::cout<<"x:"<<rect.x<<",y:"<<rect.y
     <<", width:"<<rect.width<<",height:"<<rect.height<<std::endl;
 Tensor target;
-imp::copy(target, img, rect);
-imp::save(target, "data2_CrystalMaiden.bmp");
+ns::copy(target, img, rect);
+ns::save(target, "data2_CrystalMaiden.bmp");
 ```
 
 #### 1.3 sobel3x3
 
 ```c++
-Tensor img = imp::load("D:/home/picture/dota2.bmp");
+Tensor img = ns::load("D:/home/picture/dota2.bmp");
 if (img.empty()) {
     std::cout<<"failed to load image."<<std::endl;
     return;
 }
 Tensor dst;
-imp::sobel3x3(dst, img);
-imp::save(dst, "sobel3x3.bmp");
+ns::sobel3x3(dst, img);
+ns::save(dst, "sobel3x3.bmp");
 ```
 
 
@@ -158,7 +158,7 @@ imp::save(dst, "sobel3x3.bmp");
                                         0.0, 0.1}));
 
     std::shared_ptr<uint8_t[]> rgb = nullptr;
-    std::size_t totalsize = imp::BMP::size(H, W, 3);
+    std::size_t totalsize = ns::BMP::size(H, W, 3);
     std::shared_ptr<uint8_t[]> bmp(new uint8_t[totalsize]);
     std::size_t N = 20000;
     lbm.solve(N, {0.8, 0.1, 0.1}, // color scaler
@@ -166,8 +166,8 @@ imp::save(dst, "sobel3x3.bmp");
 
         if (i % 20 == 0) {
             std::string fileName = "./cylinder/cylinder_" + std::to_string(i/20) + ".bmp";
-            imp::fromTensor(img, rgb);
-            imp::BMP::save(fileName, bmp, totalsize, rgb, H, W);
+            ns::fromTensor(img, rgb);
+            ns::BMP::save(fileName, bmp, totalsize, rgb, H, W);
             std::cout<<"progress:"<<i<<"-->"<<N<<std::endl;
         }
 

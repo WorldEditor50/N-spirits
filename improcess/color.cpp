@@ -1,7 +1,7 @@
 #include "color.h"
 #include <cmath>
 
-int imp::RGB2CMY(OutTensor xo, InTensor xi)
+int ns::RGB2CMY(OutTensor xo, InTensor xi)
 {
     if (xi.shape[HWC_C] != 3) {
         return -1;
@@ -19,7 +19,7 @@ int imp::RGB2CMY(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::RGB2HSI(OutTensor xo, InTensor xi)
+int ns::RGB2HSI(OutTensor xo, InTensor xi)
 {
     if (xi.shape[HWC_C] != 3) {
         return -1;
@@ -82,7 +82,7 @@ int imp::RGB2HSI(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::HSI2RGB(OutTensor xo, InTensor xi)
+int ns::HSI2RGB(OutTensor xo, InTensor xi)
 {
     if (xi.shape[HWC_C] != 3) {
         return -1;
@@ -121,7 +121,7 @@ int imp::HSI2RGB(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::RGB2HSV(OutTensor xo, InTensor xi)
+int ns::RGB2HSV(OutTensor xo, InTensor xi)
 {
     if (xi.shape[HWC_C] != 3) {
         return -1;
@@ -172,7 +172,7 @@ int imp::RGB2HSV(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::HSV2RGB(OutTensor xo, InTensor xi)
+int ns::HSV2RGB(OutTensor xo, InTensor xi)
 {
     if (xi.shape[HWC_C] != 3) {
         return -1;
@@ -240,7 +240,7 @@ int imp::HSV2RGB(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::RGB2YUV(OutTensor xo, InTensor xi)
+int ns::RGB2YUV(OutTensor xo, InTensor xi)
 {
     if (xi.shape[HWC_C] != 3) {
         return -1;
@@ -264,7 +264,7 @@ int imp::RGB2YUV(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::YUV2RGB(OutTensor xo, InTensor xi)
+int ns::YUV2RGB(OutTensor xo, InTensor xi)
 {
     if (xi.shape[HWC_C] != 3) {
         return -1;
@@ -293,7 +293,7 @@ int imp::YUV2RGB(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::RGB2YIQ(OutTensor xo, InTensor xi)
+int ns::RGB2YIQ(OutTensor xo, InTensor xi)
 {
     if (xi.shape[HWC_C] != 3) {
         return -1;
@@ -317,7 +317,7 @@ int imp::RGB2YIQ(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::YIQ2RGB(OutTensor xo, InTensor xi)
+int ns::YIQ2RGB(OutTensor xo, InTensor xi)
 {
     if (xi.shape[HWC_C] != 3) {
         return -1;

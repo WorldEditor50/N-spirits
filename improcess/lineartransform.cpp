@@ -1,6 +1,6 @@
 #include "lineartransform.h"
 
-int imp::linearTransform(OutTensor xo, InTensor xi, float alpha, float beta)
+int ns::linearTransform(OutTensor xo, InTensor xi, float alpha, float beta)
 {
     if (xi.shape[HWC_C] != 1) {
         return -1;
@@ -12,7 +12,7 @@ int imp::linearTransform(OutTensor xo, InTensor xi, float alpha, float beta)
     return 0;
 }
 
-int imp::logTransform(OutTensor xo, InTensor xi, float c)
+int ns::logTransform(OutTensor xo, InTensor xi, float c)
 {
     if (xi.shape[HWC_C] != 1) {
         return -1;
@@ -24,7 +24,7 @@ int imp::logTransform(OutTensor xo, InTensor xi, float c)
     return 0;
 }
 
-int imp::gammaTransform(OutTensor xo, InTensor xi, float esp, float gamma)
+int ns::gammaTransform(OutTensor xo, InTensor xi, float esp, float gamma)
 {
     if (xi.shape[HWC_C] != 1) {
         return -1;
@@ -37,7 +37,7 @@ int imp::gammaTransform(OutTensor xo, InTensor xi, float esp, float gamma)
     return 0;
 }
 
-int imp::histogramEqualize(OutTensor xo, InTensor xi)
+int ns::histogramEqualize(OutTensor xo, InTensor xi)
 {
     if (xi.shape[HWC_C] != 1) {
         return -1;
@@ -67,7 +67,7 @@ int imp::histogramEqualize(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::histogramStandardize(OutTensor xo, InTensor xi)
+int ns::histogramStandardize(OutTensor xo, InTensor xi)
 {
     if (xi.shape[HWC_C] != 1) {
         return -1;

@@ -10,7 +10,7 @@
         V y
 
 */
-int imp::line(Tensor &img, const Point2i &p1, const Point2i &p2, imp::Color3 color, float thick)
+int ns::line(Tensor &img, const Point2i &p1, const Point2i &p2, ns::Color3 color, float thick)
 {
     /*
         (y - y2)/(x - x2) = (y2 - y1)/(x2 - x1) = k
@@ -54,7 +54,7 @@ int imp::line(Tensor &img, const Point2i &p1, const Point2i &p2, imp::Color3 col
     return 0;
 }
 
-int imp::polygon(Tensor &img, const std::vector<Point2i> &p, imp::Color3 color, float thick)
+int ns::polygon(Tensor &img, const std::vector<Point2i> &p, ns::Color3 color, float thick)
 {
     std::size_t i = 0;
     for (; i < p.size() - 1; i++) {
@@ -64,7 +64,7 @@ int imp::polygon(Tensor &img, const std::vector<Point2i> &p, imp::Color3 color, 
     return 0;
 }
 
-int imp::circle(Tensor &img, const Point2i &center, float radius, imp::Color3 color, float thick)
+int ns::circle(Tensor &img, const Point2i &center, float radius, ns::Color3 color, float thick)
 {
     int x0 = center.x;
     int y0 = center.y;
@@ -83,7 +83,7 @@ int imp::circle(Tensor &img, const Point2i &center, float radius, imp::Color3 co
     return 0;
 }
 
-int imp::rectangle(Tensor &img, const Point2i &pos, const Point2i &size, imp::Color3 color, float thick)
+int ns::rectangle(Tensor &img, const Point2i &pos, const Point2i &size, ns::Color3 color, float thick)
 {
     /* top left */
     int xL = pos.x;

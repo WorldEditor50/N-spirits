@@ -3,7 +3,7 @@
 #include "improcess_def.h"
 #include <string.h>
 
-namespace imp {
+namespace ns {
 
 class Image
 {

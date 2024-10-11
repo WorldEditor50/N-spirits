@@ -2,7 +2,7 @@
 #define FEATURES_H
 #include "improcess_def.h"
 
-namespace imp {
+namespace ns {
 /* histogram */
 int histogram(OutTensor hist, InTensor gray);
 int uniformHistogram(OutTensor hist, InTensor gray);

@@ -1,6 +1,6 @@
 #include "geometrytransform.h"
 
-int imp::move(OutTensor xo, InTensor xi, const Size &offset)
+int ns::move(OutTensor xo, InTensor xi, const Size &offset)
 {
     if (offset.x < 0 || offset.x > xi.shape[HWC_W] ||
         offset.y < 0 || offset.y > xi.shape[HWC_H]) {
@@ -23,14 +23,14 @@ int imp::move(OutTensor xo, InTensor xi, const Size &offset)
     return 0;
 }
 
-int imp::transpose(OutTensor xo, InTensor xi)
+int ns::transpose(OutTensor xo, InTensor xi)
 {
     /* HWC -> WHC */
     xo = xi.permute(1, 0, 2);
     return 0;
 }
 
-int imp::horizontalFlip(OutTensor xo, InTensor xi)
+int ns::horizontalFlip(OutTensor xo, InTensor xi)
 {
     int w = xi.shape[HWC_W];
     xo = Tensor(xi.shape);
@@ -44,7 +44,7 @@ int imp::horizontalFlip(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::verticalFlip(OutTensor xo, InTensor xi)
+int ns::verticalFlip(OutTensor xo, InTensor xi)
 {
     int h = xi.shape[HWC_H];
     xo = Tensor(xi.shape);
@@ -58,7 +58,7 @@ int imp::verticalFlip(OutTensor xo, InTensor xi)
     return 0;
 }
 
-int imp::rotate(OutTensor xo, InTensor xi, float angle)
+int ns::rotate(OutTensor xo, InTensor xi, float angle)
 {
     /* rotate center = (h/2, w/2) */
     float theta = angle*pi/180.0;
@@ -107,7 +107,7 @@ int imp::rotate(OutTensor xo, InTensor xi, float angle)
     return 0;
 }
 
-int imp::nearestInterpolate(OutTensor xo, InTensor xi, const imp::Size &size)
+int ns::nearestInterpolate(OutTensor xo, InTensor xi, const ns::Size &size)
 {
     int h = xi.shape[HWC_H];
     int w = xi.shape[HWC_W];
@@ -119,8 +119,8 @@ int imp::nearestInterpolate(OutTensor xo, InTensor xi, const imp::Size &size)
     float rw = float(w)/float(wo);
     for (int i = 1; i < ho + 1; i++) {
         for (int j = 1; j < wo + 1; j++) {
-            int u = imp::clip(i*rh + 0.5, 1, h + 1);
-            int v = imp::clip(j*rw + 0.5, 1, w + 1);
+            int u = ns::clip(i*rh + 0.5, 1, h + 1);
+            int v = ns::clip(j*rw + 0.5, 1, w + 1);
             for (int k = 0; k < c; k++) {
                 xo(i - 1, j - 1, k) = xi(u - 1, v - 1, k);
             }
@@ -129,7 +129,7 @@ int imp::nearestInterpolate(OutTensor xo, InTensor xi, const imp::Size &size)
     return 0;
 }
 
-int imp::bilinearInterpolate(OutTensor xo, InTensor xi, const Size &size)
+int ns::bilinearInterpolate(OutTensor xo, InTensor xi, const Size &size)
 {
     int h = xi.shape[HWC_H];
     int w = xi.shape[HWC_W];
@@ -155,7 +155,7 @@ int imp::bilinearInterpolate(OutTensor xo, InTensor xi, const Size &size)
                 float y1 = xi(u0, v0, k)*(1 - wi) + xi(u1, v0, k)*wi;
                 float y2 = xi(u0, v1, k)*(1 - wi) + xi(u1, v1, k)*wi;
                 float y = y2*wj + (1 - wj)*y1;
-                xo(i, j, k) = imp::clip(y, 0, 255);
+                xo(i, j, k) = ns::clip(y, 0, 255);
             }
         }
     }
@@ -163,13 +163,13 @@ int imp::bilinearInterpolate(OutTensor xo, InTensor xi, const Size &size)
 }
 
 
-float imp::cubic::triangle(float x)
+float ns::cubic::triangle(float x)
 {
     float y = 0.5*x;
     return y < 0 ? y + 1 : 1 - y;
 }
 
-float imp::cubic::bell(float x)
+float ns::cubic::bell(float x)
 {
     float y = x/2.0*1.5;
     float r = 0;
@@ -183,7 +183,7 @@ float imp::cubic::bell(float x)
     return r;
 }
 
-float imp::cubic::bspLine(float x)
+float ns::cubic::bspLine(float x)
 {
     float xi = 0;
     float r = 1;
@@ -198,7 +198,7 @@ float imp::cubic::bspLine(float x)
     return r;
 }
 
-int imp::cubicInterpolate(OutTensor xo, InTensor xi, const imp::Size &size, const std::function<float(float)> &interpolate)
+int ns::cubicInterpolate(OutTensor xo, InTensor xi, const ns::Size &size, const std::function<float(float)> &interpolate)
 {
     int h = xi.shape[HWC_H];
     int w = xi.shape[HWC_W];
@@ -235,7 +235,7 @@ int imp::cubicInterpolate(OutTensor xo, InTensor xi, const imp::Size &size, cons
     return 0;
 }
 
-int imp::affine(OutTensor xo, InTensor xi, InTensor op)
+int ns::affine(OutTensor xo, InTensor xi, InTensor op)
 {
     int h = xi.shape[HWC_H];
     int w = xi.shape[HWC_W];

@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string.h>
 
-namespace imp {
+namespace ns {
 #pragma pack(push, 1)
 struct BmpHead {
     uint16_t type;

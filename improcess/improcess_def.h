@@ -4,7 +4,7 @@
 #include "../basic/point.hpp"
 #include <memory>
 
-namespace imp {
+namespace ns {
 constexpr static float pi = 3.141592653589793;
 using Size = Point2i;
 using uint8ptr = std::shared_ptr<uint8_t[]>;

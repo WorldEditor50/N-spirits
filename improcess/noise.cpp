@@ -1,14 +1,14 @@
 #include "noise.h"
 #include "../basic/linalg.h"
 
-Tensor imp::Noise::uniform(int h, int w, int c, float high, float low)
+Tensor ns::Noise::uniform(int h, int w, int c, float high, float low)
 {
     Tensor x(h, w, c);
     LinAlg::uniform(x, high, low);
     return x;
 }
 
-Tensor imp::Noise::gaussian(int h, int w, int c, float sigma)
+Tensor ns::Noise::gaussian(int h, int w, int c, float sigma)
 {
     Tensor x(h, w);
     std::uniform_real_distribution<float> roulette(0, 1);
@@ -26,7 +26,7 @@ Tensor imp::Noise::gaussian(int h, int w, int c, float sigma)
     return x;
 }
 
-Tensor imp::Noise::rayleigh(int h, int w, int c, float sigma)
+Tensor ns::Noise::rayleigh(int h, int w, int c, float sigma)
 {
     Tensor x(h, w, c);
     std::uniform_real_distribution<float> roulette(0, 1);
@@ -46,7 +46,7 @@ Tensor imp::Noise::rayleigh(int h, int w, int c, float sigma)
     return x;
 }
 
-Tensor imp::Noise::saltPepper(int h, int w, int c, float p0)
+Tensor ns::Noise::saltPepper(int h, int w, int c, float p0)
 {
     Tensor x(h, w, c);
     std::uniform_real_distribution<float> roulette(0, 1);

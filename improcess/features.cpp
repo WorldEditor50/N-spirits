@@ -1,7 +1,7 @@
 #include "features.h"
 #include "filter.h"
 
-int imp::histogram(OutTensor hist, InTensor gray)
+int ns::histogram(OutTensor hist, InTensor gray)
 {
     if (gray.shape[HWC_C] != 1) {
         return -1;
@@ -14,7 +14,7 @@ int imp::histogram(OutTensor hist, InTensor gray)
     return 0;
 }
 
-int imp::uniformHistogram(OutTensor hist, InTensor gray)
+int ns::uniformHistogram(OutTensor hist, InTensor gray)
 {
     int ret = histogram(hist, gray);
     int h = gray.shape[HWC_H];
@@ -23,7 +23,7 @@ int imp::uniformHistogram(OutTensor hist, InTensor gray)
     return ret;
 }
 
-int imp::moment0(OutTensor m0, InTensor hist)
+int ns::moment0(OutTensor m0, InTensor hist)
 {
     m0 = Tensor(256, 1);
     float s = 0;
@@ -34,7 +34,7 @@ int imp::moment0(OutTensor m0, InTensor hist)
     return 0;
 }
 
-int imp::moment1(OutTensor m1, InTensor hist)
+int ns::moment1(OutTensor m1, InTensor hist)
 {
     m1 = Tensor(256, 1);
     float s = 0;
@@ -45,7 +45,7 @@ int imp::moment1(OutTensor m1, InTensor hist)
     return 0;
 }
 
-int imp::entropy(InTensor img, uint8_t &thres)
+int ns::entropy(InTensor img, uint8_t &thres)
 {
     if (img.shape[HWC_C] != 1) {
         return -1;
@@ -82,7 +82,7 @@ int imp::entropy(InTensor img, uint8_t &thres)
     thres = f.argmax();
     return 0;
 }
-int imp::otsu(InTensor img, uint8_t &thres)
+int ns::otsu(InTensor img, uint8_t &thres)
 {
     if (img.shape[HWC_C] != 1) {
         return -1;
@@ -110,7 +110,7 @@ int imp::otsu(InTensor img, uint8_t &thres)
     return 0;
 }
 
-int imp::grayConjugateMatrix(OutTensor xo, InTensor xi, const Point2i &p1, const Point2i &p2)
+int ns::grayConjugateMatrix(OutTensor xo, InTensor xi, const Point2i &p1, const Point2i &p2)
 {
     int maxGray = xi.max();
     xo = Tensor(maxGray + 1, maxGray + 1);
@@ -136,7 +136,7 @@ int imp::grayConjugateMatrix(OutTensor xo, InTensor xi, const Point2i &p1, const
     return 0;
 }
 
-int imp::barycenter(InTensor img, Point2i &center)
+int ns::barycenter(InTensor img, Point2i &center)
 {
     if (img.shape[HWC_C] != 1) {
         return -1;
@@ -157,7 +157,7 @@ int imp::barycenter(InTensor img, Point2i &center)
     return 0;
 }
 
-int imp::LBP(OutTensor feature, InTensor gray)
+int ns::LBP(OutTensor feature, InTensor gray)
 {
     if (gray.shape[HWC_C] != 1) {
         return -1;
@@ -183,7 +183,7 @@ int imp::LBP(OutTensor feature, InTensor gray)
     return 0;
 }
 
-int imp::circleLBP(OutTensor feature, InTensor gray, int radius, int neighbors, bool rotationInvariance)
+int ns::circleLBP(OutTensor feature, InTensor gray, int radius, int neighbors, bool rotationInvariance)
 {
     if (gray.shape[HWC_C] != 1) {
         return -1;
@@ -243,7 +243,7 @@ int imp::circleLBP(OutTensor feature, InTensor gray, int radius, int neighbors, 
     return 0;
 }
 
-int imp::multiScaleBlockLBP(OutTensor feature, InTensor gray, float scale)
+int ns::multiScaleBlockLBP(OutTensor feature, InTensor gray, float scale)
 {
     if (gray.shape[HWC_C] != 1) {
         return -1;

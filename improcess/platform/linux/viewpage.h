@@ -1,7 +1,7 @@
 #ifndef VIEWPAGE_H
 #define VIEWPAGE_H
 #include "naivepage.h"
-namespace imp {
+namespace ns {
 
 class View2D : public NaivePage
 {

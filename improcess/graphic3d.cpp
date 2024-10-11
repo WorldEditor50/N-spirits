@@ -1,6 +1,6 @@
 #include "graphic3d.h"
 
-Tensor imp::ball(int x0, int y0, int z0, float r, const Color3 &color)
+Tensor ns::ball(int x0, int y0, int z0, float r, const Color3 &color)
 {
     int d = 2*r;
     Tensor b(d, d, d, 3);
@@ -22,7 +22,7 @@ Tensor imp::ball(int x0, int y0, int z0, float r, const Color3 &color)
     return b;
 }
 
-int imp::planeToSphere(OutTensor xo, InTensor xi, int r)
+int ns::planeToSphere(OutTensor xo, InTensor xi, int r)
 {
 
     int h = xi.shape[HWC_H];

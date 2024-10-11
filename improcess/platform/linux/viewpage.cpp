@@ -3,7 +3,7 @@
 #include <memory>
 #include <iostream>
 
-void imp::View2D::onPaint(NaivePage::Event *e)
+void ns::View2D::onPaint(NaivePage::Event *e)
 {
     /* copy pixmap to window */
     xcb_copy_area(connection, pixmap, window, gc,
@@ -12,20 +12,20 @@ void imp::View2D::onPaint(NaivePage::Event *e)
     return;
 }
 
-imp::View2D::View2D():
+ns::View2D::View2D():
     pixmap(0)
 {
 
 }
 
-imp::View2D::~View2D()
+ns::View2D::~View2D()
 {
     if (pixmap) {
         xcb_free_pixmap(connection, pixmap);
     }
 }
 
-void imp::View2D::display(int h, int w, int c, uint8_t *data)
+void ns::View2D::display(int h, int w, int c, uint8_t *data)
 {
     /* create window */
     int ret = createWindow(0, 0, w, h);

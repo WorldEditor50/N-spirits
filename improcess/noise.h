@@ -2,7 +2,7 @@
 #define NOISE_H
 #include "improcess_def.h"
 
-namespace imp {
+namespace ns {
 namespace Noise {
 
 Tensor uniform(int h, int w, int c, float high, float low);

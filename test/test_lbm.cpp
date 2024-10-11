@@ -25,7 +25,7 @@ void runLBM()
                                         0.0, 0.1}));
 
     std::shared_ptr<uint8_t[]> rgb = nullptr;
-    std::size_t totalsize = imp::BMP::size(H, W, 3);
+    std::size_t totalsize = ns::BMP::size(H, W, 3);
     std::shared_ptr<uint8_t[]> bmp(new uint8_t[totalsize]);
     std::size_t N = 20000;
     lbm.solve(N, {0.8, 0.1, 0.1}, // color scaler
@@ -33,13 +33,13 @@ void runLBM()
 
         if (i % 20 == 0) {
             std::string fileName = "./cylinder/cylinder_" + std::to_string(i/20) + ".bmp";
-            imp::fromTensor(img, rgb);
+            ns::fromTensor(img, rgb);
 #if 0
             improcess::Jpeg::save(fileName.c_str(),
                                   rgb.get(),
                                   img.shape[0], img.shape[1], img.shape[2]);
 #else
-            imp::BMP::save(fileName, bmp, totalsize, rgb, H, W);
+            ns::BMP::save(fileName, bmp, totalsize, rgb, H, W);
 #endif
             std::cout<<"progress:"<<i<<"-->"<<N<<std::endl;
         }
@@ -54,7 +54,7 @@ void runEuler()
     int H = 240;
     Eulerian eulerian(H, W);
     std::shared_ptr<uint8_t[]> rgb = nullptr;
-    std::size_t totalsize = imp::BMP::size(H, W, 3);
+    std::size_t totalsize = ns::BMP::size(H, W, 3);
     std::shared_ptr<uint8_t[]> bmp(new uint8_t[totalsize]);
     std::size_t N = 2000;
     eulerian.solve(N, {0.8, 0.1, 0.1}, // color scaler
@@ -62,8 +62,8 @@ void runEuler()
 
         if (i % 20 == 0) {
             std::string fileName = "./euler/euler_" + std::to_string(i/20) + ".bmp";
-            imp::fromTensor(img, rgb);
-            imp::BMP::save(fileName, bmp, totalsize, rgb, H, W);
+            ns::fromTensor(img, rgb);
+            ns::BMP::save(fileName, bmp, totalsize, rgb, H, W);
             std::cout<<"progress:"<<i<<"-->"<<N<<std::endl;
         }
 
