@@ -270,6 +270,25 @@ int ns::transparent(OutTensor rgba, InTensor rgb, int alpha)
     return 0;
 }
 
+int ns::normColor(OutTensor normRgb, InTensor rgb)
+{
+    int h = rgb.shape[HWC_H];
+    int w = rgb.shape[HWC_W];
+    normRgb = Tensor(rgb.shape);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            float r = rgb(i, j, 0);
+            float g = rgb(i, j, 1);
+            float b = rgb(i, j, 2);
+            float rho = std::sqrt(r*r + g*g + b*b);
+            normRgb(i, j, 0) = 255*r/rho;
+            normRgb(i, j, 1) = 255*g/rho;
+            normRgb(i, j, 2) = 255*b/rho;
+        }
+    }
+    return 0;
+}
+
 Tensor ns::toTensor(int h, int w, int c, std::shared_ptr<uint8_t[]> &img)
 {
     Tensor x(h, w, c);

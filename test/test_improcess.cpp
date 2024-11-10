@@ -1259,6 +1259,24 @@ void test_hopfieldNet()
     ns::show(result);
     return;
 }
+
+void test_normColor()
+{
+    Tensor img = ns::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor normRgb;
+    ns::normColor(normRgb, img);
+    Tensor gray1;
+    ns::minGray(gray1, normRgb);
+    Tensor gray2;
+    ns::gray2rgb(gray2, gray1);
+    Tensor result = Tensor::concat(1, img, normRgb, gray2);
+    ns::show(result);
+    return;
+}
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -1318,6 +1336,7 @@ int main()
     //test_curvatrueBlur();
     //test_bilateralBlur();
     //test_harrisCorner();
-    test_hopfieldNet();
+    //test_hopfieldNet();
+    test_normColor();
     return 0;
 }

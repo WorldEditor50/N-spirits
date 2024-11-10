@@ -215,7 +215,7 @@ public:
             }
             return index;
         }
-        inline T norm2() const
+        inline T norm2()
         {
             T s = 0;
             for (std::size_t i = 0; i < totalSize; i++) {
@@ -598,6 +598,16 @@ public:
         shape = {index...};
         initParams(shape, sizes, totalSize);
         return *this;
+    }
+
+    template<typename ...Index>
+    Tensor_ extend(Index ...index) const
+    {
+        Tensor_ x(index...);
+        for (std::size_t i = 0; i < totalSize; i++) {
+            x.val[i] = val[i];
+        }
+        return x;
     }
 
     template<typename ...Index>

@@ -20,15 +20,6 @@
 
 #ifdef WIN32
 #include "platform/windows/viewpage.h"
-
-#ifdef min
-#undef min
-#endif
-
-#ifdef max
-#undef max
-#endif
-
 #endif
 
 #ifdef __linux__
@@ -62,6 +53,7 @@ namespace ns {
     int rgb2rgba(OutTensor rgba, InTensor rgb, int alpha=120);
     int rgba2rgb(OutTensor rgba, InTensor rgb);
     int transparent(OutTensor rgba, InTensor rgb, int alpha=120);
+    int normColor(OutTensor normRgb, InTensor rgb);
     /* resize */
     int resize(OutTensor xo, InTensor xi, const Size &size, int type=INTERPOLATE_NEAREST);
     /* erode */

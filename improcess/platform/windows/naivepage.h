@@ -3,7 +3,7 @@
 #include <Windows.h>
 #include <string>
 
-namespace imp {
+namespace ns {
 
 class NaivePage
 {

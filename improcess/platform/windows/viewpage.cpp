@@ -3,7 +3,7 @@
 #include <iostream>
 
 
-LRESULT imp::View2D::onResize(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::View2D::onResize(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     //std::cout<<"onResize"<<std::endl;
     int w = (SHORT)LOWORD(lParam);
@@ -32,7 +32,7 @@ LRESULT imp::View2D::onResize(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
-LRESULT imp::View2D::onPaint(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::View2D::onPaint(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     //std::cout<<"onPaint"<<std::endl;
     BITMAP pageBmp;
@@ -67,7 +67,7 @@ LRESULT imp::View2D::onPaint(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::View2D::onClose(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::View2D::onClose(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     if (canvasBitmap != NULL) {
         DeleteObject(canvasBitmap);
@@ -76,18 +76,18 @@ LRESULT imp::View2D::onClose(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return NaivePage::onClose(hWnd, msg, wParam, lParam);
 }
 
-imp::View2D::View2D()
+ns::View2D::View2D()
     :canvasBitmap(NULL)
 {
 
 }
 
-imp::View2D::~View2D()
+ns::View2D::~View2D()
 {
 
 }
 
-void imp::View2D::updateImage(int h, int w, int c, uint8_t *data)
+void ns::View2D::updateImage(int h, int w, int c, uint8_t *data)
 {
     BITMAP canvas;
     GetObject(canvasBitmap, sizeof(BITMAP), &canvas);
@@ -134,7 +134,7 @@ void imp::View2D::updateImage(int h, int w, int c, uint8_t *data)
     return;
 }
 
-void imp::View2D::display(int h, int w, int c, uint8_t *data)
+void ns::View2D::display(int h, int w, int c, uint8_t *data)
 {
     /* create window */
     int x = (GetSystemMetrics(SM_CXSCREEN) - w)/2;

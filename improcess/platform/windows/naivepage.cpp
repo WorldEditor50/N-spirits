@@ -3,7 +3,7 @@
 #include <iostream>
 #pragma comment(lib, "Comctl32.lib")
 
-LRESULT imp::NaivePage::handleWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::handleWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     NaivePage *page = (NaivePage*)GetWindowLongPtrW(hWnd, GWLP_USERDATA);
     if (page != nullptr) {
@@ -12,7 +12,7 @@ LRESULT imp::NaivePage::handleWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::subClassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubClass, DWORD_PTR dwRefData)
+LRESULT ns::NaivePage::subClassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubClass, DWORD_PTR dwRefData)
 {
     NaivePage* page = (NaivePage*)dwRefData;
     if (page == nullptr) {
@@ -35,7 +35,7 @@ LRESULT imp::NaivePage::subClassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM
     return ::DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::onWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::onWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch (msg)
     {
@@ -74,12 +74,12 @@ LRESULT imp::NaivePage::onWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::onCreate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::onCreate(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::onResize(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::onResize(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     width = (SHORT)LOWORD(lParam);
     height = (SHORT)HIWORD(lParam);
@@ -92,7 +92,7 @@ LRESULT imp::NaivePage::onResize(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::onPaint(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::onPaint(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hWnd, &ps);
@@ -111,47 +111,47 @@ LRESULT imp::NaivePage::onPaint(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::onMouseDoubleClick(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::onMouseDoubleClick(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::onMousePress(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::onMousePress(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::onMouseMove(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::onMouseMove(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::onMouseRelease(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::onMouseRelease(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::onMouseWheel(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::onMouseWheel(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::onKeyDown(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::onKeyDown(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::onKeyUp(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::onKeyUp(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::onTimer(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::onTimer(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::onClose(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::onClose(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     //std::cout<<"onClose"<<std::endl;
     if (pageBitmap != NULL) {
@@ -166,7 +166,7 @@ LRESULT imp::NaivePage::onClose(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::onDestroy(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::onDestroy(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     //std::cout<<"onDestroy"<<std::endl;
 
@@ -174,12 +174,12 @@ LRESULT imp::NaivePage::onDestroy(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT imp::NaivePage::onCustomMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+LRESULT ns::NaivePage::onCustomMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-HBITMAP imp::NaivePage::createBitmap32(int width, int height)
+HBITMAP ns::NaivePage::createBitmap32(int width, int height)
 {
     BYTE bmi[sizeof(BITMAPINFOHEADER) + 256 * sizeof(RGBQUAD)] = { 0 };
     BITMAPINFOHEADER* pbmihdr = (BITMAPINFOHEADER*)bmi;
@@ -196,7 +196,7 @@ HBITMAP imp::NaivePage::createBitmap32(int width, int height)
     return hBmp;
 }
 
-imp::NaivePage::NaivePage():
+ns::NaivePage::NaivePage():
     width(0),
     height(0),
     pageHWND(NULL),
@@ -205,12 +205,12 @@ imp::NaivePage::NaivePage():
 
 }
 
-imp::NaivePage::~NaivePage()
+ns::NaivePage::~NaivePage()
 {
 
 }
 
-void imp::NaivePage::resize(int x, int y, int w, int h)
+void ns::NaivePage::resize(int x, int y, int w, int h)
 {
     if (pageHWND != nullptr) {
         width = w;
@@ -220,7 +220,7 @@ void imp::NaivePage::resize(int x, int y, int w, int h)
     return;
 }
 
-int imp::NaivePage::create(int x, int y, int w, int h,
+int ns::NaivePage::create(int x, int y, int w, int h,
                  const std::wstring &className_,
                  const std::wstring &windowName_,
                  HWND hParent_)
@@ -280,28 +280,28 @@ int imp::NaivePage::create(int x, int y, int w, int h,
     return 0;
 }
 
-void imp::NaivePage::show()
+void ns::NaivePage::show()
 {
     ShowWindow(pageHWND, SW_SHOW);
     UpdateWindow(pageHWND);
     return;
 }
 
-void imp::NaivePage::showMaximized()
+void ns::NaivePage::showMaximized()
 {
     ShowWindow(pageHWND, SW_SHOWMAXIMIZED);
     UpdateWindow(pageHWND);
     return;
 }
 
-void imp::NaivePage::showMinimized()
+void ns::NaivePage::showMinimized()
 {
     ShowWindow(pageHWND, SW_SHOWMINIMIZED);
     UpdateWindow(pageHWND);
     return;
 }
 
-void imp::NaivePage::hide()
+void ns::NaivePage::hide()
 {
     ShowWindow(pageHWND, SW_HIDE);
     return;
