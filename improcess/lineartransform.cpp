@@ -2,9 +2,6 @@
 
 int ns::linearTransform(OutTensor xo, InTensor xi, float alpha, float beta)
 {
-    if (xi.shape[HWC_C] != 1) {
-        return -1;
-    }
     xo = Tensor(xi.shape);
     for (std::size_t i = 0; i < xi.totalSize; i++) {
         xo.val[i] = clip(xi.val[i]*alpha + beta, 0, 255);
@@ -14,9 +11,6 @@ int ns::linearTransform(OutTensor xo, InTensor xi, float alpha, float beta)
 
 int ns::logTransform(OutTensor xo, InTensor xi, float c)
 {
-    if (xi.shape[HWC_C] != 1) {
-        return -1;
-    }
     xo = Tensor(xi.shape);
     for (std::size_t i = 0; i < xi.totalSize; i++) {
         xo.val[i] = clip(c*std::log(xi.val[i] + 1), 0, 255);
@@ -26,12 +20,9 @@ int ns::logTransform(OutTensor xo, InTensor xi, float c)
 
 int ns::gammaTransform(OutTensor xo, InTensor xi, float esp, float gamma)
 {
-    if (xi.shape[HWC_C] != 1) {
-        return -1;
-    }
     xo = Tensor(xi.shape);
     for (std::size_t i = 0; i < xi.totalSize; i++) {
-        float p = std::pow((xi.val[i] + esp)/255, gamma)*255;
+        float p = std::pow((xi.val[i] + esp)/255.0, gamma)*255;
         xo.val[i] = clip(p, 0, 255);
     }
     return 0;

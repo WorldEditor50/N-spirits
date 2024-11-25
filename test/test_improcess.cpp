@@ -1277,6 +1277,65 @@ void test_normColor()
     ns::show(result);
     return;
 }
+
+void test_histogramStandardize()
+{
+    Tensor img = ns::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    ns::meanGray(gray, img);
+    Tensor hist;
+    ns::histogramStandardize(hist, gray);
+    Tensor result = Tensor::concat(1, gray, hist);
+    ns::show(result);
+    return;
+}
+
+void test_histogramEqualize()
+{
+    Tensor img = ns::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    ns::meanGray(gray, img);
+    Tensor hist;
+    ns::histogramEqualize(hist, gray);
+    Tensor result = Tensor::concat(1, gray, hist);
+    ns::show(result);
+    return;
+}
+
+void test_gammaTransform()
+{
+    Tensor img = ns::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor g1;
+    ns::gammaTransform(g1, img, 0.1, 0.1);
+    Tensor g2;
+    ns::gammaTransform(g2, img, 0.1, 0.2);
+    Tensor g3;
+    ns::gammaTransform(g3, img, 0.1, 0.3);
+    Tensor result1 = Tensor::concat(1, img, g1, g2, g3);
+    Tensor g4;
+    ns::gammaTransform(g4, img, 0.1, 1);
+    Tensor g5;
+    ns::gammaTransform(g5, img, 0.1, 2);
+    Tensor g6;
+    ns::gammaTransform(g6, img, 0.1, 3);
+    Tensor result2 = Tensor::concat(1, img, g4, g5, g6);
+    Tensor result = Tensor::concat(0, result1, result2);
+    ns::show(result);
+    return;
+}
+
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -1337,6 +1396,9 @@ int main()
     //test_bilateralBlur();
     //test_harrisCorner();
     //test_hopfieldNet();
-    test_normColor();
+    //test_normColor();
+    //test_histogramStandardize();
+    //test_histogramEqualize();
+    test_gammaTransform();
     return 0;
 }
