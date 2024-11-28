@@ -977,6 +977,20 @@ void test_HSI()
     return;
 }
 
+
+void test_HSV()
+{
+    Tensor img = ns::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor hsv;
+    ns::RGB2HSV(hsv, img);
+    ns::show(hsv);
+    return;
+}
+
 void test_canny()
 {
     Tensor img = ns::load("./images/crystalmaiden.bmp");
@@ -1336,6 +1350,20 @@ void test_gammaTransform()
     return;
 }
 
+void test_hsvHistogramEqualize()
+{
+    Tensor img = ns::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor heq;
+    ns::hsvHistogramEqualize(heq, img);
+    Tensor result = Tensor::concat(1, img, heq);
+    ns::show(result);
+    return;
+}
+
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -1371,6 +1399,7 @@ int main()
 #endif
     //test_CMY();
     //test_HSI();
+    //test_HSV();
     //test_rotate();
     //test_sobel();
     //test_laplacian();
@@ -1399,6 +1428,7 @@ int main()
     //test_normColor();
     //test_histogramStandardize();
     //test_histogramEqualize();
-    test_gammaTransform();
+    //test_gammaTransform();
+    test_hsvHistogramEqualize();
     return 0;
 }

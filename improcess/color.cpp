@@ -146,29 +146,24 @@ int ns::RGB2HSV(OutTensor xo, InTensor xi)
             float H = 0;
             float S = 0;
             float V = maxVal;
-            float delta = maxVal - minVal;
-            if (maxVal != 0) {
-                S = delta/maxVal;
-            } else {
-                return -1;
-            }
+            float d = maxVal - minVal;
+            S = maxVal != 0 ? d/maxVal : 0;
             if (maxVal == R) {
-                H = (G - B)/delta;
+                H = (G - B)/d;
             } else if (maxVal == G) {
-                H = 2 + (B - R)/delta;
+                H = 2 + (B - R)/d;
             } else {
-                H = 4 + (R - G)/delta;
+                H = 4 + (R - G)/d;
             }
             H *= 60;
             H = H < 0 ? (H + 360) : H;
             H /= 360;
-            H *= 255;
-            S *= 255;
             xo(i, j, 0) = H;
             xo(i, j, 1) = S;
             xo(i, j, 2) = V;
         }
     }
+    xo *= 255;
     return 0;
 }
 
@@ -182,9 +177,9 @@ int ns::HSV2RGB(OutTensor xo, InTensor xi)
     xo = Tensor(xi.shape);
     for (int i = 0; i < h; i++) {
         for (int j = 0; j < w; j++) {
-            float H = xi(i, j, 0)/255.0f*360;
-            float S = xi(i, j, 1)/255.0f;
-            float V = xi(i, j, 2)/255.0f;
+            float H = (xi(i, j, 0)/255)*360;
+            float S = xi(i, j, 1)/255;
+            float V = xi(i, j, 2)/255;
             float R = 0;
             float G = 0;
             float B = 0;
@@ -223,7 +218,7 @@ int ns::HSV2RGB(OutTensor xo, InTensor xi)
             case 4:
                 R = t;
                 G = p;
-                B = q;
+                B = V;
                 break;
             default:
                 R = V;

@@ -16,6 +16,7 @@ int gammaTransform(OutTensor xo, InTensor xi, float esp, float gamma);
 int histogramEqualize(OutTensor xo, InTensor xi);
 /* histogram standardize */
 int histogramStandardize(OutTensor xo, InTensor xi);
+
 }
 
 #endif // LINEARTRANSFORM_H

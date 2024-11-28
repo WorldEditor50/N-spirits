@@ -289,6 +289,54 @@ int ns::normColor(OutTensor normRgb, InTensor rgb)
     return 0;
 }
 
+int ns::bayer2rgb(OutTensor rgb, InTensor xi)
+{
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    int padding = 1;
+    Tensor bayer;
+    ns::copyMakeBorder(bayer, xi, padding);
+    rgb = Tensor(h + padding*2, w + padding*2, 3);
+    int ho = bayer.shape[HWC_H];
+    int wo = bayer.shape[HWC_W];
+    for (int i = padding; i < ho - padding; i++) {
+        for (int j = padding; j < wo - padding; j++) {
+            /*
+                |M00 M01 M02|
+                |M10 M11 M12|
+                |M20 M21 M22|
+
+            */
+            int n00 = (i - 1)*wo + j - 1;int n01 = (i - 1)*wo + j;int n02 = (i - 1)*wo + j + 1;
+            int n10 = (i    )*wo + j - 1;int n11 = (i    )*wo + j;int n12 = (i    )*wo + j + 1;
+            int n20 = (i + 1)*wo + j - 1;int n21 = (i + 1)*wo + j;int n22 = (i + 1)*wo + j + 1;
+            if (i%2 == 0) {
+                if (j%2 == 0) {
+                    rgb(i, j, 0) = (bayer[n00] + bayer[n02] + bayer[n22] + bayer[n20])/4;
+                    rgb(i, j, 1) = (bayer[n01] + bayer[n12] + bayer[n21] + bayer[n10])/4;
+                    rgb(i, j, 2) = bayer[n11];
+                } else {
+                    rgb(i, j, 0) = (bayer[n01] + bayer[n21])/2;
+                    rgb(i, j, 1) = bayer[n11];
+                    rgb(i, j, 2) = (bayer[n10] + bayer[n12])/2;
+                }
+            } else {
+                if (j%2 == 0) {
+                    rgb(i, j, 0) = (bayer[n10] + bayer[n12])/2;
+                    rgb(i, j, 1) = bayer[n11];
+                    rgb(i, j, 2) = (bayer[n01] + bayer[n21])/2;
+                } else {
+                    rgb(i, j, 0) = bayer[n11];
+                    rgb(i, j, 1) = (bayer[n01] + bayer[n12] + bayer[n21] + bayer[n10])/4;
+                    rgb(i, j, 2) = (bayer[n00] + bayer[n02] + bayer[n22] + bayer[n20])/4;
+
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 Tensor ns::toTensor(int h, int w, int c, std::shared_ptr<uint8_t[]> &img)
 {
     Tensor x(h, w, c);
@@ -1082,5 +1130,28 @@ int ns::harrisCorner(OutTensor xo, InTensor xi, float coeff)
             xo(i, j, 0) = resp;
         }
     }
+    return 0;
+}
+
+int ns::hsvHistogramEqualize(OutTensor xo, InTensor xi)
+{
+    Tensor hsv;
+    ns::RGB2HSV(hsv, xi);
+    int h = xi.shape[HWC_H];
+    int w = xi.shape[HWC_W];
+    Tensor v(h, w, 1);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            v(i, j) = hsv(i, j, 2);
+        }
+    }
+    Tensor veq;
+    ns::histogramEqualize(veq, v);
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            hsv(i, j, 2) = veq(i, j);
+        }
+    }
+    ns::HSV2RGB(xo, hsv);
     return 0;
 }

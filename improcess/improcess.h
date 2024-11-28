@@ -54,6 +54,8 @@ namespace ns {
     int rgba2rgb(OutTensor rgba, InTensor rgb);
     int transparent(OutTensor rgba, InTensor rgb, int alpha=120);
     int normColor(OutTensor normRgb, InTensor rgb);
+    /* bayer --> rgb */
+    int bayer2rgb(OutTensor rgb, InTensor bayer);
     /* resize */
     int resize(OutTensor xo, InTensor xi, const Size &size, int type=INTERPOLATE_NEAREST);
     /* erode */
@@ -83,6 +85,8 @@ namespace ns {
     /* histogram of oriented gradient */
     int HOG(OutTensor xo, OutTensor hist, InTensor xi, int cellSize=16, int binSize=8, int blockSize=2);
     int harrisCorner(OutTensor xo, InTensor xi, float coeff=0.04);
+    /* hsv histogram equalize */
+    int hsvHistogramEqualize(OutTensor xo, InTensor xi);
 }
 
 
