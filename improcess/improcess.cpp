@@ -291,14 +291,12 @@ int ns::normColor(OutTensor normRgb, InTensor rgb)
 
 int ns::bayer2rgb(OutTensor rgb, InTensor xi)
 {
-    int h = xi.shape[HWC_H];
-    int w = xi.shape[HWC_W];
     int padding = 1;
     Tensor bayer;
     ns::copyMakeBorder(bayer, xi, padding);
-    rgb = Tensor(h + padding*2, w + padding*2, 3);
     int ho = bayer.shape[HWC_H];
     int wo = bayer.shape[HWC_W];
+    rgb = Tensor(ho, wo, 3);
     for (int i = padding; i < ho - padding; i++) {
         for (int j = padding; j < wo - padding; j++) {
             /*

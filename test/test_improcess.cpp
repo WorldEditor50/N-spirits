@@ -1364,6 +1364,32 @@ void test_hsvHistogramEqualize()
     return;
 }
 
+void test_bayer2rgb()
+{
+    Tensor bayer;
+    {
+        std::ifstream file("D:\\home\\picture\\rg10\\raw_light.rg10", std::ios::ate|std::ios::binary);
+        if (!file.is_open()) {
+            std::cout<<"failed to read image file."<<std::endl;
+            return;
+        }
+        auto totalSize = file.tellg();
+        std::cout<<"total size = "<<totalSize<<std::endl;
+        file.seekg(0);
+        std::shared_ptr<uint8_t[]> data(new uint8_t[totalSize]);
+        file.read((char*)data.get(), totalSize);
+        file.close();
+        bayer = ns::toTensor(1200, 2048, 1, data);
+    }
+    Tensor rgb;
+    ns::bayer2rgb(rgb, bayer);
+    ns::save(rgb, "light.bmp");
+    Tensor rgb2;
+    ns::resize(rgb2, rgb, ns::Size(600, 800), ns::INTERPOLATE_CUBIC);
+    ns::show(rgb2);
+    return;
+}
+
 int main()
 {
 #ifdef ENABLE_JPEG
@@ -1429,6 +1455,7 @@ int main()
     //test_histogramStandardize();
     //test_histogramEqualize();
     //test_gammaTransform();
-    test_hsvHistogramEqualize();
+    //test_hsvHistogramEqualize();
+    test_bayer2rgb();
     return 0;
 }
