@@ -1,4 +1,15 @@
 #include "improcess.h"
+#ifdef ENABLE_JPEG
+#include "jpegwrap/jpegwrap.h"
+#endif
+
+#ifdef WIN32
+#include "platform/windows/viewpage.h"
+#endif
+
+#ifdef __linux__
+#include "platform/linux/viewpage.h"
+#endif
 
 int ns::fromTensor(InTensor x, std::shared_ptr<uint8_t[]> &img)
 {
@@ -1151,5 +1162,53 @@ int ns::hsvHistogramEqualize(OutTensor xo, InTensor xi)
         }
     }
     ns::HSV2RGB(xo, hsv);
+    return 0;
+}
+
+int ns::floydSteinbergDithering(OutTensor xo, InTensor xi)
+{
+    if (xi.shape[HWC_C] != 1) {
+        return -1;
+    }
+    int h = xi.shape[0];
+    int w = xi.shape[1];
+    xo = Tensor(h, w, 1);
+    for (int i = 1; i < h - 1; i++) {
+        for (int j = 1; j < w - 1; j++) {
+            int p1 = xi(i, j);
+            float p2 = p1/255*255;
+            float e = p2 - p1;
+            xo(i    , j + 1) = p2 + e*7/16;
+            xo(i + 1, j - 1) = p2 + e*3/16;
+            xo(i + 1, j)     = p2 + e*5/16;
+            xo(i + 1, j + 1) = p2 + e*1/16;
+        }
+    }
+    return 0;
+}
+
+int ns::atkinsonDithering(OutTensor xo, InTensor xi)
+{
+    if (xi.shape[HWC_C] != 1) {
+        return -1;
+    }
+    int h = xi.shape[0];
+    int w = xi.shape[1];
+    xo = Tensor(xi);
+    Tensor error(h, w);
+    for (int i = 1; i < h - 2; i++) {
+        for (int j = 1; j < w - 2; j++) {
+            int p1 = xo(i, j) + error(i, j);
+            float p2 = p1/255*255;
+            xo(i, j) = p2;
+            float e = (p2 - p1)/8.0;
+            error(i    , j + 1) += e;
+            error(i    , j + 2) += e;
+            error(i + 1, j - 1) += e;
+            error(i + 1, j)     += e;
+            error(i + 1, j + 1) += e;
+            error(i + 2, j)     += e;
+        }
+    }
     return 0;
 }

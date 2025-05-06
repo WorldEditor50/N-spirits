@@ -1366,7 +1366,7 @@ void test_hsvHistogramEqualize()
 
 void test_bayer2rgb()
 {
-    Tensor bayer;
+    Tensor bayer(1200, 1600, 1);
     {
         std::ifstream file("D:\\home\\picture\\rg10\\raw_light.rg10", std::ios::ate|std::ios::binary);
         if (!file.is_open()) {
@@ -1379,7 +1379,11 @@ void test_bayer2rgb()
         std::shared_ptr<uint8_t[]> data(new uint8_t[totalSize]);
         file.read((char*)data.get(), totalSize);
         file.close();
-        bayer = ns::toTensor(1200, 2048, 1, data);
+        for (std::size_t i = 0; i < totalSize*25/32; i+=25) {
+            for (int j = 0; j < 24; j++) {
+                bayer[i*25 + j] = data[i + j];
+            }
+        }
     }
     Tensor rgb;
     ns::bayer2rgb(rgb, bayer);
@@ -1387,6 +1391,21 @@ void test_bayer2rgb()
     Tensor rgb2;
     ns::resize(rgb2, rgb, ns::Size(600, 800), ns::INTERPOLATE_CUBIC);
     ns::show(rgb2);
+    return;
+}
+
+void test_floydSteinbergDithering()
+{
+    Tensor img = ns::load("./images/crystalmaiden.bmp");
+    if (img.empty()) {
+        std::cout<<"failed to load image."<<std::endl;
+        return;
+    }
+    Tensor gray;
+    ns::maxGray(gray, img);
+    Tensor out;
+    ns::floydSteinbergDithering(out, gray);
+    ns::show(out);
     return;
 }
 
@@ -1456,6 +1475,7 @@ int main()
     //test_histogramEqualize();
     //test_gammaTransform();
     //test_hsvHistogramEqualize();
-    test_bayer2rgb();
+    //test_bayer2rgb();
+    test_floydSteinbergDithering();
     return 0;
 }

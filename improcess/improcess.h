@@ -14,17 +14,7 @@
 #include "filter.h"
 #include "features.h"
 #include "noise.h"
-#ifdef ENABLE_JPEG
-#include "jpegwrap/jpegwrap.h"
-#endif
 
-#ifdef WIN32
-#include "platform/windows/viewpage.h"
-#endif
-
-#ifdef __linux__
-#include "platform/linux/viewpage.h"
-#endif
 
 namespace ns {
 
@@ -87,6 +77,9 @@ namespace ns {
     int harrisCorner(OutTensor xo, InTensor xi, float coeff=0.04);
     /* hsv histogram equalize */
     int hsvHistogramEqualize(OutTensor xo, InTensor xi);
+    /* dithering */
+    int floydSteinbergDithering(OutTensor xo, InTensor xi);
+    int atkinsonDithering(OutTensor xo, InTensor xi);
 }
 
 

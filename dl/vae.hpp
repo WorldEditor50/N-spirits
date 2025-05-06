@@ -12,7 +12,8 @@ private:
     /* encoder */
     FcLayer encode1;
     FcLayer encode2;
-    FcLayer encode3;
+    FcLayer encodeMu;
+    FcLayer encodeSigma;
     /* decoder */
     FcLayer decode1;
     FcLayer decode2;
@@ -20,18 +21,20 @@ public:
     explicit VAE(int inputDim, int hiddenDim, int zDim)
     {
         /* encoder */
-        encode1 = FcLayer(inputDim, hiddenDim, false, Fn_LeakyRelu);
+        encode1 = FcLayer(inputDim, hiddenDim, false, Fn_Tanh);
         encode2 = FcLayer(hiddenDim, zDim, false, Fn_Linear);
-        encode3 = FcLayer(hiddenDim, zDim, false, Fn_Linear);
+        encodeMu = FcLayer(hiddenDim, zDim, false, Fn_Linear);
+        encodeSigma = FcLayer(hiddenDim, zDim, false, Fn_Linear);
         /* decoder */
         decode1 = FcLayer(zDim, hiddenDim, false, Fn_LeakyRelu);
         decode2 = FcLayer(hiddenDim, inputDim, false, Fn_Sigmoid);
     }
     void encode(const Tensor &img, Tensor &mu, Tensor &sigma)
     {
-        Tensor& h = encode1.forward(img);
-        mu = encode2.forward(h);
-        sigma = encode3.forward(h);
+        Tensor& o1 = encode1.forward(img);
+        Tensor& o2 = encode2.forward(o1);
+        mu = encodeMu.forward(o2);
+        sigma = encodeSigma.forward(o2);
         return;
     }
 
@@ -47,9 +50,14 @@ public:
         Tensor sigma;
         encode(xi, mu, sigma);
         Tensor epsilon = Tensor(sigma.shape);
-        LinAlg::uniform(epsilon, -1, 1);
+       //LinAlg::normal(epsilon, -1, 1);
         Tensor z = mu + epsilon*sigma;
         return decode(z);
+    }
+
+    void backward(const Tensor &x)
+    {
+
     }
 
     Tensor& operator()(const Tensor &img)
