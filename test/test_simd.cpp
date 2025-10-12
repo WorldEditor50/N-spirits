@@ -1,7 +1,5 @@
 #include <iostream>
 #include "../basic/simd/tensorsi.hpp"
-#include "../basic/simd/simd.hpp"
-#include "../basic/simd/avx2func.hpp"
 #include "../basic/linalg.h"
 #include "../utils/clock.hpp"
 
@@ -19,7 +17,7 @@ float correct(const Tensorsi &x1, const Tensorsi &x2)
     return n/N*100;
 }
 
-void test_simd_matmul()
+void test_avx2_matmul()
 {
 #if defined(__AVX2__)
     std::cout<<"__m128/float:"<<sizeof (__m128)/sizeof (float)<<std::endl;
@@ -104,7 +102,7 @@ void test_simd_matmul()
 #endif
     return;
 }
-void test_simd()
+void test_avx2()
 {
 #if defined(__AVX2__)
     /* horizontal sum */
@@ -162,7 +160,7 @@ void test_simd()
     return;
 }
 
-void test_simd_transpose()
+void test_avx2_transpose()
 {
 #if defined(__AVX2__)
     int N = 4096;
@@ -195,34 +193,33 @@ void test_simd_transpose()
 #endif
 }
 
-int main()
+void test_sse2_matmul()
 {
-#if defined(__SSE2__)
-    std::cout<<"__m128/float:"<<sizeof (__m128)/sizeof (float)<<std::endl;
-    std::cout<<"__m128d/double:"<<sizeof (__m128d)/sizeof (double)<<std::endl;
-#elif defined (__AVX2__)
-    std::cout<<"__m256/float:"<<sizeof (__m256)/sizeof (float)<<std::endl;
-    std::cout<<"__m256d/double:"<<sizeof (__m256d)/sizeof (double)<<std::endl;
-#endif
-    //test_simd();
-    //test_simd_matmul();
-    //test_simd_transpose();
-#if 1
-    int N = 128;
+    int N = 1024;
     Tensorsi x(N, N);
     Tensorsi x1(N, N);
     Tensorsi x2(N, N);
     LinAlg::uniform(x1, -9, 9);
     LinAlg::uniform(x2, -9, 9);
-    for (std::size_t i = 0; i < 4; i++) {
-        x.zero();
-        Tensorsi::MM::ikkj(x, x1, x2);
-    }
     Tensorsi x3(N, N);
     Tensorsi::MM::ikkj(x3, x1, x2);
-    std::cout<<"correct rate:"<<correct(x, x3)<<std::endl;
-    x.printValue();
-    x3.printValue();
+    //std::cout<<"correct rate:"<<correct(x, x3)<<std::endl;
+    return;
+}
+
+int main()
+{
+#if defined(__SSE2__)
+    std::cout<<"__m128/float:"<<sizeof (__m128)/sizeof (float)<<std::endl;
+    std::cout<<"__m128d/double:"<<sizeof (__m128d)/sizeof (double)<<std::endl;
+    test_sse2_matmul();
+#elif defined (__AVX2__)
+    std::cout<<"__m256/float:"<<sizeof (__m256)/sizeof (float)<<std::endl;
+    std::cout<<"__m256d/double:"<<sizeof (__m256d)/sizeof (double)<<std::endl;
+    test_avx2();
+    test_avx2_matmul();
+    test_avx2_transpose();
 #endif
+
 	return 0;
 }

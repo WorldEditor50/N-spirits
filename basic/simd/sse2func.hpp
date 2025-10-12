@@ -7,7 +7,7 @@
 #include "../basic_def.h"
 
 namespace simd {
-#if defined(__SSE2__)
+
 template<typename T>
 struct Step {
     constexpr static std::size_t value = 0;
@@ -1128,7 +1128,6 @@ struct SSE2 {
     };
 };
 
-#endif // SSE2
 }
 
 #endif // SSE2FUNC_HPP

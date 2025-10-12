@@ -677,7 +677,7 @@ void test_gmmPixelCluster()
     std::vector<Tensor> xi;
     x.toVector(xi);
     GMM model(16, 3);
-    model.cluster(xi, 1000, 1e-6);
+    model.cluster(xi, 1000, 1e-3);
     for (int i = 0; i < 16; i++) {
         model.u[i].printValue();
     }

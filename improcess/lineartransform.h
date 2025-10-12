@@ -1,7 +1,7 @@
 #ifndef LINEARTRANSFORM_H
 #define LINEARTRANSFORM_H
-#include "improcess_def.h"
-#include "features.h"
+#include "../basic/tensor.hpp"
+#include <functional>
 
 namespace ns {
 /* transform */

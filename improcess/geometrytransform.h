@@ -1,6 +1,7 @@
 #ifndef GEOMETRYTRANSFORM_H
 #define GEOMETRYTRANSFORM_H
 #include "improcess_def.h"
+#include <functional>
 
 namespace ns {
 

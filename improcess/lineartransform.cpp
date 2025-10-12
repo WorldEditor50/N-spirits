@@ -1,4 +1,6 @@
 #include "lineartransform.h"
+#include "improcess_def.h"
+#include "features.h"
 
 int ns::linearTransform(OutTensor xo, InTensor xi, float alpha, float beta)
 {

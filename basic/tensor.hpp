@@ -2,14 +2,10 @@
 #define TENSOR_H
 #include <cmath>
 #include <vector>
-#include <functional>
-#include <fstream>
 #include <string>
 #include <sstream>
 #include <iostream>
 #include <assert.h>
-#include "alignallocator.hpp"
-
 
 template<typename T, template<typename Ti> class Alloc=std::allocator>
 class Tensor_

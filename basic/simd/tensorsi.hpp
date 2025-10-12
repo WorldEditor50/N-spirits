@@ -1,8 +1,10 @@
 #ifndef TENSORSI_HPP
 #define TENSORSI_HPP
 #include "../tensor.hpp"
+#include "../alignallocator.hpp"
 #include "sse2func.hpp"
 #include "avx2func.hpp"
+
 
 template<typename T , typename Instruct, template<typename Ti> class Alloc=AlignAllocator32>
 class Tensorsi_ : public Tensor_<T, Alloc>
@@ -379,10 +381,12 @@ public:
     };
 
 };
+
+using Tensorsi = Tensorsi_<float, simd::SSE2, AlignAllocator32>;
+
 #if defined(__AVX2__)
 using Tensorsi = Tensorsi_<float, simd::AVX2, AlignAllocator32>;
 //using Tensorsi = Tensorsi_<float, simd::AVX2, std::allocator>;
-#elif defined (__SSE2__)
-using Tensorsi = Tensorsi_<float, simd::SSE2, AlignAllocator32>;
 #endif
+
 #endif // TENSORSI_HPP
