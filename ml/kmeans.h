@@ -1,9 +1,6 @@
 #ifndef KMEANS_H
 #define KMEANS_H
 #include <vector>
-#include <map>
-#include <cmath>
-#include <string>
 #include <random>
 #include <functional>
 #include "../basic/tensor.hpp"
@@ -41,12 +38,12 @@ public:
         for (std::size_t epoch = 0; epoch < maxEpoch; epoch++) {
             /* pick the nearest topic */
             for (std::size_t i = 0; i < x.size(); i++) {
-                float maxD = -1;
+                float minD = distance(x[i], centers[0]);
                 std::size_t topic = 0;
-                for (std::size_t j = 0; j < centers.size(); j++) {
+                for (std::size_t j = 1; j < centers.size(); j++) {
                     float d = distance(x[i], centers[j]);
-                    if (d > maxD) {
-                        maxD = d;
+                    if (minD > d) {
+                        minD = d;
                         topic = j;
                     }
                 }
@@ -109,12 +106,12 @@ public:
 
     std::size_t operator()(const Tensor &x)
     {
-        float maxD = -1;
+        float minD = distance(x, centers[0]);
         std::size_t topic = 0;
-        for (std::size_t i = 0; i < centers.size(); i++) {
+        for (std::size_t i = 1; i < centers.size(); i++) {
             float d = distance(x, centers[i]);
-            if (d > maxD) {
-                maxD = d;
+            if (minD > d) {
+                minD = d;
                 topic = i;
             }
         }

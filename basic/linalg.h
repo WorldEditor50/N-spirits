@@ -103,6 +103,8 @@ namespace GaussianElimination {
     void evaluate(const Tensor &u, Tensor &x);
 }
 int gaussSeidel(const Tensor &a, const Tensor &b, Tensor &x, int iteration, float eps=1e-4);
+/* regression */
+int lineRegression(const Tensor &x, const Tensor &y, float &k, float &b);
 /* det */
 float det(const Tensor &x);
 /* rank */

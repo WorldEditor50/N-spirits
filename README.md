@@ -70,8 +70,8 @@
     x.reshape(h*w, 3, 1);
     std::vector<Tensor> xi;
     x.toVector(xi);
-    Kmeans model(16, 3, LinAlg::Kernel::laplace);
-    model.cluster(xi, 1000, 0.5, 1e-6);
+    Kmeans model(16, 3, LinAlg::normL2);
+    model.cluster(xi, 200, 0, 1e-6);
     /* classify */
     Tensor result(h, w, 3, 1);
     for (int i = 0; i < h; i++) {

@@ -819,6 +819,30 @@ int LinAlg::gaussSeidel(const Tensor &a, const Tensor &b, Tensor &x, int iterati
     return 0;
 }
 
+int LinAlg::lineRegression(const Tensor &x, const Tensor &y, float &k, float &b)
+{
+    float sx = 0;
+    float sy = 0;
+    float sxy = 0;
+    float sxx = 0;
+    float n = 0;
+    for (int i = 0; i < x.totalSize; i++) {
+        float x_ = x[i];
+        float y_ = y[i];
+        sx += x_;
+        sy += y_;
+        sxy += x_*y_;
+        sxx += x_*x_;
+    }
+    float d = n*sxx - sx*sx;
+    if (d == 0) {
+        return -1;
+    }
+    k = (n*sxy - sx*sy)/d;
+    b = (sy - k*sx)/n;
+    return 0;
+}
+
 float LinAlg::det(const Tensor &x)
 {
     float value = 0;

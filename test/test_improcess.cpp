@@ -621,9 +621,7 @@ void test_kmeansPixelCluster()
     x.reshape(h*w, 3, 1);
     std::vector<Tensor> xi;
     x.toVector(xi);
-    Kmeans model(16, 3, [](const Tensor &x1, const Tensor &x2)->float{
-        return LinAlg::Kernel::laplace(x1, x2, 1.0);
-    });
+    Kmeans model(16, 3, LinAlg::normL2);
     model.cluster(xi, 200, 0, 1e-6);
     /* centers */
     for (int i = 0; i < 16; i++) {
@@ -1450,7 +1448,7 @@ int main()
     //test_laplacian();
     //test_histogram();
     //test_svmSegmentation();
-    //test_kmeansPixelCluster();
+    test_kmeansPixelCluster();
     //test_gmmPixelCluster();
     //test_houghLine();
     //test_regionGrow();
@@ -1476,6 +1474,6 @@ int main()
     //test_gammaTransform();
     //test_hsvHistogramEqualize();
     //test_bayer2rgb();
-    test_floydSteinbergDithering();
+    //test_floydSteinbergDithering();
     return 0;
 }
